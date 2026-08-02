@@ -21,6 +21,11 @@ import type {
   AgentRunTimings,
 } from "./types.js";
 import { Session } from "./session.js";
+import {
+  buildSystemPrompt,
+  buildDefaultSystemPrompt as buildFallbackPrompt,
+} from "../prompts/system-prompt-builder.js";
+import { buildRuntimeDatetimeBlock } from "../prompts/runtime-context.js";
 
 // ============================================================
 // 重试常量 — 控制 runner 遇到可重试错误时的退避策略
@@ -891,22 +896,65 @@ export class AgentRunner {
   }
 
   // ==========================================================
-  // 默认 System Prompt
-  // ==========================================================
-  private buildDefaultSystemPrompt(): string {
-    return [
-      "You are a helpful AI assistant with access to tools.",
-      "Use tools when needed to accomplish tasks.",
-      "Be concise and accurate in your responses.",
-    ].join("\n");
-  }
-
-  // ==========================================================
   // System Prompt 构建
   // ==========================================================
-  private async buildSystemPromptWithEvolution(base: string): Promise<string> {
-    // 可扩展：注入技能索引等
-    return base;
+
+  /**
+   * 构建默认 system prompt（fallback）。
+   *
+   * 当模板文件不可用或配置未提供 systemPrompt 时使用。
+   * 不依赖文件 I/O，纯内存构建。
+   */
+  private buildDefaultSystemPrompt(): string {
+    return buildFallbackPrompt();
+  }
+
+  /**
+   * 构建完整的 system prompt 并执行进化增强。
+   *
+   * **流程：**
+   * 1. 确定 base prompt 来源（优先级：params.systemPrompt >
+   *    config.agent.systemPrompt > 内置 fallback 模板）
+   * 2. 组装完整 system prompt（模板 + 技能索引 + 项目上下文 + 运行时注入）
+   * 3. 返回组装结果（含 turnEphemeral）
+   *
+   * @param base — 基础 prompt（来自 params 或 config）
+   * @param params — 完整的 run 参数（用于提取 workingDir 等上下文）
+   * @returns 组装后的 system prompt 字符串
+   */
+  private async buildSystemPromptWithEvolution(
+    base: string,
+    params: AgentRunParams,
+  ): Promise<{
+    systemPrompt: string;
+    turnEphemeral: string;
+  }> {
+    // 判断 base 是否为"原始默认值"（需要替换为完整模板）
+    const isRawFallback =
+      base === buildFallbackPrompt() ||
+      base === this.config.agent.systemPrompt;
+
+    if (isRawFallback) {
+      // 使用完整模板体系构建
+      const assembly = buildSystemPrompt({
+        workingDir: params.workingDir,
+        extraSystemPrompt: this.config.agent.systemPrompt &&
+          this.config.agent.systemPrompt !== base
+          ? this.config.agent.systemPrompt
+          : undefined,
+      });
+      return {
+        systemPrompt: assembly.systemPrompt,
+        turnEphemeral: assembly.turnEphemeral,
+      };
+    }
+
+    // base 是用户自定义的完整 prompt → 直接使用，仅追加日期
+    const datetimeBlock = buildRuntimeDatetimeBlock();
+    return {
+      systemPrompt: base,
+      turnEphemeral: datetimeBlock,
+    };
   }
 
   // ==========================================================
@@ -1059,7 +1107,9 @@ export class AgentRunner {
 
     const basePrompt =
       params.systemPrompt ?? this.config.agent.systemPrompt ?? this.buildDefaultSystemPrompt();
-    const systemPrompt = await this.buildSystemPromptWithEvolution(basePrompt);
+    const built = await this.buildSystemPromptWithEvolution(basePrompt, params);
+    const systemPrompt = built.systemPrompt;
+    const builtTurnEphemeral = built.turnEphemeral;
 
     const toolLoopsRef = { current: 0 };
     const compactionCountRef = { current: 0 };
@@ -1129,11 +1179,19 @@ export class AgentRunner {
 
         // 2d. 调用 LLM（流式）
         activeProviderStartedAt = Date.now();
+
+        // 合并 turnEphemeral：构建器生成的 + 用户传入的
+        const effectiveTurnEphemeral = [builtTurnEphemeral, params.turnEphemeral]
+          .filter(Boolean)
+          .join("\n\n");
+
         const streamIter = provider.stream({
           model: modelId,
           messages: withRequestScopedControls(
             this.session.getMessagesForModel(
-              params.turnEphemeral ? { turnContext: params.turnEphemeral } : undefined,
+              effectiveTurnEphemeral
+                ? { turnContext: effectiveTurnEphemeral }
+                : undefined,
             ),
             requestControls,
           ),

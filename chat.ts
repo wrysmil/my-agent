@@ -27,6 +27,7 @@ import { SessionStore } from "./src/storage/session-store.js";
 import { SkillLoader } from "./src/skills/loader.js";
 import type { SkillSpec, SkillContent } from "./src/skills/types.js";
 import { pickDescription } from "./src/skills/types.js";
+import { buildSystemPrompt } from "./src/prompts/system-prompt-builder.js";
 
 // ============================================================
 // 命令行参数
@@ -162,12 +163,13 @@ if (flagList) {
 }
 
 // ============================================================
-// System prompt（含 skill 上下文）
+// System prompt（使用模板体系构建）
 // ============================================================
 const skillContext = buildSkillContext();
-const systemPrompt = skillContext
-  ? `${config.agent.systemPrompt}\n\n${skillContext}`
-  : config.agent.systemPrompt;
+const { systemPrompt } = buildSystemPrompt({
+  skillsIndex: skillContext || undefined,
+  extraSystemPrompt: config.agent.systemPrompt,
+});
 
 // ============================================================
 // 创建 AgentRunner

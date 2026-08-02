@@ -341,52 +341,66 @@ export class DeepSeekProvider implements LLMProvider {
     }
 
     for (const msg of messages) {
-      for (const block of msg.content) {
-        switch (block.type) {
-          case "text":
-            out.push({ role: msg.role as DeepSeekMessage["role"], content: block.text });
-            break;
-          case "tool_use":
-            out.push({
-              role: "assistant",
-              content: null,
-              tool_calls: [
-                {
-                  id: block.id,
-                  type: "function",
+      // 将同一 Message 的多个 content block 合并为一条 DeepSeek 消息
+      const textBlocks = msg.content.filter((b) => b.type === "text");
+      const toolUseBlocks = msg.content.filter((b) => b.type === "tool_use");
+      const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
+      const imageBlocks = msg.content.filter((b) => b.type === "image");
+
+      // assistant 文本 + 工具调用合并为一条消息
+      if (msg.role === "assistant") {
+        const text = textBlocks.map((b) => (b as { text: string }).text).join("");
+        const hasTools = toolUseBlocks.length > 0;
+
+        out.push({
+          role: "assistant",
+          content: text || null,
+          ...(hasTools
+            ? {
+                tool_calls: toolUseBlocks.map((tc) => ({
+                  id: tc.id,
+                  type: "function" as const,
                   function: {
-                    name: block.name,
-                    arguments: JSON.stringify(block.input),
+                    name: tc.name,
+                    arguments: JSON.stringify(tc.input),
                   },
-                },
-              ],
-            });
-            break;
-          case "tool_result":
-            out.push({
-              role: "tool",
-              tool_call_id: block.toolUseId,
-              content: block.content,
-            });
-            break;
-          case "image":
-            // DeepSeek 支持 vision，用 OpenAI content_part 格式
-            const lastMsg = out[out.length - 1];
-            if (lastMsg && lastMsg.role === "user" && typeof lastMsg.content === "string") {
-              // 转换简单 content 为 content array
-              // DeepSeek 兼容 OpenAI vision 格式
-              out.push({
-                role: "user",
-                content: JSON.stringify([
-                  { type: "image_url", image_url: { url: `data:${block.mediaType};base64,${block.data}` } },
-                ]),
-              } as DeepSeekMessage);
-            }
-            break;
-          case "thinking":
-            // DeepSeek 不支持 thinking 块，跳过
-            break;
-        }
+                })),
+              }
+            : {}),
+        });
+        continue;
+      }
+
+      // user 文本
+      for (const block of textBlocks) {
+        out.push({
+          role: "user",
+          content: (block as { text: string }).text,
+        });
+      }
+
+      // tool 结果（每条 tool_result 独立一条 tool 消息）
+      for (const block of toolResultBlocks) {
+        out.push({
+          role: "tool",
+          tool_call_id: block.toolUseId,
+          content: block.content,
+        });
+      }
+
+      // 图片 → DeepSeek vision 格式
+      for (const block of imageBlocks) {
+        out.push({
+          role: "user",
+          content: JSON.stringify([
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${(block as { mediaType: string }).mediaType};base64,${(block as { data: string }).data}`,
+              },
+            },
+          ]),
+        } as DeepSeekMessage);
       }
     }
 

@@ -267,18 +267,49 @@ export class Session {
   /**
    * 构建面向模型的上下文视图。
    *
-   * 返回发送给 LLM provider 的消息列表。当前为直接返回所有消息的副本，
-   * 未来会扩展支持：
-   * - 注入临时上下文（`turnContext`）
-   * - 选择性包含/排除执行计划（`includeExecutionPlan`）
-   * - 应用压缩摘要（用摘要替换旧轮次）
+   * 返回发送给 LLM provider 的消息列表的副本。
+   * 未来会扩展支持选择性包含/排除执行计划、应用压缩摘要等。
    *
-   * @param _opts.turnContext — 可选的临时上下文文本，注入到本轮消息视图
+   * **turnContext 注入规则（缓存友好）：**
+   * 临时上下文（日期/时区、编排状态等）作为本轮最后一条 user 消息的
+   * 前导文本注入。这样 system prompt 前缀保持跨轮字节稳定，
+   * 仅用户消息尾部变化，最大化 prompt cache 命中率。
+   *
+   * @param _opts.turnContext — 可选的临时上下文文本，注入到本轮最后一条 user 消息前
    * @param _opts.includeExecutionPlan — 是否将执行计划作为上下文包含
-   * @returns 消息列表的副本
+   * @returns 消息列表的副本（含注入的上下文）
    */
   getMessagesForModel(_opts?: { turnContext?: string; includeExecutionPlan?: boolean }): Message[] {
-    return [...this.messages];
+    const messages = [...this.messages];
+    const turnContext = _opts?.turnContext?.trim();
+
+    if (turnContext && messages.length > 0) {
+      // 找到本轮第一条 user 消息（真正的用户输入，而非 tool_result），
+      // 在其 content 前注入 turnContext。
+      // 必须注入第一条而非最后一条，否则当最后一条 user 消息是
+      // tool_result 时，注入的文本会破坏 assistant(tool_calls) → tool
+      // 的连续消息格式，导致 API 报错。
+      const currentTurnId = this.turnId;
+      for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        if (msg.role === "user" && msg.turnId === currentTurnId) {
+          // 跳过纯 tool_result 消息（content 全是 tool_result 块）
+          const hasNonToolResult = msg.content.some((b) => b.type !== "tool_result");
+          if (!hasNonToolResult) continue;
+
+          messages[i] = {
+            ...msg,
+            content: [
+              { type: "text" as const, text: turnContext },
+              ...msg.content,
+            ],
+          };
+          break;
+        }
+      }
+    }
+
+    return messages;
   }
 
   /**
