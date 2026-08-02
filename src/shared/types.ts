@@ -57,6 +57,8 @@ export type MessageContent =
 export type Message = {
   role: MessageRole;
   content: MessageContent[];
+  /** UI 轮次身份。由 Session 分配，从面向 provider 的投影中剥离。 */
+  turnId?: number;
 };
 
 // ============================================================

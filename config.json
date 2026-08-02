@@ -1,0 +1,35 @@
+{
+  "agent": {
+    "defaultModel": "deepseek-chat",
+    "defaultProvider": "deepseek",
+    "maxRetries": 2,
+    "maxToolLoops": 20,
+    "toolIdleTimeoutMs": 300000,
+    "systemPrompt": "你是一个有工具调用能力的 AI 助手。用中文回复。"
+  },
+  "models": {
+    "providers": {
+      "deepseek": {
+        "baseUrl": "https://api.deepseek.com/v1"
+      }
+    },
+    "catalog": {
+      "deepseek-chat": {
+        "provider": "deepseek",
+        "model": "deepseek-chat",
+        "contextWindow": 65536,
+        "maxOutputTokens": 8192,
+        "supportsTools": true,
+        "supportsStreaming": true
+      },
+      "deepseek-reasoner": {
+        "provider": "deepseek",
+        "model": "deepseek-reasoner",
+        "contextWindow": 65536,
+        "maxOutputTokens": 8192,
+        "supportsTools": false,
+        "supportsStreaming": true
+      }
+    }
+  }
+}
