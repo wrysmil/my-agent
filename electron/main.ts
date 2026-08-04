@@ -1,7 +1,5 @@
 import { app, BrowserWindow } from "electron";
 import * as path from "node:path";
-import { registerIpcHandlers } from "../src/ipc/index.js";
-import { closeDb } from "../src/storage/db.js";
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -16,7 +14,7 @@ function createWindow(): void {
       preload: path.join(import.meta.dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
-      sandbox: false,        // false: 允许预加载脚本访问 fs（用于 devtools）
+      sandbox: false,
     },
   });
 
@@ -24,12 +22,10 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  registerIpcHandlers();
   createWindow();
 });
 
 app.on("window-all-closed", () => {
-  closeDb();
   app.quit();
 });
 

@@ -1,8 +1,25 @@
-import Database from "better-sqlite3";
+import { createRequire } from "node:module";
 import * as fs from "node:fs";
 import { dataDir, dbFile } from "./paths.js";
 
-let _db: Database.Database | null = null;
+const require = createRequire(import.meta.url);
+
+let _db: any = null;
+let _DatabaseClass: any = undefined;
+
+function getDatabaseClass(): any {
+  if (_DatabaseClass !== undefined) return _DatabaseClass;
+  try {
+    _DatabaseClass = require("better-sqlite3");
+  } catch (err) {
+    _DatabaseClass = null;
+    throw new Error(
+      `better-sqlite3 native module not available: ${String(err)}. ` +
+      "Run 'npx @electron/rebuild -w better-sqlite3' with Node >= 22."
+    );
+  }
+  return _DatabaseClass;
+}
 
 const MIGRATIONS = [
   {
@@ -101,7 +118,7 @@ const MIGRATIONS = [
   },
 ];
 
-function migrate(db: Database.Database): void {
+function migrate(db: any): void {
   db.exec(
     "CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY)"
   );
@@ -120,8 +137,9 @@ function migrate(db: Database.Database): void {
   }
 }
 
-export function getDb(): Database.Database {
+export function getDb(): any {
   if (_db) return _db;
+  const Database = getDatabaseClass();
   const dir = dataDir();
   fs.mkdirSync(dir, { recursive: true });
   _db = new Database(dbFile());
