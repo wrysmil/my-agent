@@ -1,0 +1,102 @@
+<!-- electron/renderer/index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>My Agent</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ===== 图标侧栏 ===== -->
+    <aside id="sidebar">
+      <div id="sidebar-logo" title="My Agent" data-nav="chat">M</div>
+      <nav id="sidebar-nav">
+        <div class="sidebar-icon active" data-nav="chat" title="对话">💬</div>
+        <div class="sidebar-icon" data-nav="sessions" title="会话管理">📋</div>
+        <div class="sidebar-icon" data-nav="skills" title="Skills">🧩</div>
+        <div class="sidebar-icon" data-nav="settings" title="设置">⚙️</div>
+      </nav>
+      <div id="sidebar-footer">
+        <div id="sidebar-avatar" title="用户">Q</div>
+      </div>
+    </aside>
+
+    <!-- ===== 主区 ===== -->
+    <main id="main">
+      <!-- 对话页 -->
+      <section id="page-chat" class="page active">
+        <div id="chat-messages">
+          <div class="empty-state">
+            <div class="empty-state-icon">💬</div>
+            <div>开始一段新对话</div>
+            <div style="margin-top:4px;font-size:12px;">输入消息，Enter 发送，Shift+Enter 换行</div>
+          </div>
+        </div>
+        <div id="chat-input-area">
+          <div class="input-context-bar">
+            <span class="chip" id="ctx-project">📁 my-agent</span>
+            <span class="chip" id="ctx-model">🧠 deepseek-chat</span>
+          </div>
+          <div class="input-wrapper">
+            <textarea id="chat-input" rows="2"
+              placeholder="输入消息... Enter 发送，Shift+Enter 换行"></textarea>
+            <div class="input-toolbar">
+              <div class="input-toolbar-left">
+                <button class="btn btn-icon btn-ghost" title="附件">📎</button>
+                <button class="btn btn-icon btn-ghost" title="图片">🖼️</button>
+              </div>
+              <div class="input-toolbar-right">
+                <button class="btn btn-sm btn-secondary">停止</button>
+                <button class="btn btn-primary" id="btn-send">发送 ➤</button>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:11px;color:#bbb;margin-top:8px;">
+            My Agent 可能产生错误，请核实重要信息
+          </div>
+        </div>
+      </section>
+
+      <!-- 会话管理页 -->
+      <section id="page-sessions" class="page">
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <div>会话管理 — 即将实现</div>
+        </div>
+      </section>
+
+      <!-- Skills 管理页 -->
+      <section id="page-skills" class="page">
+        <div class="empty-state">
+          <div class="empty-state-icon">🧩</div>
+          <div>Skills 管理 — 即将实现</div>
+        </div>
+      </section>
+
+      <!-- 设置页 -->
+      <section id="page-settings" class="page">
+        <div class="empty-state">
+          <div class="empty-state-icon">⚙️</div>
+          <div>设置 — 即将实现</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 第三方 -->
+  <script src="vendor/marked.min.js"></script>
+
+  <!-- 模块 -->
+  <script src="js/api.js"></script>
+  <script src="modules/markdown.js"></script>
+
+  <!-- 入口 -->
+  <script src="js/app.js"></script>
+</body>
+</html>
