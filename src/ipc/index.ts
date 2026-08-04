@@ -1,5 +1,11 @@
-// IPC handler registration entry point — stubs filled in Batch 4
+import { registerChatIpc } from "./chat.js";
+import { registerSessionsIpc } from "./sessions.js";
+import { registerConfigIpc } from "./config.js";
+import { registerSkillsIpc } from "./skills.js";
 
 export function registerIpcHandlers(): void {
-  // TODO: Batch 4 — register sessions/config/skills/chat/providers handlers
+  registerChatIpc();
+  registerSessionsIpc();
+  registerConfigIpc();
+  registerSkillsIpc();
 }
