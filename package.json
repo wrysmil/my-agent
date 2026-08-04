@@ -2,17 +2,25 @@
   "name": "my-agent",
   "version": "0.1.0",
   "type": "module",
+  "main": "dist/electron/main.js",
   "scripts": {
     "check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "chat": "tsx chat.ts"
+    "chat": "tsx chat.ts",
+    "dev": "npx @electron/rebuild -w better-sqlite3 && tsc -p tsconfig.electron.json && node scripts/copy-assets.mjs && electron .",
+    "build": "electron-builder"
   },
   "dependencies": {
+    "better-sqlite3": "^13.0.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^22.0.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^26.15.3",
     "tsx": "^4.0.0",
     "typescript": "^5.7.0",
     "vitest": "^2.0.0"
