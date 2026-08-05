@@ -1,0 +1,162 @@
+/* electron/renderer/css/sessions.css */
+
+/* ===== 筛选条 ===== */
+#sessions-filter-bar {
+  padding: 14px 28px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  background: var(--bg-secondary);
+}
+
+#sessions-filter-bar .input {
+  flex: 1;
+  height: 34px;
+  font-size: var(--text-base);
+  border-radius: var(--radius-md);
+  padding: 4px 14px;
+}
+
+#sessions-filter-bar .select {
+  height: 34px;
+  font-size: var(--text-base);
+}
+
+/* ===== 批量操作条 ===== */
+#sessions-batch-bar {
+  padding: 10px 28px;
+  background: var(--color-primary-bg);
+  border-bottom: 1px solid var(--border-input);
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-base);
+}
+
+#sessions-batch-bar.visible {
+  display: flex;
+}
+
+.batch-bar-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.batch-bar-count {
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.batch-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ===== 表格 ===== */
+#sessions-table-wrap {
+  flex: 1;
+  overflow-y: auto;
+}
+
+#sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-base);
+}
+
+#sessions-table th {
+  text-align: left;
+  padding: 14px 8px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-light);
+  position: sticky;
+  top: 0;
+  background: var(--bg-main);
+}
+
+#sessions-table td {
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--color-text-secondary);
+}
+
+#sessions-table tr.selected {
+  background: var(--color-primary-bg);
+}
+
+#sessions-table tr:hover {
+  background: var(--bg-hover);
+}
+
+#sessions-table tr.selected:hover {
+  background: var(--color-primary-bg);
+}
+
+#sessions-table .session-name {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+#sessions-table .session-preview {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  margin-top: 2px;
+}
+
+#sessions-table .col-checkbox {
+  width: 32px;
+  text-align: center;
+}
+
+#sessions-table .col-actions {
+  width: 60px;
+  text-align: right;
+}
+
+#sessions-table .col-count {
+  text-align: right;
+}
+
+#sessions-table .col-tokens {
+  text-align: right;
+}
+
+/* ===== 分页 ===== */
+#sessions-pagination {
+  padding: 12px 28px;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.pagination-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.pagination-btns button {
+  background: var(--bg-main);
+  border: 1px solid var(--border-input);
+  color: var(--color-text);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.pagination-btns button.active {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+
+.pagination-btns button:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
