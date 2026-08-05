@@ -2,21 +2,24 @@
  * 交互式对话 CLI
  *
  * 用法：
- *   npx tsx chat.ts              # 新建会话
- *   npx tsx chat.ts --load <id>  # 恢复会话
+ *   npx tsx chat.ts              # 主菜单（默认）
+ *   npx tsx chat.ts --load <id>  # 恢复会话，跳过菜单
  *   npx tsx chat.ts --list       # 列出历史会话
  *
- * 命令（对话中）：
- *   /quit /exit    退出
- *   /clear         清空当前会话上下文
- *   /save          显示当前会话 ID
- *   /tools         列出可用工具
- *   /skills        列出可用 Skill
- *   /skill <id>    查看 Skill 内容
+ * 主菜单（数字彩菜单）：
+ *   ① 开始对话
+ *   ② 设置模型提供商
+ *   ③ 查看当前提供商
+ *   ④ 退出
+ *
+ * 启动时若 active provider 的 API Key 为空，主动引导进入设置。
  */
 
 import * as readline from "node:readline";
+import * as path from "node:path";
+import * as os from "node:os";
 import { loadConfig } from "./src/config/loader.js";
+import type { CoreAgentConfig } from "./src/config/schema.js";
 import { AgentRunner } from "./src/agent/runner.js";
 import { DeepSeekProvider } from "./src/providers/deepseek.js";
 import { ProviderRegistry } from "./src/providers/registry.js";
@@ -24,42 +27,65 @@ import { defineTool, type AgentTool } from "./src/tools/base.js";
 import { BUILTIN_TOOLS } from "./src/tools/builtin.js";
 import { PersistentSession } from "./src/agent/persistent-session.js";
 import { SessionStore } from "./src/storage/session-store.js";
+import { ProvidersStore, type ProviderConfigEntry } from "./src/storage/providers-store.js";
 import { SkillLoader } from "./src/skills/loader.js";
 import type { SkillSpec, SkillContent } from "./src/skills/types.js";
 import { pickDescription } from "./src/skills/types.js";
 import { buildSystemPrompt } from "./src/prompts/system-prompt-builder.js";
+import {
+  runMainMenu,
+  showCurrentProvider,
+  type MainMenuChoice,
+} from "./src/cli/menu.js";
+import { runProviderMenu } from "./src/cli/provider-menu.js";
+import { confirm } from "./src/cli/io.js";
 
-// ============================================================
-// 命令行参数
-// ============================================================
-const args = process.argv.slice(2);
-const flagList = args.includes("--list");
-const loadIdx = args.indexOf("--load");
-const loadId = loadIdx >= 0 ? args[loadIdx + 1] : undefined;
+// ============================================================================
+// CLI 解析（导出供测试）
+// ============================================================================
 
-// ============================================================
-// 初始化
-// ============================================================
-const API_KEY = process.env.DEEPSEEK_API_KEY;
-if (!API_KEY) {
-  console.error("❌ 请设置 DEEPSEEK_API_KEY 环境变量");
-  console.error("   export DEEPSEEK_API_KEY=sk-xxx");
-  process.exit(1);
+export interface CliIo {
+  consoleLog: (...args: unknown[]) => void;
+  consoleError: (...args: unknown[]) => void;
+  exit: (code: number) => void;
 }
 
-const config = await loadConfig("./config.json");
+export interface BootstrapOptions {
+  argv: string[];
+  env: NodeJS.ProcessEnv;
+  providersPath: string;
+  cli: CliIo;
+  projectConfig: CoreAgentConfig;
+}
 
-const provider = new DeepSeekProvider({
-  apiKey: API_KEY,
-  baseUrl: config.models.providers?.deepseek?.baseUrl,
-});
+export interface BootstrapResult {
+  store: ProvidersStore;
+  activeProvider: ProviderConfigEntry | undefined;
+  parsedArgs: ReturnType<typeof parseArgs>;
+}
 
-const providers = new ProviderRegistry(config);
-providers.registerFactory("deepseek", () => provider);
+export function parseArgs(argv: string[]) {
+  const flagList = argv.includes("--list");
+  const loadIdx = argv.indexOf("--load");
+  const loadId = loadIdx >= 0 ? argv[loadIdx + 1] : undefined;
+  return { flagList, loadId };
+}
 
-// ============================================================
-// 自定义工具
-// ============================================================
+/** 加载 providers 并解析参数（不进入交互）。供测试与 main 共用。 */
+export async function bootstrapChat(opts: BootstrapOptions): Promise<BootstrapResult> {
+  const store = await ProvidersStore.load(opts.providersPath);
+  const parsedArgs = parseArgs(opts.argv);
+  return {
+    store,
+    activeProvider: store.getActiveProvider(),
+    parsedArgs,
+  };
+}
+
+// ============================================================================
+// 工具（calculator / getTime）
+// ============================================================================
+
 const calculator = defineTool({
   name: "calculator",
   description: "执行数学计算。输入一个数学表达式字符串。",
@@ -96,18 +122,18 @@ const getTime = defineTool({
   },
 });
 
-// ============================================================
-// Skill 加载
-// ============================================================
+// ============================================================================
+// Skills
+// ============================================================================
+
 const skillDir = new URL("./skills", import.meta.url).pathname;
-const skillSpecs = SkillLoader.scan(skillDir, "system");
+const skillSpecs: SkillSpec[] = SkillLoader.scan(skillDir, "system");
 const skillMap = new Map<string, SkillContent>();
 for (const spec of skillSpecs) {
   const content = SkillLoader.load(spec);
   if (content) skillMap.set(spec.id, content);
 }
 
-// 构建 skill 列表（注入到 system prompt）
 function buildSkillContext(): string {
   if (skillSpecs.length === 0) return "";
   const lines = ["## 可用技能 (Skills)", ""];
@@ -119,93 +145,153 @@ function buildSkillContext(): string {
   return lines.join("\n");
 }
 
-// ============================================================
-// 工具汇总
-// ============================================================
-const allTools: AgentTool[] = [
-  ...BUILTIN_TOOLS,
-  calculator,
-  getTime,
-];
+const allTools: AgentTool[] = [...BUILTIN_TOOLS, calculator, getTime];
+const skillContext = buildSkillContext();
 
-// ============================================================
-// Session 管理
-// ============================================================
-const store = new SessionStore();
+// ============================================================================
+// Provider 装配
+// ============================================================================
 
-let session: PersistentSession;
-if (flagList) {
-  // --list：列出历史会话
-  const sessions = store.list();
-  if (sessions.length === 0) {
-    console.log("📭 没有已保存的会话");
-  } else {
-    console.log(`📋 已保存的会话 (${sessions.length}):\n`);
-    for (const s of sessions) {
-      console.log(`  ${s.id}  →  ${s.name}`);
-    }
+function buildProviderRegistry(store: ProvidersStore): ProviderRegistry {
+  const registry = new ProviderRegistry();
+  const active = store.getActiveProvider();
+  if (!active) {
+    throw new Error("没有可用的 provider；请先在设置菜单中新建一个");
   }
-  process.exit(0);
-} else if (loadId) {
-  // --load <id>：恢复会话
-  const loaded = store.get(loadId);
-  if (!loaded) {
-    console.error(`❌ 会话不存在: ${loadId}`);
-    console.error("   使用 --list 查看可用会话");
-    process.exit(1);
+  if (active.type === "deepseek") {
+    const dp = new DeepSeekProvider({ apiKey: active.apiKey, baseUrl: active.baseUrl });
+    registry.registerFactory(active.id, () => dp);
   }
-  session = loaded;
-  console.log(`📂 已恢复会话: ${session.sessionId}`);
-} else {
-  // 新建会话
-  session = store.create();
-  console.log(`🆕 新建会话: ${session.sessionId}`);
+  return registry;
 }
 
-// ============================================================
-// System prompt（使用模板体系构建）
-// ============================================================
-const skillContext = buildSkillContext();
-const { systemPrompt } = buildSystemPrompt({
-  skillsIndex: skillContext || undefined,
-  extraSystemPrompt: config.agent.systemPrompt,
-});
+// ============================================================================
+// 主入口
+// ============================================================================
 
-// ============================================================
-// 创建 AgentRunner
-// ============================================================
-function createRunner(): AgentRunner {
-  return new AgentRunner({
-    config,
-    providers,
+async function main() {
+  const config = await loadConfig("./config.json");
+  const providersPath = path.join(
+    process.env.MY_AGENT_HOME ?? path.join(os.homedir(), ".my-agent"),
+    "providers.json",
+  );
+
+  const { store, parsedArgs } = await bootstrapChat({
+    argv: process.argv.slice(2),
+    env: process.env,
+    providersPath,
+    cli: { consoleLog: console.log, consoleError: console.error, exit: process.exit },
+    projectConfig: config,
+  });
+
+  // --list 优先（不进入菜单）
+  if (parsedArgs.flagList) {
+    const sessions = new SessionStore().list();
+    if (sessions.length === 0) {
+      console.log("📭 没有已保存的会话");
+    } else {
+      console.log(`📋 已保存的会话 (${sessions.length}):\n`);
+      for (const s of sessions) {
+        console.log(`  ${s.id}  →  ${s.name}`);
+      }
+    }
+    return;
+  }
+
+  // --load 跳过菜单
+  if (parsedArgs.loadId) {
+    const sessionStore = new SessionStore();
+    const loaded = sessionStore.get(parsedArgs.loadId);
+    if (!loaded) {
+      console.error(`❌ 会话不存在: ${parsedArgs.loadId}`);
+      console.error("   使用 --list 查看可用会话");
+      process.exit(1);
+    }
+    await runChat({ config, store, session: loaded });
+    return;
+  }
+
+  // 默认：主菜单循环
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (;;) {
+      const choice: MainMenuChoice = await runMainMenu(rl, store);
+      switch (choice) {
+        case "start": {
+          const active = store.getActiveProvider();
+          if (!active || !active.apiKey) {
+            const go = await confirm(
+              rl,
+              "⚠️ 当前 provider 缺少 API Key，是否进入设置？",
+              true,
+            );
+            if (go) {
+              await runProviderMenu(rl, store);
+            }
+            if (!store.getActiveProvider()?.apiKey) {
+              console.log("❌ 仍未配置 API Key，无法开始对话\n");
+              continue;
+            }
+          }
+          await runChat({ config, store, session: undefined });
+          return;
+        }
+        case "settings":
+          await runProviderMenu(rl, store);
+          continue;
+        case "view":
+          showCurrentProvider(store);
+          continue;
+        case "quit":
+          console.log("👋 再见！");
+          return;
+      }
+    }
+  } finally {
+    rl.close();
+  }
+}
+
+// ============================================================================
+// 对话主循环
+// ============================================================================
+
+async function runChat(opts: {
+  config: CoreAgentConfig;
+  store: ProvidersStore;
+  session: PersistentSession | undefined;
+}): Promise<void> {
+  const sessionStore = new SessionStore();
+  let session: PersistentSession = opts.session ?? sessionStore.create();
+
+  const registry = buildProviderRegistry(opts.store);
+  const { systemPrompt } = buildSystemPrompt({
+    skillsIndex: skillContext || undefined,
+    extraSystemPrompt: opts.config.agent.systemPrompt,
+  });
+
+  let runner: AgentRunner = new AgentRunner({
+    config: opts.config,
+    providers: registry,
     tools: allTools,
     session,
   });
-}
 
-let runner = createRunner();
+  console.log(`🆕 新建会话: ${session.sessionId}`);
+  console.log("🤖 Agent 对话模式");
+  console.log(`   Session: ${session.sessionId}`);
+  console.log(`   工具: ${allTools.map((t) => t.name).join(", ")}`);
+  console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
+  console.log("   输入消息后回车，/help 查看命令\n");
 
-// ============================================================
-// 交互循环
-// ============================================================
-console.log("🤖 Agent 对话模式");
-console.log(`   Session: ${session.sessionId}`);
-console.log(`   工具: ${allTools.map((t) => t.name).join(", ")}`);
-console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
-console.log("   输入消息后回车，/help 查看命令\n");
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ask = (): Promise<string> =>
+    new Promise((resolve) => {
+      rl.question("👤 ", (answer) => resolve(answer.trim()));
+    });
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-const ask = (): Promise<string> =>
-  new Promise((resolve) => {
-    rl.question("👤 ", (answer) => resolve(answer.trim()));
-  });
-
-function showHelp() {
-  console.log(`
+  function showHelp() {
+    console.log(`
 ┌─────────────────────────────────────────────┐
 │  /quit, /exit    退出                        │
 │  /clear          清空上下文（新建 session）     │
@@ -216,137 +302,143 @@ function showHelp() {
 │  /help           显示此帮助                    │
 └─────────────────────────────────────────────┘
 `);
-}
-
-function showTools() {
-  console.log("\n📦 可用工具:\n");
-  for (const tool of allTools) {
-    console.log(`  🔧 ${tool.name}`);
-    console.log(`     ${tool.description.slice(0, 80)}`);
   }
-  console.log();
-}
 
-function showSkills() {
-  if (skillSpecs.length === 0) {
-    console.log("\n📭 无可用 Skill\n");
-    return;
-  }
-  console.log("\n📚 可用 Skill:\n");
-  for (const spec of skillSpecs) {
-    const desc = pickDescription(spec);
-    console.log(`  📋 ${spec.name} (\`${spec.id}\`)`);
-    console.log(`     ${desc}`);
-  }
-  console.log();
-}
-
-function showSkill(id: string) {
-  const content = skillMap.get(id);
-  if (!content) {
-    console.log(`\n❌ Skill 不存在: ${id}\n`);
-    return;
-  }
-  console.log(`\n📋 Skill: ${content.name} (\`${content.id}\`)\n`);
-  console.log(`${"=".repeat(50)}`);
-  console.log(content.body);
-  console.log(`${"=".repeat(50)}\n`);
-}
-
-async function chat() {
-  while (true) {
-    const input = await ask();
-    if (!input) continue;
-
-    // 命令处理
-    if (input.startsWith("/")) {
-      const [cmd, ...rest] = input.split(/\s+/);
-      switch (cmd) {
-        case "/quit":
-        case "/exit":
-          rl.close();
-          session.close();
-          console.log("👋 再见！");
-          return;
-        case "/help":
-          showHelp();
-          continue;
-        case "/clear":
-          session.close();
-          session = store.create();
-          runner = createRunner();
-          console.log(`🧹 上下文已清除，新会话: ${session.sessionId}\n`);
-          continue;
-        case "/save":
-          console.log(`💾 当前会话 ID: ${session.sessionId}`);
-          console.log(`   下次使用: npx tsx chat.ts --load ${session.sessionId}\n`);
-          continue;
-        case "/tools":
-          showTools();
-          continue;
-        case "/skills":
-          showSkills();
-          continue;
-        case "/skill":
-          if (rest.length === 0) {
-            console.log("用法: /skill <id>\n");
-          } else {
-            showSkill(rest[0]);
-          }
-          continue;
-        default:
-          console.log(`未知命令: ${cmd}，输入 /help 查看帮助\n`);
-          continue;
-      }
+  function showTools() {
+    console.log("\n📦 可用工具:\n");
+    for (const tool of allTools) {
+      console.log(`  🔧 ${tool.name}`);
+      console.log(`     ${tool.description.slice(0, 80)}`);
     }
+    console.log();
+  }
 
-    process.stdout.write("🤖 ");
-    let toolPhase = false;
+  function showSkills() {
+    if (skillSpecs.length === 0) {
+      console.log("\n📭 无可用 Skill\n");
+      return;
+    }
+    console.log("\n📚 可用 Skill:\n");
+    for (const spec of skillSpecs) {
+      const desc = pickDescription(spec);
+      console.log(`  📋 ${spec.name} (\`${spec.id}\`)`);
+      console.log(`     ${desc}`);
+    }
+    console.log();
+  }
 
-    try {
-      for await (const ev of runner.runStream({
-        message: input,
-        systemPrompt,
-      })) {
-        switch (ev.type) {
-          case "text_delta":
-            if (toolPhase) {
-              toolPhase = false;
-              process.stdout.write("\n🤖 ");
+  function showSkill(id: string) {
+    const content = skillMap.get(id);
+    if (!content) {
+      console.log(`\n❌ Skill 不存在: ${id}\n`);
+      return;
+    }
+    console.log(`\n📋 Skill: ${content.name} (\`${content.id}\`)\n`);
+    console.log(`${"=".repeat(50)}`);
+    console.log(content.body);
+    console.log(`${"=".repeat(50)}\n`);
+  }
+
+  try {
+    for (;;) {
+      const input = await ask();
+      if (!input) continue;
+
+      if (input.startsWith("/")) {
+        const [cmd, ...rest] = input.split(/\s+/);
+        switch (cmd) {
+          case "/quit":
+          case "/exit":
+            rl.close();
+            session.close();
+            console.log("👋 再见！");
+            return;
+          case "/help":
+            showHelp();
+            continue;
+          case "/clear":
+            session.close();
+            session = sessionStore.create();
+            runner = new AgentRunner({
+              config: opts.config,
+              providers: registry,
+              tools: allTools,
+              session,
+            });
+            console.log(`🧹 上下文已清除，新会话: ${session.sessionId}\n`);
+            continue;
+          case "/save":
+            console.log(`💾 当前会话 ID: ${session.sessionId}`);
+            console.log(`   下次使用: npx tsx chat.ts --load ${session.sessionId}\n`);
+            continue;
+          case "/tools":
+            showTools();
+            continue;
+          case "/skills":
+            showSkills();
+            continue;
+          case "/skill":
+            if (rest.length === 0) {
+              console.log("用法: /skill <id>\n");
+            } else {
+              showSkill(rest[0]);
             }
-            process.stdout.write(ev.text);
-            break;
-          case "tool_start":
-            toolPhase = true;
-            console.log(`\n   🔧 ${ev.name}(${JSON.stringify(ev.input)})`);
-            break;
-          case "tool_end": {
-            const res = (ev as any).result ?? "";
-            const icon = (ev as any).isError ? "❌" : "✅";
-            const preview = String(res).slice(0, 150);
-            console.log(`   ${icon} ${preview}`);
-            break;
-          }
-          case "retry":
-            console.log(`\n   🔄 重试: ${(ev as any).reason}`);
-            break;
-          case "done":
-            if (ev.result.meta.error) {
-              console.log(
-                `\n❌ [${ev.result.meta.error.kind}] ${ev.result.meta.error.message}`,
-              );
-            }
-            break;
+            continue;
+          default:
+            console.log(`未知命令: ${cmd}，输入 /help 查看帮助\n`);
+            continue;
         }
       }
-    } catch (err) {
-      console.log(`\n❌ 错误: ${String(err)}`);
+
+      process.stdout.write("🤖 ");
+      let toolPhase = false;
+      try {
+        for await (const ev of runner.runStream({
+          message: input,
+          systemPrompt,
+        })) {
+          switch (ev.type) {
+            case "text_delta":
+              if (toolPhase) {
+                toolPhase = false;
+                process.stdout.write("\n🤖 ");
+              }
+              process.stdout.write(ev.text);
+              break;
+            case "tool_start":
+              toolPhase = true;
+              console.log(`\n   🔧 ${ev.name}(${JSON.stringify(ev.input)})`);
+              break;
+            case "tool_end": {
+              const res = (ev as any).result ?? "";
+              const icon = (ev as any).isError ? "❌" : "✅";
+              const preview = String(res).slice(0, 150);
+              console.log(`   ${icon} ${preview}`);
+              break;
+            }
+            case "retry":
+              console.log(`\n   🔄 重试: ${(ev as any).reason}`);
+              break;
+            case "done":
+              if (ev.result.meta.error) {
+                console.log(
+                  `\n❌ [${ev.result.meta.error.kind}] ${ev.result.meta.error.message}`,
+                );
+              }
+              break;
+          }
+        }
+      } catch (err) {
+        console.log(`\n❌ 错误: ${String(err)}`);
+      }
+      console.log("\n");
     }
-    console.log("\n");
+  } finally {
+    rl.close();
   }
 }
 
-chat().catch((err) => {
+main().catch((err) => {
   console.error("Fatal:", err);
   process.exit(1);
 });
