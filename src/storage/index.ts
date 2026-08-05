@@ -4,3 +4,12 @@
 
 export { appendJsonLine, readJsonLines, writeJsonLines, atomicWrite, ensureDir, removeFile, defaultSessionDir } from "./jsonl.js";
 export { SessionStore } from "./session-store.js";
+export {
+  ProvidersStore,
+  ProvidersConfigSchema,
+  ProviderConfigEntrySchema,
+  defaultProvidersConfig,
+  defaultProvidersFilePath,
+  type ProvidersConfig,
+  type ProviderConfigEntry,
+} from "./providers-store.js";
