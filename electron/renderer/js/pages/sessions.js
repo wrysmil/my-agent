@@ -5,8 +5,14 @@ const SessionsPage = {
   page: 1,
   pageSize: 20,
   total: 0,
+  _initialized: false,
 
   async init() {
+    if (this._initialized) {
+      await this.load();
+      return;
+    }
+    this._initialized = true;
     this.bindEvents();
     await this.load();
   },

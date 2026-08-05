@@ -2,8 +2,15 @@
 const SettingsPage = {
   currentTab: "models",
   config: null,
+  _initialized: false,
 
   async init() {
+    if (this._initialized) {
+      await this.loadConfig();
+      this.switchTab(this.currentTab);
+      return;
+    }
+    this._initialized = true;
     this.bindSubnav();
     this.bindEvents();
     await this.loadConfig();

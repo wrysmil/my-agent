@@ -138,12 +138,19 @@ const ChatPage = {
   },
 
   async send() {
+    // 防止并发发送：当前流未结束时忽略新的发送请求
+    if (this.currentStream) return;
+
     const input = document.getElementById("chat-input");
     const message = input.value.trim();
     if (!message) return;
 
     input.value = "";
     input.style.height = "auto";
+
+    // 发送中禁用按钮，防止误操作
+    const sendBtn = document.getElementById("btn-send");
+    if (sendBtn) sendBtn.disabled = true;
 
     const container = document.getElementById("chat-messages");
     const empty = container.querySelector(".empty-state");
@@ -213,6 +220,8 @@ const ChatPage = {
     stream.on("done", (ev) => {
       this.currentStream = null;
       this.currentAssistantEl = null;
+      const sendBtn = document.getElementById("btn-send");
+      if (sendBtn) sendBtn.disabled = false;
 
       if (ev.sessionId) {
         this.currentSessionId = ev.sessionId;
@@ -228,6 +237,8 @@ const ChatPage = {
         `<div style="color:#ff6b6b;margin-top:8px;">❌ ${this.escapeHtml(ev.message)}</div>`;
       this.currentStream = null;
       this.currentAssistantEl = null;
+      const sendBtn = document.getElementById("btn-send");
+      if (sendBtn) sendBtn.disabled = false;
     });
   },
 
@@ -241,6 +252,8 @@ const ChatPage = {
         `<div style="color:#999;margin-top:8px;font-style:italic;">⏹ 已停止生成</div>`;
       this.currentAssistantEl = null;
     }
+    const sendBtn = document.getElementById("btn-send");
+    if (sendBtn) sendBtn.disabled = false;
   },
 
   appendUserMessage(text) {

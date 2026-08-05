@@ -3,8 +3,14 @@ const SkillsPage = {
   skills: [],
   filterCategory: "all",
   showEnabledOnly: false,
+  _initialized: false,
 
   async init() {
+    if (this._initialized) {
+      await this.load();
+      return;
+    }
+    this._initialized = true;
     this.bindEvents();
     await this.load();
   },
