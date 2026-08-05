@@ -1,0 +1,121 @@
+/* electron/renderer/css/theme-dark.css
+ * 暗色主题：完整变量覆盖 + 静态样式硬编码颜色修补。
+ * 由 app.js 在初始化时动态注入 <link>，因此加载顺序位于全部静态样式之后，
+ * 保证与 :root 中同名变量的级联覆盖（同优先级靠后获胜）生效。
+ *
+ * 切换方式：
+ *  - <html data-theme="dark">   —— 强制暗色（设置页「暗色」）
+ *  - <html data-theme="system"> + 系统暗色偏好 —— 跟随系统（设置页「跟随系统」）
+ * 说明：CSS 自定义属性无法在 @media 内复用同一套值，system 分支需重复声明。
+ */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* 主色（品牌色保持不变） */
+  --color-primary: #6c5ce7;
+  --color-primary-light: #a29bfe;
+  --color-primary-bg: rgba(108, 92, 231, 0.18);
+  --color-primary-border: rgba(108, 92, 231, 0.28);
+
+  /* 文字 */
+  --color-text: #e0e0e0;
+  --color-text-secondary: #aaa;
+  --color-text-muted: #888;
+  --color-text-placeholder: #666;
+
+  /* 背景 */
+  --bg-main: #1a1a2e;
+  --bg-secondary: #16162a;
+  --bg-hover: rgba(255, 255, 255, 0.06);
+
+  /* 边框 */
+  --border-light: #2a2a3e;
+  --border-default: #2f2f45;
+  --border-input: #2a2a3e;
+
+  /* 卡片阴影（暗色下加深） */
+  --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+
+  /* 状态色（暗色下提亮以保证可读性） */
+  --color-success: #34d399;
+  --color-success-bg: rgba(52, 211, 153, 0.12);
+  --color-error: #ff6b6b;
+  --color-error-bg: rgba(255, 107, 107, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.12);
+
+  /* 圆角 / 字号 / 间距与亮色共享，此处不重复覆盖 */
+}
+
+/* 跟随系统：仅在系统为暗色偏好时应用暗色覆盖 */
+@media (prefers-color-scheme: dark) {
+  [data-theme="system"] {
+    color-scheme: light dark;
+
+    --color-primary: #6c5ce7;
+    --color-primary-light: #a29bfe;
+    --color-primary-bg: rgba(108, 92, 231, 0.18);
+    --color-primary-border: rgba(108, 92, 231, 0.28);
+
+    --color-text: #e0e0e0;
+    --color-text-secondary: #aaa;
+    --color-text-muted: #888;
+    --color-text-placeholder: #666;
+
+    --bg-main: #1a1a2e;
+    --bg-secondary: #16162a;
+    --bg-hover: rgba(255, 255, 255, 0.06);
+
+    --border-light: #2a2a3e;
+    --border-default: #2f2f45;
+    --border-input: #2a2a3e;
+
+    --card-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+
+    --color-success: #34d399;
+    --color-success-bg: rgba(52, 211, 153, 0.12);
+    --color-error: #ff6b6b;
+    --color-error-bg: rgba(255, 107, 107, 0.15);
+    --color-warning: #fbbf24;
+    --color-warning-bg: rgba(251, 191, 36, 0.12);
+  }
+}
+
+/* ===== 静态样式中的硬编码颜色修补（仅暗色下生效） ===== */
+
+/* reset.css：body 默认前景/背景 */
+[data-theme="dark"] body {
+  color: #e0e0e0;
+  background: #1a1a2e;
+}
+
+/* reset.css：滚动条 */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #3a3a52;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #4a4a62;
+}
+
+/* layout.css：侧栏图标默认色在暗色下过暗 */
+[data-theme="dark"] .sidebar-icon {
+  color: #aaa;
+}
+
+/* components.css：次要按钮文字硬编码 #333 */
+[data-theme="dark"] .btn-secondary {
+  color: var(--color-text);
+}
+
+/* components.css：消息气泡背景硬编码 #fff */
+[data-theme="dark"] .message-user .message-bubble,
+[data-theme="dark"] .message-assistant .message-bubble {
+  background: #23233a;
+  border-color: var(--border-default);
+}
+
+/* skills.css：开关滑轨硬编码 #ddd */
+[data-theme="dark"] .toggle-slider {
+  background: #44445c;
+}

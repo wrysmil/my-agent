@@ -1,4 +1,17 @@
 // electron/renderer/js/pages/skills.js
+
+// 分类 → 图标 映射（用于分类 chip 与卡片图标）
+const CATEGORY_EMOJI = {
+  "开发": "💻", "写作": "📝", "数据": "📊", "研究": "🔍", "创意": "🎨",
+};
+
+// Skill source 枚举 → 中文标签（SkillSpec.source: system | user | marketplace）
+const SOURCE_LABEL = {
+  system: "内置",
+  user: "用户",
+  marketplace: "市场",
+};
+
 const SkillsPage = {
   skills: [],
   filterCategory: "all",
@@ -16,13 +29,6 @@ const SkillsPage = {
   },
 
   bindEvents() {
-    document.querySelectorAll(".skills-chip-bar .chip").forEach((chip) => {
-      chip.addEventListener("click", () => {
-        this.filterCategory = chip.dataset.category;
-        this.render();
-      });
-    });
-
     const toggle = document.getElementById("show-enabled-only");
     if (toggle) {
       toggle.addEventListener("change", () => {
@@ -32,28 +38,78 @@ const SkillsPage = {
     }
   },
 
-  async load() {
-    try {
-      this.skills = await api.skills.list();
-      if (this.skills.length === 0) {
-        this.skills = this.getMockSkills();
-      }
-      this.render();
-    } catch (err) {
-      console.error("Failed to load skills:", err);
-      this.skills = this.getMockSkills();
-      this.render();
+  /** 展示加载中 / 加载失败占位（不触发 render，避免闪现空态）。 */
+  showStatus(text) {
+    const grid = document.getElementById("skills-grid");
+    if (grid) {
+      grid.innerHTML =
+        `<div class="empty-state"><div class="empty-state-icon">🧩</div><div>${this.esc(text)}</div></div>`;
     }
   },
 
-  render() {
-    document.querySelectorAll(".skills-chip-bar .chip").forEach((chip) => {
-      chip.classList.toggle("active", chip.dataset.category === this.filterCategory);
+  async load() {
+    this.showStatus("加载中...");
+    try {
+      this.skills = await api.skills.list();
+    } catch (err) {
+      console.error("加载 Skills 失败:", err);
+      this.skills = [];
+      this.showStatus("加载失败");
+      return;
+    }
+    this.render();
+  },
+
+  /** 从真实数据的 category 字段动态收集可用分类，重建分类 chips。 */
+  renderChips() {
+    const bar = document.querySelector(".skills-chip-bar");
+    if (!bar) return;
+
+    const toggle = document.getElementById("show-enabled-only");
+    const toggleLabel = toggle ? toggle.closest("label") : null;
+
+    // 收集可用分类（保持首次出现顺序、去重、忽略空值）
+    const categories = [];
+    this.skills.forEach((s) => {
+      if (s.category && !categories.includes(s.category)) categories.push(s.category);
     });
 
+    // 数据刷新后所选分类已不存在时回退到"全部"，避免死筛选状态
+    if (this.filterCategory !== "all" && !categories.includes(this.filterCategory)) {
+      this.filterCategory = "all";
+    }
+
+    // 移除旧的 chips（保留"分类："标签与"仅显示已启用"开关）
+    bar.querySelectorAll(".chip").forEach((chip) => chip.remove());
+
+    const mkChip = (category, text) => {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "chip" + (category === this.filterCategory ? " active" : "");
+      chip.dataset.category = category;
+      chip.textContent = text;
+      chip.addEventListener("click", () => {
+        this.filterCategory = category;
+        this.render();
+      });
+      return chip;
+    };
+
+    bar.insertBefore(mkChip("all", "全部"), toggleLabel);
+    categories.forEach((cat) => {
+      const emoji = CATEGORY_EMOJI[cat] ? `${CATEGORY_EMOJI[cat]} ` : "";
+      bar.insertBefore(mkChip(cat, `${emoji}${cat}`), toggleLabel);
+    });
+  },
+
+  render() {
+    this.renderChips();
+
     const enabledCount = this.skills.filter((s) => s.enabled !== false).length;
-    document.getElementById("skills-stats").textContent =
-      `已启用 ${enabledCount} / ${this.skills.length}`;
+    const statsEl = document.getElementById("skills-stats");
+    if (statsEl) {
+      statsEl.textContent = `已启用 ${enabledCount} / ${this.skills.length}`;
+    }
 
     let filtered = this.skills;
     if (this.filterCategory !== "all") {
@@ -95,35 +151,34 @@ const SkillsPage = {
         this.render();
       });
     });
+
+    // 卡片点击查看详情（可选：console 占位，后续可扩展为详情面板）
+    container.querySelectorAll(".skill-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest(".toggle-switch")) return;
+        const skill = this.skills.find((s) => s.id === card.dataset.id);
+        if (skill) console.log("[skills] 查看详情:", skill.name, skill);
+      });
+    });
   },
 
   renderCard(s) {
-    const colors = {
-      "code-review": "#dbeafe",
-      "commit-message": "#dcfce7",
-      summarize: "#fef3c7",
-      "git-workflow": "#fee2e2",
-      "sql-helper": "#ede9fe",
-      "deep-research": "#dbeafe",
-      "web-search": "#f3f4f6",
-      "image-gen": "#f3f4f6",
-      "pdf-reader": "#f3f4f6",
-    };
-    const iconBg = colors[s.id] || "#f3f4f6";
-
-    const CATEGORY_EMOJI = {
-      "开发": "💻", "写作": "📝", "数据": "📊", "研究": "🔍", "创意": "🎨",
-    };
+    const iconBg = "#e5e7eb";
     const displayCategory = s.category
       ? `${CATEGORY_EMOJI[s.category] || ""} ${s.category}`
       : "未分类";
+    const description = s.description_zh || s.description_en || "";
+    const sourceLabel = SOURCE_LABEL[s.source] || s.source || "内置";
+    const version = s.version
+      ? (String(s.version).startsWith("v") ? String(s.version) : `v${s.version}`)
+      : "v1.0.0";
 
     return `
-      <div class="skill-card ${s.enabled === false ? "disabled" : ""}">
+      <div class="skill-card ${s.enabled === false ? "disabled" : ""}" data-id="${s.id}">
         <div class="skill-card-header">
           <div class="skill-card-icon-row">
             <div class="skill-card-icon" style="background:${iconBg};">
-              ${s.icon || "📦"}
+              ${s.icon || CATEGORY_EMOJI[s.category] || "📦"}
             </div>
             <div>
               <div class="skill-card-name">${this.esc(s.name)}</div>
@@ -135,107 +190,12 @@ const SkillsPage = {
             <span class="toggle-slider"></span>
           </label>
         </div>
-        <div class="skill-card-desc">${this.esc(s.description || "")}</div>
+        <div class="skill-card-desc">${this.esc(description)}</div>
         <div class="skill-card-footer">
-          <span class="skill-card-source">📦 ${s.version || "v1.0.0"} · ${s.source || "内置"}</span>
+          <span class="skill-card-source">📦 ${version} · ${sourceLabel}</span>
           <span class="skill-card-config">配置</span>
         </div>
       </div>`;
-  },
-
-  getMockSkills() {
-    return [
-      {
-        id: "code-review",
-        name: "code-review",
-        category: "开发",
-        icon: "🔍",
-        description: "自动审查 PR / commit，识别 bug、安全问题与风格问题。",
-        enabled: true,
-        version: "v1.2.0",
-        source: "内置",
-      },
-      {
-        id: "commit-message",
-        name: "commit-message",
-        category: "开发",
-        icon: "📝",
-        description: "基于 staged diff 生成 Conventional Commits 规范的提交信息。",
-        enabled: true,
-        version: "v0.9.0",
-        source: "内置",
-      },
-      {
-        id: "summarize",
-        name: "summarize",
-        category: "写作",
-        icon: "📋",
-        description: "摘要长文档/对话/网页内容，支持中文输出与多级压缩。",
-        enabled: true,
-        version: "v1.0.1",
-        source: "自定义",
-      },
-      {
-        id: "git-workflow",
-        name: "git-workflow",
-        category: "开发",
-        icon: "🌿",
-        description: "规范化 Git 工作流：branch 命名 / PR 模板 / rebase 冲突解决。",
-        enabled: true,
-        version: "v2.0.0",
-        source: "市场",
-      },
-      {
-        id: "sql-helper",
-        name: "sql-helper",
-        category: "数据",
-        icon: "📊",
-        description: "自然语言转 SQL、查询优化建议、EXPLAIN 解读。",
-        enabled: true,
-        version: "v1.1.0",
-        source: "市场",
-      },
-      {
-        id: "deep-research",
-        name: "deep-research",
-        category: "研究",
-        icon: "🔬",
-        description: "多轮检索 + 交叉验证，生成带引用源的研究报告。",
-        enabled: true,
-        version: "v0.5.0",
-        source: "自定义",
-      },
-      {
-        id: "web-search",
-        name: "web-search",
-        category: "研究",
-        icon: "🌐",
-        description: "联网搜索（需配置 search API Key）。",
-        enabled: false,
-        version: "v1.0.0",
-        source: "市场",
-      },
-      {
-        id: "image-gen",
-        name: "image-gen",
-        category: "创意",
-        icon: "🎨",
-        description: "文字生成配图（需 DALL-E / Stable Diffusion key）。",
-        enabled: false,
-        version: "v0.8.0",
-        source: "市场",
-      },
-      {
-        id: "pdf-reader",
-        name: "pdf-reader",
-        category: "数据",
-        icon: "📑",
-        description: "读取 PDF 文本、表格、图片，结构化输出。",
-        enabled: false,
-        version: "v1.0.2",
-        source: "市场",
-      },
-    ];
   },
 
   esc(s) {

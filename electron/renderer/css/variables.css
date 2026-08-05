@@ -1,5 +1,9 @@
 /* electron/renderer/css/variables.css */
 :root {
+  /* 原生控件（滚动条、select、input[type=range] 等）按亮色渲染；
+     暗色主题在 theme-dark.css 中通过 [data-theme] 切换 */
+  color-scheme: light;
+
   /* 主色 */
   --color-primary: #6c5ce7;
   --color-primary-light: #a29bfe;
@@ -51,4 +55,16 @@
   --sidebar-width: 64px;
   --subnav-width: 200px;
   --panel-width: 260px;
+}
+
+/* ===== 暗色主题切换过渡 =====
+ * CSS 自定义属性本身无法过渡，故对使用变量的颜色类属性声明过渡，
+ * 使 [data-theme] 切换（亮/暗）平滑渐变；仅作用于颜色类属性，不干扰布局动画。
+ * 已有更高优先级/更具体的 transition 规则（如按钮、悬浮态）不受影响。
+ */
+body,
+body * {
+  transition: background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }

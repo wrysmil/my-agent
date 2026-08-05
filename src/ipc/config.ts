@@ -1,7 +1,9 @@
 import { ipcMain, app } from "electron";
 import * as path from "node:path";
-import { loadConfig } from "../config/loader.js";
+import { CoreAgentConfigSchema } from "../config/schema.js";
+import { readConfigFile, writeConfigFile } from "../storage/config-store.js";
 import { getDb } from "../storage/db.js";
+import { DeepSeekProvider } from "../providers/deepseek.js";
 import {
   listProviders,
   upsertProvider,
@@ -17,13 +19,46 @@ let _configCache: any = null;
 let _configCacheTime = 0;
 const CONFIG_CACHE_TTL_MS = 30_000; // 30 秒
 
+/** 应用配置 JSON 文件路径（userData/config.json）。 */
+function configFilePath(): string {
+  return path.join(app.getPath("userData"), "config.json");
+}
+
+/**
+ * 从 SQLite configs 表读取原始配置（key → JSON 值）。
+ * 双写过渡期保留的旧存储；config:get 时与 JSON 文件合并（JSON 文件优先）。
+ */
+function readConfigFromDb(): Record<string, unknown> {
+  try {
+    const db = getDb();
+    const rows = db
+      .prepare("SELECT key, value FROM configs")
+      .all() as Array<{ key: string; value: string }>;
+    const out: Record<string, unknown> = {};
+    for (const row of rows) {
+      try {
+        out[row.key] = JSON.parse(row.value);
+      } catch {
+        out[row.key] = row.value;
+      }
+    }
+    return out;
+  } catch {
+    // DB 未就绪时静默降级为空配置
+    return {};
+  }
+}
+
 async function getCachedConfig() {
   if (_configCache && Date.now() - _configCacheTime < CONFIG_CACHE_TTL_MS) {
     return _configCache;
   }
-  // R5 修正: 传入 userData 下的 config.json 路径
-  const configPath = path.join(app.getPath("userData"), "config.json");
-  _configCache = await loadConfig(configPath);
+  // 合并 JSON 文件 + SQLite configs 表（JSON 文件优先），再做 Zod 校验补默认值
+  const merged = {
+    ...readConfigFromDb(),
+    ...(readConfigFile(configFilePath()) ?? {}),
+  };
+  _configCache = CoreAgentConfigSchema.parse(merged);
   _configCacheTime = Date.now();
   return _configCache;
 }
@@ -37,6 +72,12 @@ export function registerConfigIpc(): void {
   });
 
   ipcMain.handle("config:update", async (_e, patch: Record<string, unknown>) => {
+    // 主存储：写 JSON 文件（与 config:get 同源）
+    const configPath = configFilePath();
+    const existing = readConfigFile(configPath) ?? {};
+    writeConfigFile(configPath, { ...existing, ...patch });
+
+    // 双写过渡：同步保留 SQLite configs 表写入，便于回滚/迁移
     const db = getDb();
     for (const [key, value] of Object.entries(patch)) {
       db.prepare(`
@@ -93,12 +134,20 @@ export function registerConfigIpc(): void {
   });
 
   ipcMain.handle("providers:test", async (_e, id: string) => {
-    const key = getApiKey(id);
-    if (!key) return { ok: false, error: "未配置 API Key" };
     const entry = getProvider(id);
     if (!entry) return { ok: false, error: "Provider 不存在" };
+    const key = getApiKey(id);
+    if (!key) return { ok: false, error: "未配置 API Key" };
     try {
-      // 具体测试逻辑由 provider 类型决定（后续 Plan B/C 实现）
+      // 调用真实 DeepSeek API 校验（GET /models），而非直接返回 { ok: true }
+      const provider = new DeepSeekProvider({
+        apiKey: key,
+        baseUrl: entry.baseUrl || undefined,
+      });
+      const valid = await provider.validateAuth();
+      if (!valid) {
+        return { ok: false, error: "API Key 认证失败（DeepSeek /models 校验未通过）" };
+      }
       return { ok: true };
     } catch (err) {
       return { ok: false, error: String(err) };

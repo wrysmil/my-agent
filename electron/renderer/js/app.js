@@ -1,8 +1,12 @@
 // electron/renderer/js/app.js
 const App = {
   currentPage: "chat",
+  PAGES: ["chat", "sessions", "skills", "settings"],
 
   init() {
+    // 注入暗色主题样式表（位于静态样式之后，保证变量覆盖生效）
+    this.injectDarkThemeCss();
+
     // 侧栏导航
     document.querySelectorAll(".sidebar-icon").forEach((icon) => {
       icon.addEventListener("click", () => {
@@ -39,12 +43,46 @@ const App = {
       }
     });
 
-    // 初始路由
-    this.navigate(this.currentPage);
+    // 前进/后退：hash 变化同步路由（hashchange 为主，popstate 兜底，去重）
+    window.addEventListener("popstate", () => this.syncFromHash());
+    window.addEventListener("hashchange", () => this.syncFromHash());
+
+    // 初始路由：读取 location.hash 确定当前页
+    this.applyPage(this.pageFromHash() || "chat");
   },
 
-  navigate(page) {
-    // 更新侧栏
+  /** 暗色主题样式表通过 <link> 动态注入，无需改动 index.html。 */
+  injectDarkThemeCss() {
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "css/theme-dark.css";
+    document.head.appendChild(link);
+  },
+
+  /** 从 location.hash 解析合法页面，非法/空则返回 null。 */
+  pageFromHash() {
+    const hash = location.hash.replace(/^#/, "");
+    return this.PAGES.includes(hash) ? hash : null;
+  },
+
+  /** 历史前进/后退导致 hash 变化时同步到对应页面。 */
+  syncFromHash() {
+    const page = this.pageFromHash();
+    if (page && page !== this.currentPage) {
+      this.navigate(page, true);
+    }
+  },
+
+  navigate(page, fromHash = false) {
+    // 导航时同步地址栏 hash（产生历史记录）；hash 触发回流时不重复写入
+    if (!fromHash && location.hash !== `#${page}`) {
+      location.hash = page;
+    }
+    this.applyPage(page);
+  },
+
+  applyPage(page) {
+    // 更新侧栏（active 状态与 hash 同步）
     document.querySelectorAll(".sidebar-icon").forEach((icon) => {
       icon.classList.toggle("active", icon.dataset.nav === page);
     });

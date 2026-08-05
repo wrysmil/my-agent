@@ -4,6 +4,18 @@ const SettingsPage = {
   config: null,
   _initialized: false,
 
+  // 内置工具清单（对应 src/tools/builtin.ts 的 BUILTIN_TOOLS，保持同步）
+  builtinTools: [
+    { name: "read_file", desc: "读取文件内容，支持行号/字符范围" },
+    { name: "write_file", desc: "写入/创建文件，父目录自动创建" },
+    { name: "edit_file", desc: "对现有文件做精确字符串替换" },
+    { name: "list_files", desc: "列出目录中的文件和子目录" },
+    { name: "search_files", desc: "按文件名/glob 模式搜索文件" },
+    { name: "grep_files", desc: "在文件内容中搜索文本/正则" },
+    { name: "bash", desc: "执行 shell 命令（有副作用）" },
+    { name: "web_fetch", desc: "抓取网页内容并提取文本" },
+  ],
+
   async init() {
     if (this._initialized) {
       await this.loadConfig();
@@ -14,6 +26,8 @@ const SettingsPage = {
     this.bindSubnav();
     this.bindEvents();
     await this.loadConfig();
+    // 应用已保存主题（若可回读）；缺失时默认亮色
+    this.applyTheme(this.config?.theme || "light");
     this.switchTab(this.currentTab);
   },
 
@@ -49,19 +63,48 @@ const SettingsPage = {
   async loadConfig() {
     try {
       this.config = await api.config.get();
-      this.renderModelsTab();
     } catch (err) {
       console.error("Failed to load config:", err);
     }
   },
 
+  // ============================================================
+  // Provider 数据源（模型 tab）
+  // ============================================================
+
   async loadProviders() {
     try {
       const providers = await api.providers.list();
       this.renderProviderCards(providers);
+      this.populateModelSelects(providers);
     } catch (err) {
       console.error("Failed to load providers:", err);
     }
+  },
+
+  /** 从 Provider 的 models 字段去重合并生成模型下拉选项。 */
+  populateModelSelects(providers) {
+    const modelSet = new Set();
+    (providers || []).forEach((p) => {
+      (p.models || []).forEach((m) => modelSet.add(m));
+    });
+    const models = [...modelSet];
+
+    const optionsHtml = models.length
+      ? models.map((m) => `<option value="${this.esc(m)}">${this.esc(m)}</option>`).join("")
+      : `<option value="">暂无模型，请先在下方的 Provider 配置中添加</option>`;
+
+    ["setting-main-model", "setting-plan-model"].forEach((id) => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const current = sel.value;
+      sel.innerHTML = optionsHtml;
+      if (models.includes(current)) {
+        sel.value = current;
+      } else if (models.length) {
+        sel.value = models[0];
+      }
+    });
   },
 
   renderProviderCards(providers) {
@@ -90,9 +133,7 @@ const SettingsPage = {
 
     container.innerHTML = providers.map((p) => {
       const cfg = PROVIDER_CONFIG[p.provider] ?? { icon: "?", color: "#999", label: p.provider };
-      const iconStyle = cfg.color.startsWith("linear-gradient")
-        ? `background:${cfg.color};`
-        : `background:${cfg.color};`;
+      const iconStyle = `background:${cfg.color};`;
       const connected = p.isEnabled;
       return `
       <div class="provider-card ${connected ? "" : "disconnected"}">
@@ -119,6 +160,20 @@ const SettingsPage = {
     container.querySelectorAll(".delete-provider").forEach(btn =>
       btn.addEventListener("click", () => this.deleteProvider(btn.dataset.id))
     );
+  },
+
+  /** API Key 基础校验：非空 + 常见前缀检查。返回警告列表（不阻止保存）。 */
+  validateApiKey(key, required = false) {
+    const warnings = [];
+    const trimmed = (key || "").trim();
+    if (!trimmed && required) {
+      warnings.push("API Key 不能为空");
+    } else if (trimmed) {
+      if (!/^(sk-|ak-|fk-|pk-|sk-ant-|key-)/i.test(trimmed)) {
+        warnings.push("API Key 通常以 sk-/ak-/fk- 等前缀开头，请确认格式是否正确");
+      }
+    }
+    return warnings;
   },
 
   async showProviderForm(editId) {
@@ -158,6 +213,8 @@ const SettingsPage = {
               <label class="settings-field-label">API Key</label>
               <input class="input" type="password" id="pf-api-key" placeholder="sk-..." style="width:100%;">
               <div class="settings-field-desc">密钥将加密存储到本地数据库</div>
+              <div class="settings-field-desc" id="pf-api-key-hint"
+                style="color:var(--color-warning);display:none;margin-top:6px;"></div>
             </div>
             <div class="settings-field">
               <label class="settings-field-label">Base URL（可选）</label>
@@ -185,12 +242,34 @@ const SettingsPage = {
       document.getElementById("pf-api-key").placeholder = "留空则不修改已有密钥";
     }
 
+    const isNew = !editId;
+    const showKeyWarnings = () => {
+      const warnings = this.validateApiKey(
+        document.getElementById("pf-api-key").value,
+        isNew,
+      );
+      const hint = document.getElementById("pf-api-key-hint");
+      if (hint) {
+        hint.textContent = warnings.join("；");
+        hint.style.display = warnings.length ? "" : "none";
+      }
+    };
+
+    document.getElementById("pf-api-key").addEventListener("blur", showKeyWarnings);
+
     document.getElementById("btn-save-provider").addEventListener("click", async () => {
+      const apiKey = document.getElementById("pf-api-key").value;
+      const warnings = this.validateApiKey(apiKey, isNew);
+      // warn 但不阻止保存
+      if (warnings.length) {
+        this.showToast("⚠️ " + warnings.join("；") + "（已保存）");
+      }
+
       await api.providers.save({
         id: editId ?? undefined,
         provider: document.getElementById("pf-provider").value,
         name: document.getElementById("pf-name").value,
-        apiKey: document.getElementById("pf-api-key").value,
+        apiKey,
         baseUrl: document.getElementById("pf-base-url").value,
         models: document.getElementById("pf-models").value
           .split(",").map(s => s.trim()).filter(Boolean),
@@ -210,6 +289,10 @@ const SettingsPage = {
     await api.providers.delete(id);
     this.loadProviders();
   },
+
+  // ============================================================
+  // 标签页分发
+  // ============================================================
 
   switchTab(tab) {
     this.currentTab = tab;
@@ -243,7 +326,20 @@ const SettingsPage = {
     }
   },
 
+  // ============================================================
+  // 模型 tab
+  // ============================================================
+
   renderModelsTab() {
+    const cfg = this.config ?? {};
+    const agent = cfg.agent ?? {};
+    const mainModel = agent.defaultModel || "deepseek-chat";
+    const planModel = cfg.planModel || "deepseek-chat";
+    const temperature = cfg.temperature ?? 0.7;
+    const maxTokens = cfg.maxTokens ?? 4096;
+    const timeoutSeconds = [60, 120, 300].includes(cfg.requestTimeout)
+      ? cfg.requestTimeout : 120;
+
     const content = document.getElementById("settings-content");
     content.innerHTML = `
       <div class="settings-section">
@@ -252,13 +348,11 @@ const SettingsPage = {
           <div class="settings-field">
             <div>
               <div class="settings-field-label">主对话模型</div>
-              <div class="settings-field-desc">用于所有新建会话</div>
+              <div class="settings-field-desc">用于所有新建会话（来自已配置 Provider）</div>
             </div>
             <div class="settings-field-control">
               <select class="select" id="setting-main-model">
-                <option>🧠 deepseek-chat</option>
-                <option>🤖 claude-sonnet-4</option>
-                <option>⚡ gpt-4o</option>
+                <option value="${this.esc(mainModel)}">${this.esc(mainModel)}</option>
               </select>
             </div>
           </div>
@@ -269,7 +363,7 @@ const SettingsPage = {
             </div>
             <div class="settings-field-control">
               <select class="select" id="setting-plan-model">
-                <option>🧠 deepseek-chat</option>
+                <option value="${this.esc(planModel)}">${this.esc(planModel)}</option>
               </select>
             </div>
           </div>
@@ -296,8 +390,8 @@ const SettingsPage = {
               <div class="settings-field-desc">越高越发散</div>
             </div>
             <div class="settings-field-control">
-              <input type="range" id="setting-temperature" min="0" max="1" step="0.1" value="0.7">
-              <span class="value-display" id="temp-value">0.7</span>
+              <input type="range" id="setting-temperature" min="0" max="1" step="0.1" value="${temperature}">
+              <span class="value-display" id="temp-value">${temperature}</span>
             </div>
           </div>
           <div class="settings-field">
@@ -306,7 +400,8 @@ const SettingsPage = {
               <div class="settings-field-desc">单次回复上限</div>
             </div>
             <div class="settings-field-control">
-              <input type="number" class="input" value="4096" id="setting-max-tokens" style="width:100px;">
+              <input type="number" class="input" value="${maxTokens}" id="setting-max-tokens"
+                min="1" style="width:100px;">
             </div>
           </div>
           <div class="settings-field">
@@ -316,9 +411,9 @@ const SettingsPage = {
             </div>
             <div class="settings-field-control">
               <select class="select" id="setting-timeout">
-                <option>60 秒</option>
-                <option selected>120 秒</option>
-                <option>300 秒</option>
+                ${[60, 120, 300].map((sec) =>
+                  `<option value="${sec}" ${timeoutSeconds === sec ? "selected" : ""}>${sec} 秒</option>`
+                ).join("")}
               </select>
             </div>
           </div>
@@ -339,33 +434,35 @@ const SettingsPage = {
     );
   },
 
+  // ============================================================
+  // 工具 tab
+  // ============================================================
+
   renderToolsTab() {
-    const tools = [
-      { name: "read_file", desc: "读取文件内容，支持行范围", enabled: true },
-      { name: "write_file", desc: "写入/创建文件", enabled: true },
-      { name: "bash", desc: "执行 Shell 命令", enabled: true },
-      { name: "grep_files", desc: "正则搜索文件内容", enabled: true },
-      { name: "list_dir", desc: "列出目录结构", enabled: true },
-      { name: "glob_files", desc: "通配符匹配文件名", enabled: true },
-      { name: "fetch_url", desc: "HTTP GET 请求", enabled: false },
-      { name: "run_skill", desc: "调用已安装的 Skill", enabled: true },
-    ];
+    const cfg = this.config ?? {};
+    const enabledSet = Array.isArray(cfg.enabledTools)
+      ? new Set(cfg.enabledTools)
+      : null; // null → 全部默认启用
 
     document.getElementById("settings-content").innerHTML = `
       <div class="settings-section">
         <h3>内置工具启用状态</h3>
+        <p style="color:var(--color-text-muted);font-size:12px;margin:-6px 0 14px;">
+          列表与 src/tools/builtin.ts 的 BUILTIN_TOOLS 一致
+        </p>
         <div class="settings-field-group">
-          ${tools
+          ${this.builtinTools
             .map(
-              (t, i) => `
+              (t) => `
             <div class="settings-field">
               <div>
-                <div class="settings-field-label">🔧 ${t.name}</div>
-                <div class="settings-field-desc">${t.desc}</div>
+                <div class="settings-field-label">🔧 ${this.esc(t.name)}</div>
+                <div class="settings-field-desc">${this.esc(t.desc)}</div>
               </div>
               <div class="settings-field-control">
-                <input type="checkbox" ${t.enabled ? "checked" : ""}
-                  id="tool-${i}" style="accent-color:var(--color-primary);">
+                <input type="checkbox" id="tool-${this.esc(t.name)}"
+                  ${enabledSet === null || enabledSet.has(t.name) ? "checked" : ""}
+                  style="accent-color:var(--color-primary);">
               </div>
             </div>`
             )
@@ -379,7 +476,17 @@ const SettingsPage = {
     this.bindEvents();
   },
 
+  // ============================================================
+  // 路径 tab
+  // ============================================================
+
   renderPathsTab() {
+    const cfg = this.config ?? {};
+    const dirs = Array.isArray(cfg.workingDirs) ? cfg.workingDirs : [];
+    const defaultValue = dirs.length
+      ? dirs.join("\n")
+      : `D:/studyspace/project/my-agent\nD:/studyspace/源码学习/Orkas`;
+
     document.getElementById("settings-content").innerHTML = `
       <div class="settings-section">
         <h3>路径与权限</h3>
@@ -387,14 +494,13 @@ const SettingsPage = {
           <div class="settings-field">
             <div>
               <div class="settings-field-label">工作目录白名单</div>
-              <div class="settings-field-desc">Agent 只能访问以下目录</div>
+              <div class="settings-field-desc">Agent 只能访问以下目录（每行一个）</div>
             </div>
           </div>
         </div>
         <div style="margin-top:12px;">
-          <textarea class="input" rows="4" style="width:100%;font-family:monospace;font-size:12px;"
-            placeholder="每行一个目录路径">D:/studyspace/project/my-agent
-        D:/studyspace/源码学习/Orkas</textarea>
+          <textarea class="input" id="setting-working-dirs" rows="4"
+            style="width:100%;font-family:monospace;font-size:12px;">${this.esc(defaultValue)}</textarea>
         </div>
       </div>
       <div class="settings-actions">
@@ -404,7 +510,18 @@ const SettingsPage = {
     this.bindEvents();
   },
 
+  // ============================================================
+  // 上下文 tab
+  // ============================================================
+
   renderContextTab() {
+    const cfg = this.config ?? {};
+    const thresholds = [70, 82, 90];
+    const threshold = thresholds.includes(cfg.contextCompressThreshold)
+      ? cfg.contextCompressThreshold : 82;
+    const keep = cfg.contextKeepRounds ?? 2;
+    const budget = cfg.contextBudget ?? 5;
+
     document.getElementById("settings-content").innerHTML = `
       <div class="settings-section">
         <h3>上下文压缩</h3>
@@ -415,10 +532,10 @@ const SettingsPage = {
               <div class="settings-field-desc">上下文窗口使用率超过此值触发压缩</div>
             </div>
             <div class="settings-field-control">
-              <select class="select">
-                <option>70%</option>
-                <option selected>82%</option>
-                <option>90%</option>
+              <select class="select" id="setting-context-threshold">
+                ${thresholds.map((v) =>
+                  `<option value="${v}" ${threshold === v ? "selected" : ""}>${v}%</option>`
+                ).join("")}
               </select>
             </div>
           </div>
@@ -428,7 +545,8 @@ const SettingsPage = {
               <div class="settings-field-desc">压缩后最少保留的完整轮次</div>
             </div>
             <div class="settings-field-control">
-              <input type="number" class="input" value="2" style="width:80px;">
+              <input type="number" class="input" id="setting-context-keep"
+                value="${keep}" min="1" style="width:80px;">
             </div>
           </div>
           <div class="settings-field">
@@ -437,7 +555,8 @@ const SettingsPage = {
               <div class="settings-field-desc">单次会话最多压缩次数</div>
             </div>
             <div class="settings-field-control">
-              <input type="number" class="input" value="5" style="width:80px;">
+              <input type="number" class="input" id="setting-context-budget"
+                value="${budget}" min="0" style="width:80px;">
             </div>
           </div>
         </div>
@@ -449,7 +568,15 @@ const SettingsPage = {
     this.bindEvents();
   },
 
+  // ============================================================
+  // 外观 tab
+  // ============================================================
+
   renderAppearanceTab() {
+    const cfg = this.config ?? {};
+    const theme = cfg.theme || "light";
+    const fontSize = cfg.fontSize || "medium";
+
     document.getElementById("settings-content").innerHTML = `
       <div class="settings-section">
         <h3>外观</h3>
@@ -457,12 +584,13 @@ const SettingsPage = {
           <div class="settings-field">
             <div>
               <div class="settings-field-label">主题</div>
+              <div class="settings-field-desc">切换后立即生效</div>
             </div>
             <div class="settings-field-control">
-              <select class="select">
-                <option selected>亮色</option>
-                <option>暗色</option>
-                <option>跟随系统</option>
+              <select class="select" id="setting-theme">
+                <option value="light" ${theme === "light" ? "selected" : ""}>亮色</option>
+                <option value="dark" ${theme === "dark" ? "selected" : ""}>暗色</option>
+                <option value="system" ${theme === "system" ? "selected" : ""}>跟随系统</option>
               </select>
             </div>
           </div>
@@ -471,10 +599,10 @@ const SettingsPage = {
               <div class="settings-field-label">字体大小</div>
             </div>
             <div class="settings-field-control">
-              <select class="select">
-                <option>小</option>
-                <option selected>中</option>
-                <option>大</option>
+              <select class="select" id="setting-font-size">
+                <option value="small" ${fontSize === "small" ? "selected" : ""}>小</option>
+                <option value="medium" ${fontSize === "medium" ? "selected" : ""}>中</option>
+                <option value="large" ${fontSize === "large" ? "selected" : ""}>大</option>
               </select>
             </div>
           </div>
@@ -485,9 +613,28 @@ const SettingsPage = {
       </div>
     `;
     this.bindEvents();
+
+    const themeSelect = document.getElementById("setting-theme");
+    if (themeSelect) {
+      themeSelect.addEventListener("change", () => {
+        this.applyTheme(themeSelect.value);
+        this.save();
+      });
+    }
   },
 
+  /** 主题即时生效：通过 document.documentElement.dataset.theme 驱动 CSS。 */
+  applyTheme(theme) {
+    document.documentElement.dataset.theme = theme || "light";
+  },
+
+  // ============================================================
+  // 开发者 tab
+  // ============================================================
+
   renderDeveloperTab() {
+    const cfg = this.config ?? {};
+
     document.getElementById("settings-content").innerHTML = `
       <div class="settings-section">
         <h3>开发者</h3>
@@ -498,7 +645,8 @@ const SettingsPage = {
               <div class="settings-field-desc">离线调试模式，不调用真实 API</div>
             </div>
             <div class="settings-field-control">
-              <input type="checkbox" style="accent-color:var(--color-primary);">
+              <input type="checkbox" id="setting-mock-llm" ${cfg.mockLLM ? "checked" : ""}
+                style="accent-color:var(--color-primary);">
             </div>
           </div>
           <div class="settings-field">
@@ -507,7 +655,8 @@ const SettingsPage = {
               <div class="settings-field-desc">记录完整 LLM 请求/响应</div>
             </div>
             <div class="settings-field-control">
-              <input type="checkbox" style="accent-color:var(--color-primary);">
+              <input type="checkbox" id="setting-trace-mode" ${cfg.traceMode ? "checked" : ""}
+                style="accent-color:var(--color-primary);">
             </div>
           </div>
         </div>
@@ -515,6 +664,9 @@ const SettingsPage = {
       <div class="settings-section">
         <h3>版本</h3>
         <p style="color:#666;font-size:13px;" id="version-info">加载中...</p>
+      </div>
+      <div class="settings-actions">
+        <button class="btn btn-primary" id="btn-save-settings">保存设置</button>
       </div>
     `;
     this.bindEvents();
@@ -536,20 +688,104 @@ const SettingsPage = {
     this.switchTab(this.currentTab);
   },
 
+  // ============================================================
+  // 保存
+  // ============================================================
+
   async save() {
+    const patch = this.collectCurrentTabPatch();
+    if (!patch) {
+      this.showToast("当前标签页没有可保存的字段");
+      return;
+    }
     try {
-      await api.config.update({
-        temperature: Number.parseFloat(
-          document.getElementById("setting-temperature")?.value ?? "0.7"
-        ),
-        maxTokens: Number.parseInt(
-          document.getElementById("setting-max-tokens")?.value ?? "4096"
-        ),
-      });
+      await api.config.update(patch);
+      // 同步本地缓存，便于同页回读
+      this.config = { ...(this.config ?? {}), ...patch };
       this.showToast("设置已保存");
     } catch (err) {
       this.showToast("保存失败: " + err.message);
     }
+  },
+
+  /** 收集当前 tab 的所有 input/select/checkbox 值。 */
+  collectCurrentTabPatch() {
+    switch (this.currentTab) {
+      case "models": return this.collectModelsPatch();
+      case "tools": return this.collectToolsPatch();
+      case "paths": return this.collectPathsPatch();
+      case "context": return this.collectContextPatch();
+      case "appearance": return this.collectAppearancePatch();
+      case "developer": return this.collectDeveloperPatch();
+      default: return null;
+    }
+  },
+
+  collectModelsPatch() {
+    return {
+      // agent 保持 schema 完整，只覆盖 defaultModel，避免清掉其他 agent 配置
+      agent: { ...(this.config?.agent ?? {}), defaultModel: this.readVal("setting-main-model", "deepseek-chat") },
+      planModel: this.readVal("setting-plan-model", "deepseek-chat"),
+      temperature: this.toNum(this.readVal("setting-temperature"), 0.7),
+      maxTokens: this.toNum(this.readVal("setting-max-tokens"), 4096),
+      requestTimeout: this.toNum(this.readVal("setting-timeout"), 120),
+    };
+  },
+
+  collectToolsPatch() {
+    const enabled = [];
+    for (const t of this.builtinTools) {
+      const el = document.getElementById("tool-" + t.name);
+      if (el && el.checked) enabled.push(t.name);
+    }
+    return { enabledTools: enabled };
+  },
+
+  collectPathsPatch() {
+    const raw = this.readVal("setting-working-dirs", "");
+    const dirs = raw.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    return { workingDirs: dirs };
+  },
+
+  collectContextPatch() {
+    return {
+      contextCompressThreshold: this.toNum(this.readVal("setting-context-threshold"), 82),
+      contextKeepRounds: this.toNum(this.readVal("setting-context-keep"), 2),
+      contextBudget: this.toNum(this.readVal("setting-context-budget"), 5),
+    };
+  },
+
+  collectAppearancePatch() {
+    return {
+      theme: this.readVal("setting-theme", "light"),
+      fontSize: this.readVal("setting-font-size", "medium"),
+    };
+  },
+
+  collectDeveloperPatch() {
+    return {
+      mockLLM: this.readChecked("setting-mock-llm", false),
+      traceMode: this.readChecked("setting-trace-mode", false),
+    };
+  },
+
+  // ============================================================
+  // 工具方法
+  // ============================================================
+
+  readVal(id, fallback = "") {
+    return document.getElementById(id)?.value ?? fallback;
+  },
+
+  readChecked(id, fallback = false) {
+    const el = document.getElementById(id);
+    return el ? el.checked : fallback;
+  },
+
+  toNum(v, fallback) {
+    if (v === "" || v == null) return fallback;
+    const n = Number(v);
+    return Number.isNaN(n) ? fallback : n;
   },
 
   esc(s) {

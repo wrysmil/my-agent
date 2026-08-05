@@ -171,3 +171,19 @@
   max-width: 780px;
   margin: 0 auto 8px;
 }
+
+/* ===== 消息入场动画 ===== */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message {
+  animation: messageSlideIn 0.25s ease-out;
+}

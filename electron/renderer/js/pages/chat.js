@@ -122,19 +122,133 @@ const ChatPage = {
 
     try {
       const session = await api.sessions.get(sessionId);
-      if (!session) {
-        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><div>会话不存在</div></div>`;
+      document.getElementById("chat-title").textContent =
+        session?.name || "新对话";
+
+      // WU-1.5 提供 sessions:getMessages IPC（从 PersistentSession JSONL 读取消息）
+      const raw = await window.myAgent.invoke("sessions:getMessages", sessionId);
+      const messages = Array.isArray(raw) ? raw : (raw?.messages ?? []);
+
+      if (messages.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><div>开始对话</div></div>`;
         return;
       }
 
-      document.getElementById("chat-title").textContent =
-        session.name || "新对话";
-
-      // TODO: 从 JSONL 加载消息历史（Plan C 实现）
-      container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💬</div><div>开始对话</div></div>`;
+      container.innerHTML = "";
+      this.renderHistoryMessages(messages);
+      container.scrollTop = container.scrollHeight;
     } catch (err) {
+      console.error("[chat] 加载历史失败:", err);
       container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><div>加载失败</div></div>`;
     }
+  },
+
+  /** 渲染 JSONL 历史消息：user/assistant 气泡 + 工具调用卡片。 */
+  renderHistoryMessages(messages) {
+    // toolUseId -> { name, input }，用于把后续 tool_result 与调用配对
+    const pendingToolUses = new Map();
+
+    for (const msg of messages) {
+      const role = msg?.role;
+      const rawContent = msg?.content;
+      const text = this.extractText(rawContent);
+      const blocks = Array.isArray(rawContent) ? rawContent : [];
+      const toolUses = blocks.filter((b) => b?.type === "tool_use");
+      const toolResults = blocks.filter((b) => b?.type === "tool_result");
+
+      if (role === "assistant") {
+        for (const tu of toolUses) {
+          pendingToolUses.set(tu.id, { name: tu.name, input: tu.input });
+        }
+        if (text) this.appendAssistantMessage(text);
+      } else {
+        // user（含 tool_result）/ tool / 未知角色
+        for (const tr of toolResults) {
+          const tu = pendingToolUses.get(tr.toolUseId);
+          if (tu) {
+            this.appendHistoryToolCard({
+              name: tu.name,
+              input: tu.input,
+              result: tr,
+            });
+            pendingToolUses.delete(tr.toolUseId);
+          } else {
+            // 孤儿 tool_result（无配对调用），以通用卡片展示
+            this.appendHistoryToolCard({
+              name: "工具结果",
+              input: null,
+              result: tr,
+            });
+          }
+        }
+        if (text) this.appendUserMessage(text);
+      }
+    }
+
+    // 未匹配到结果（异常中断）的 tool_use，补一张已完成卡片
+    for (const tu of pendingToolUses.values()) {
+      this.appendHistoryToolCard({ name: tu.name, input: tu.input, result: null });
+    }
+  },
+
+  /** 从消息内容提取纯文本（兼容字符串或 ContentBlock 数组）。 */
+  extractText(content) {
+    if (typeof content === "string") return content.trim();
+    if (!Array.isArray(content)) return "";
+    return content
+      .filter((b) => b && b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("")
+      .trim();
+  },
+
+  /** 历史回显：工具调用 + 执行结果的合并卡片（复用 tool-call-card 样式）。 */
+  appendHistoryToolCard({ name, input, result }) {
+    const container = document.getElementById("chat-messages");
+    const el = document.createElement("div");
+    el.className = "message";
+    el.style.paddingLeft = "42px";
+
+    const card = document.createElement("div");
+    card.className = `tool-call-card${result?.isError ? " error" : ""}`;
+    card.style.maxWidth = "88%";
+    card.style.width = "100%";
+
+    const inputPreview = input ? JSON.stringify(input).slice(0, 120) : "";
+    const resultText = result ? String(result.content ?? "") : "";
+    const statusText = result
+      ? (result.isError
+          ? `❌ ${resultText.slice(0, 100) || "执行失败"}`
+          : `✅ ${resultText.slice(0, 100) || "完成"}`)
+      : "✅ 完成";
+
+    card.innerHTML = `
+      <div class="tool-call-header">
+        <span>🔧 <strong>${this.escapeHtml(name)}</strong>${inputPreview ? ` · ${this.escapeHtml(inputPreview)}` : ""}</span>
+        <span style="color:#aaa;font-size:11px;">▼</span>
+      </div>
+      <div class="tool-call-body">
+        <pre style="margin:0;white-space:pre-wrap;font-size:11px;">${input ? this.escapeHtml(JSON.stringify(input, null, 2)) : "(无输入)"}</pre>
+        ${result ? `<pre style="margin:6px 0 0;white-space:pre-wrap;font-size:11px;color:#555;">→ ${this.escapeHtml(resultText)}</pre>` : ""}
+      </div>
+      <div class="tool-call-status ${result?.isError ? "error" : "success"}">
+        ${this.escapeHtml(statusText)}
+      </div>
+    `;
+
+    const header = card.querySelector(".tool-call-header");
+    const body = card.querySelector(".tool-call-body");
+    header.addEventListener("click", () => {
+      if (body) body.classList.toggle("expanded");
+      const arrow = header.querySelector("span:last-child");
+      if (arrow) {
+        arrow.textContent = body && body.classList.contains("expanded")
+          ? "▲" : "▼";
+      }
+    });
+
+    el.appendChild(card);
+    container.appendChild(el);
   },
 
   async send() {
@@ -330,8 +444,13 @@ const ChatPage = {
   },
 
   newSession() {
-    this.currentSessionId = null;
+    // 若正在生成，先取消流，避免后续回调写入已清空的容器
+    if (this.currentStream) {
+      this.currentStream.cancel();
+      this.currentStream = null;
+    }
     this.currentAssistantEl = null;
+    this.currentSessionId = null;
 
     const container = document.getElementById("chat-messages");
     container.innerHTML = `
@@ -342,6 +461,10 @@ const ChatPage = {
     `;
 
     document.getElementById("chat-title").textContent = "新对话";
+
+    const sendBtn = document.getElementById("btn-send");
+    if (sendBtn) sendBtn.disabled = false;
+
     document.getElementById("chat-input").focus();
 
     this.loadSessionList();

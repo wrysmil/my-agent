@@ -38,6 +38,10 @@ const SessionsPage = {
       "click",
       () => this.batchDelete()
     );
+    document.getElementById("btn-batch-archive").addEventListener(
+      "click",
+      () => this.batchArchive()
+    );
     document.getElementById("btn-batch-export").addEventListener(
       "click",
       () => this.batchExport()
@@ -110,7 +114,7 @@ const SessionsPage = {
             ${this.selected.has(s.id) ? "checked" : ""}>
         </td>
         <td>
-          <div class="session-name">${this.esc(s.name || "新对话")}</div>
+          <div class="session-name">${this.esc(s.name || "新对话")}${s.isArchived ? '<span style="font-size:12px;color:#999;margin-left:6px;">(已归档)</span>' : ""}</div>
         </td>
         <td>📁 —</td>
         <td>${this.esc(s.model)}</td>
@@ -207,20 +211,83 @@ const SessionsPage = {
     if (this.selected.size === 0) return;
     if (!confirm(`确定删除 ${this.selected.size} 个会话？此操作不可撤销。`)) return;
 
-    for (const id of this.selected) {
-      try {
-        await api.sessions.delete(id);
-      } catch (err) {
-        console.error(`Failed to delete ${id}:`, err);
-      }
-    }
+    const ids = [...this.selected];
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          await api.sessions.delete(id);
+        } catch (err) {
+          console.error(`Failed to delete ${id}:`, err);
+        }
+      })
+    );
     this.selected.clear();
     await this.load();
   },
 
-  batchExport() {
-    const ids = [...this.selected].join(",");
-    alert(`导出功能暂未实现。已选: ${ids}`);
+  async batchArchive() {
+    if (this.selected.size === 0) return;
+    if (!confirm(`确定归档选中的 ${this.selected.size} 个会话？`)) return;
+
+    const ids = [...this.selected];
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          await api.sessions.archive(id);
+        } catch (err) {
+          console.error(`Failed to archive ${id}:`, err);
+        }
+      })
+    );
+    this.selected.clear();
+    await this.load();
+  },
+
+  async batchExport() {
+    if (this.selected.size === 0) return;
+
+    const ids = [...this.selected];
+    const exported = [];
+
+    for (const id of ids) {
+      try {
+        const session = this.sessions.find((s) => s.id === id);
+        // sessions:getMessages 未封装进 api.js，直接走 preload IPC
+        const messages = await window.myAgent.invoke("sessions:getMessages", id);
+        exported.push({
+          session: session
+            ? {
+                id: session.id,
+                name: session.name,
+                model: session.model,
+                provider: session.provider,
+                createdAt: session.createdAt,
+                updatedAt: session.updatedAt,
+              }
+            : { id },
+          messages,
+        });
+      } catch (err) {
+        console.error(`Failed to export session ${id}:`, err);
+      }
+    }
+
+    if (exported.length === 0) {
+      alert("导出失败：没有可导出的会话数据。");
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(exported, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sessions-export-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   },
 
   showRowMenu(id, anchor) {

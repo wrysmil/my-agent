@@ -21,6 +21,15 @@ if (existsSync(preloadSrc)) {
   console.log("[copy-assets] preload.cjs → dist/electron/");
 }
 
+// 复制 main.cjs 入口（CJS wrapper，解决 electron 模块 ESM/CJS 兼容问题）
+const mainSrc = join(root, "electron", "main.cjs");
+const mainDst = join(root, "dist", "electron", "main.cjs");
+if (existsSync(mainSrc)) {
+  ensureDir(dirname(mainDst));
+  cpSync(mainSrc, mainDst);
+  console.log("[copy-assets] main.cjs → dist/electron/");
+}
+
 // 复制 renderer 目录
 const rendererSrc = join(root, "electron", "renderer");
 const rendererDst = join(root, "dist", "electron", "renderer");
