@@ -1,0 +1,268 @@
+<h2>Skills 管理页 — 浏览 / 启用 / 安装</h2>
+<p class="subtitle">Skill 是 SKILL.md 文件的封装，用于扩展 Agent 的领域能力。本页管理内置 Skill、市场安装 Skill 与自定义 Skill。</p>
+
+<div class="section">
+  <h3>Skills 管理页 — 完整视图</h3>
+  <div class="mockup">
+    <div class="mockup-header">Skills 管理（卡片网格 + 标签筛选）</div>
+    <div class="mockup-body" style="padding:0;display:flex;height:680px;overflow:hidden;font-family:-apple-system,'PingFang SC',sans-serif;">
+
+      <!-- 图标侧栏 -->
+      <div style="width:64px;min-width:64px;background:#fafafa;border-right:1px solid #eee;display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin-bottom:18px;">M</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="对话">💬</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="项目">📁</div>
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(108,92,231,0.12);color:#6c5ce7;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="Skills">🧩</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="定时任务">⏰</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-bottom:6px;" title="设置">⚙️</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#6c5ce7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;">Q</div>
+      </div>
+
+      <!-- 主区 -->
+      <div style="flex:1;display:flex;flex-direction:column;background:#fff;">
+        <!-- 顶栏 -->
+        <div style="padding:14px 28px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <h2 style="margin:0;font-size:18px;color:#222;">🧩 Skills 管理</h2>
+            <span style="color:#999;font-size:13px;">已启用 6 / 12 · 自定义 3</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">📥 从市场安装</button>
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">📂 打开目录</button>
+            <button style="background:#6c5ce7;color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">＋ 新建 Skill</button>
+          </div>
+        </div>
+
+        <!-- 标签筛选 -->
+        <div style="padding:14px 28px;border-bottom:1px solid #f0f0f0;display:flex;gap:8px;align-items:center;background:#fafafa;">
+          <span style="font-size:12px;color:#999;margin-right:4px;">分类：</span>
+          <button style="padding:5px 12px;border:none;background:#6c5ce7;color:#fff;border-radius:14px;cursor:pointer;font-size:12px;">全部</button>
+          <button style="padding:5px 12px;border:none;background:#fff;color:#666;border:1px solid #e5e5e5;border-radius:14px;cursor:pointer;font-size:12px;">💻 开发</button>
+          <button style="padding:5px 12px;border:none;background:#fff;color:#666;border:1px solid #e5e5e5;border-radius:14px;cursor:pointer;font-size:12px;">📝 写作</button>
+          <button style="padding:5px 12px;border:none;background:#fff;color:#666;border:1px solid #e5e5e5;border-radius:14px;cursor:pointer;font-size:12px;">📊 数据</button>
+          <button style="padding:5px 12px;border:none;background:#fff;color:#666;border:1px solid #e5e5e5;border-radius:14px;cursor:pointer;font-size:12px;">🔍 研究</button>
+          <button style="padding:5px 12px;border:none;background:#fff;color:#666;border:1px solid #e5e5e5;border-radius:14px;cursor:pointer;font-size:12px;">🎨 创意</button>
+          <span style="margin-left:auto;font-size:12px;color:#666;">
+            <input type="checkbox" checked style="accent-color:#6c5ce7;"> 仅显示已启用
+          </span>
+        </div>
+
+        <!-- Skill 卡片网格 -->
+        <div style="flex:1;overflow-y:auto;padding:20px 28px;background:#fafafa;">
+
+          <!-- 第一组：已启用 -->
+          <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">已启用 (6)</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;">
+
+            <!-- Skill 卡片 1：code-review -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;">🔍</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">code-review</div>
+                    <div style="font-size:11px;color:#999;">💻 开发</div>
+                  </div>
+                </div>
+                <label style="display:inline-flex;align-items:center;cursor:pointer;">
+                  <input type="checkbox" checked style="accent-color:#6c5ce7;">
+                </label>
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">自动审查 PR / commit，识别 bug、安全问题与风格问题。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v1.2.0 · 内置</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- Skill 卡片 2：commit-message -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#dcfce7;color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:16px;">📝</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">commit-message</div>
+                    <div style="font-size:11px;color:#999;">💻 开发</div>
+                  </div>
+                </div>
+                <input type="checkbox" checked style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">基于 staged diff 生成 Conventional Commits 规范的提交信息。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v0.9.0 · 内置</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- Skill 卡片 3：summarize -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#fef3c7;color:#d97706;display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">summarize</div>
+                    <div style="font-size:11px;color:#999;">📝 写作</div>
+                  </div>
+                </div>
+                <input type="checkbox" checked style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">摘要长文档/对话/网页内容，支持中文输出与多级压缩。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v1.0.1 · 自定义</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- Skill 卡片 4：git-workflow -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#fee2e2;color:#dc2626;display:flex;align-items:center;justify-content:center;font-size:16px;">🌿</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">git-workflow</div>
+                    <div style="font-size:11px;color:#999;">💻 开发</div>
+                  </div>
+                </div>
+                <input type="checkbox" checked style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">规范化 Git 工作流：branch 命名 / PR 模板 / rebase 冲突解决。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v2.0.0 · 市场</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- Skill 卡片 5：sql-helper -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#ede9fe;color:#7c3aed;display:flex;align-items:center;justify-content:center;font-size:16px;">📊</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">sql-helper</div>
+                    <div style="font-size:11px;color:#999;">📊 数据</div>
+                  </div>
+                </div>
+                <input type="checkbox" checked style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">自然语言转 SQL、查询优化建议、EXPLAIN 解读。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v1.1.0 · 市场</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- Skill 卡片 6：deep-research -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#dbeafe;color:#2563eb;display:flex;align-items:center;justify-content:center;font-size:16px;">🔬</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">deep-research</div>
+                    <div style="font-size:11px;color:#999;">🔍 研究</div>
+                  </div>
+                </div>
+                <input type="checkbox" checked style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">多轮检索 + 交叉验证，生成带引用源的研究报告。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v0.5.0 · 自定义</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 第二组：未启用 -->
+          <div style="font-size:11px;color:#999;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">未启用 (6)</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+
+            <!-- 卡片 7：web-search -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;opacity:0.7;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;color:#6b7280;display:flex;align-items:center;justify-content:center;font-size:16px;">🌐</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">web-search</div>
+                    <div style="font-size:11px;color:#999;">🔍 研究</div>
+                  </div>
+                </div>
+                <input type="checkbox" style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">联网搜索（需配置 search API Key）。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v1.0.0 · 市场</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- 卡片 8：image-gen -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;opacity:0.7;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;color:#6b7280;display:flex;align-items:center;justify-content:center;font-size:16px;">🎨</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">image-gen</div>
+                    <div style="font-size:11px;color:#999;">🎨 创意</div>
+                  </div>
+                </div>
+                <input type="checkbox" style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">文字生成配图（需 DALL-E / Stable Diffusion key）。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v0.8.0 · 市场</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+
+            <!-- 卡片 9：pdf-reader -->
+            <div style="background:#fff;border:1px solid #ececec;border-radius:10px;padding:14px;opacity:0.7;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div style="width:32px;height:32px;border-radius:8px;background:#f3f4f6;color:#6b7280;display:flex;align-items:center;justify-content:center;font-size:16px;">📑</div>
+                  <div>
+                    <div style="font-size:13px;font-weight:600;color:#222;">pdf-reader</div>
+                    <div style="font-size:11px;color:#999;">📊 数据</div>
+                  </div>
+                </div>
+                <input type="checkbox" style="accent-color:#6c5ce7;">
+              </div>
+              <p style="font-size:12px;color:#666;line-height:1.5;margin:6px 0 10px;">读取 PDF 文本、表格、图片，结构化输出。</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#999;">
+                <span>📦 v1.0.2 · 市场</span>
+                <span style="cursor:pointer;color:#6c5ce7;">配置</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 底栏：选中 Skill 时的操作 -->
+        <!-- <div style="padding:12px 28px;border-top:1px solid #f0f0f0;background:rgba(108,92,231,0.05);font-size:13px;">已选 2 个 Skill · <button>批量启用</button> · <button>导出</button></div> -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>关键设计点</h3>
+  <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#555;">
+    <div>✅ <strong>顶栏</strong>：标题 + 「已启用 6 / 12 · 自定义 3」统计 + 市场安装 / 打开目录 / 新建 Skill 三个动作</div>
+    <div>✅ <strong>标签筛选</strong>：分类 chip（全部 / 💻 开发 / 📝 写作 / 📊 数据 / 🔍 研究 / 🎨 创意）+ 右上角「仅显示已启用」</div>
+    <div>✅ <strong>卡片网格</strong>：3 列布局，每卡显示图标 / 名称 / 分类 / 描述 / 版本+来源 / 启用开关 / 配置入口</div>
+    <div>✅ <strong>来源区分</strong>：内置 / 自定义 / 市场 三类用不同 badge 颜色区分</div>
+    <div>✅ <strong>未启用区</strong>：半透明显示（opacity 0.7），强调关闭状态</div>
+    <div>✅ <strong>分组</strong>：用小标题分组「已启用」「未启用」，信息层级清晰</div>
+  </div>
+</div>
+
+<div class="section" style="background:rgba(108,92,231,0.06);border-radius:10px;padding:16px;margin-top:24px;">
+  <h3 style="margin-top:0;">🎨 整套 UI 设计已完成</h3>
+  <ol style="font-size:13px;color:#555;line-height:1.8;">
+    <li>✅ <strong>对话页</strong>（KIMI 风格 + My-Agent 本地化）</li>
+    <li>✅ <strong>会话管理页</strong>（表格视图 + 多维筛选 + 批量操作）</li>
+    <li>✅ <strong>设置页</strong>（左侧二级导航 + 主区表单）</li>
+    <li>✅ <strong>Skills 管理页</strong>（卡片网格 + 标签筛选 + 来源分组）</li>
+  </ol>
+  <p style="font-size:13px;color:#666;margin-bottom:0;">下一步：将设计稿汇总写入 <code>docs/superpowers/specs/2026-08-04-my-agent-desktop-ui-design.md</code>，然后用 writing-plans 拆分实现计划。</p>
+</div>

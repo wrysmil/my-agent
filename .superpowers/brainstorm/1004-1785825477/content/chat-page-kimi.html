@@ -1,0 +1,212 @@
+<h2>对话页 — 参考 KIMI 风格重设计</h2>
+<p class="subtitle">极简白底 + 图标导航 + 大圆角输入区。适用于长时间工作场景。</p>
+
+<div class="section">
+  <h3>方案 A — KIMI 极简风（白底 + 大圆角输入框居中）</h3>
+  <div class="mockup">
+    <div class="mockup-header">对话页 — KIMI 风格白底版</div>
+    <div class="mockup-body" style="padding:0;display:flex;height:640px;overflow:hidden;font-family:-apple-system,'PingFang SC',sans-serif;">
+
+      <!-- Sidebar: 图标导航 -->
+      <div style="width:64px;min-width:64px;background:#fafafa;border-right:1px solid #eee;display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin-bottom:16px;" title="My Agent">M</div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+          <div style="width:40px;height:40px;border-radius:10px;background:#fff;color:#333;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;border:1px solid #eee;" title="新建对话">＋</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="对话">💬</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="Skills">🧩</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="定时任务">⏰</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="width:40px;height:40px;border-radius:10px;background:#6c5ce7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;cursor:pointer;" title="QH Huang">Q</div>
+      </div>
+
+      <!-- Main content -->
+      <div style="flex:1;display:flex;background:#fff;">
+
+        <!-- 会话列表 (次级侧栏) -->
+        <div style="width:260px;border-right:1px solid #f0f0f0;display:flex;flex-direction:column;background:#fff;">
+          <div style="padding:14px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-weight:600;font-size:14px;color:#333;">对话列表</span>
+            <button style="background:#f5f5f5;border:none;border-radius:6px;width:24px;height:24px;cursor:pointer;color:#666;font-size:14px;">+</button>
+          </div>
+          <div style="padding:8px 12px;border-bottom:1px solid #f0f0f0;">
+            <input class="mock-input" placeholder="🔍 搜索对话" style="width:100%;background:#f5f5f5;border:none;height:30px;font-size:12px;border-radius:8px;padding:4px 10px;box-sizing:border-box;">
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:6px;">
+            <div style="font-size:11px;color:#999;padding:8px 12px 4px;">今天</div>
+            <div style="padding:9px 12px;border-radius:8px;margin-bottom:2px;background:rgba(108,92,231,0.08);font-size:13px;color:#333;">
+              <div style="font-weight:500;margin-bottom:2px;">重构 utils.ts</div>
+              <div style="font-size:11px;color:#999;">帮我重构日期处理函数...</div>
+            </div>
+            <div style="padding:9px 12px;border-radius:8px;margin-bottom:2px;font-size:13px;color:#333;">
+              <div style="font-weight:500;margin-bottom:2px;">分析项目结构</div>
+              <div style="font-size:11px;color:#999;">了解 src 目录组织...</div>
+            </div>
+            <div style="font-size:11px;color:#999;padding:8px 12px 4px;">昨天</div>
+            <div style="padding:9px 12px;border-radius:8px;margin-bottom:2px;font-size:13px;color:#333;">
+              <div style="font-weight:500;margin-bottom:2px;">写登录页面</div>
+              <div style="font-size:11px;color:#999;">用 Tailwind 重构...</div>
+            </div>
+            <div style="padding:9px 12px;border-radius:8px;margin-bottom:2px;font-size:13px;color:#333;">
+              <div style="font-weight:500;margin-bottom:2px;">修复 CI 配置</div>
+              <div style="font-size:11px;color:#999;">GitHub Actions 报错...</div>
+            </div>
+            <div style="font-size:11px;color:#999;padding:8px 12px 4px;">更早</div>
+            <div style="padding:9px 12px;border-radius:8px;margin-bottom:2px;font-size:13px;color:#333;">性能优化建议</div>
+          </div>
+          <!-- 底部：升级套餐 -->
+          <div style="padding:12px;border-top:1px solid #f0f0f0;">
+            <button style="width:100%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;border:none;padding:8px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;">升级套餐</button>
+          </div>
+        </div>
+
+        <!-- 右侧对话主区 -->
+        <div style="flex:1;display:flex;flex-direction:column;">
+          <!-- 顶栏 -->
+          <div style="padding:10px 24px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;font-size:13px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span style="font-weight:600;color:#333;">重构 utils.ts</span>
+              <span style="color:#999;">·</span>
+              <span style="color:#666;font-size:12px;">deepseek-chat</span>
+            </div>
+            <div style="display:flex;gap:14px;align-items:center;color:#888;font-size:12px;">
+              <span>🔄 4 轮工具</span>
+              <span>📊 2.4K tokens</span>
+              <button style="background:none;border:none;cursor:pointer;color:#888;font-size:14px;">⋯</button>
+            </div>
+          </div>
+
+          <!-- 消息流 -->
+          <div style="flex:1;overflow-y:auto;padding:28px 24px;display:flex;flex-direction:column;gap:20px;background:#fafafa;">
+            <!-- 用户消息 -->
+            <div style="display:flex;gap:10px;justify-content:flex-end;align-items:flex-start;">
+              <div style="background:#fff;border:1px solid #ececec;padding:12px 16px;border-radius:14px 14px 4px 14px;max-width:70%;font-size:14px;color:#222;line-height:1.6;box-shadow:0 1px 2px rgba(0,0,0,0.03);">
+                帮我重构 utils.ts 里的日期处理函数，需要支持时区转换和格式化
+              </div>
+              <div style="width:32px;height:32px;border-radius:50%;background:#6c5ce7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">Q</div>
+            </div>
+            <!-- AI 思考文字 -->
+            <div style="display:flex;gap:10px;align-items:flex-start;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">M</div>
+              <div style="max-width:85%;font-size:14px;color:#222;line-height:1.7;background:#fff;padding:12px 16px;border-radius:4px 14px 14px 14px;border:1px solid #ececec;">
+                好的，我先读取 utils.ts 看看当前的代码结构。
+              </div>
+            </div>
+            <!-- 工具调用卡片 -->
+            <div style="display:flex;gap:10px;">
+              <div style="width:32px;flex-shrink:0;"></div>
+              <div style="max-width:88%;width:100%;">
+                <div style="background:#fff;border:1px solid #ececec;border-radius:10px;overflow:hidden;font-size:13px;">
+                  <div style="padding:8px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;">
+                    <span style="color:#222;">🔧 <strong>read_file</strong> · utils.ts</span>
+                    <span style="color:#aaa;font-size:11px;">▼</span>
+                  </div>
+                  <div style="padding:0 14px 10px;color:#666;font-size:12px;font-family:monospace;line-height:1.5;">
+                    { "filePath": "src/utils.ts", "offset": 1, "limit": 80 }
+                  </div>
+                  <div style="padding:8px 14px;background:#f7faf7;color:#16a34a;font-size:12px;border-top:1px solid #f0f0f0;">
+                    ✅ 已读取 245 行 (4.2 KB) · 45ms
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- AI 回答 -->
+            <div style="display:flex;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">M</div>
+              <div style="max-width:85%;font-size:14px;color:#222;line-height:1.7;background:#fff;padding:12px 16px;border-radius:4px 14px 14px 14px;border:1px solid #ececec;">
+                代码已确认。现在重构日期处理函数：
+                <div style="background:#fafafa;border-left:3px solid #6c5ce7;padding:8px 12px;margin:8px 0;border-radius:4px;font-size:13px;font-family:monospace;color:#555;">
+                  ✅ 重构完成<br>
+                  · <code style="background:#eee;padding:1px 5px;border-radius:3px;">formatDate()</code> 多格式支持<br>
+                  · <code style="background:#eee;padding:1px 5px;border-radius:3px;">toTimezone()</code> 时区转换<br>
+                  · <code style="background:#eee;padding:1px 5px;border-radius:3px;">relativeTime()</code> 相对时间
+                </div>
+              </div>
+            </div>
+            <!-- 流式生成指示 -->
+            <div style="display:flex;gap:10px;">
+              <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#6c5ce7,#a29bfe);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">M</div>
+              <div style="font-size:14px;color:#6c5ce7;background:#fff;padding:12px 16px;border-radius:4px 14px 14px 14px;border:1px solid #ececec;">
+                ▍ 正在生成...
+              </div>
+            </div>
+          </div>
+
+          <!-- 输入区 -->
+          <div style="padding:18px 24px 24px;background:#fff;">
+            <div style="max-width:780px;margin:0 auto;background:#fff;border:1px solid #e5e5e5;border-radius:18px;padding:6px 8px 6px 16px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+              <textarea class="mock-input" style="width:100%;border:none;outline:none;min-height:48px;resize:none;font-family:inherit;font-size:14px;color:#222;background:transparent;" placeholder="输入消息... Enter 发送，Shift+Enter 换行"></textarea>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 4px 4px 0;">
+                <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:#888;">
+                  <span style="cursor:pointer;">📎</span>
+                  <span style="cursor:pointer;padding:4px 10px;background:#f5f5f5;border-radius:6px;">📁 /project/src</span>
+                  <span style="cursor:pointer;padding:4px 10px;background:#f5f5f5;border-radius:6px;">🧠 deepseek</span>
+                </div>
+                <div style="display:flex;gap:6px;align-items:center;">
+                  <button style="background:none;border:none;color:#888;cursor:pointer;font-size:11px;">⚙️ 工具</button>
+                  <button style="background:#6c5ce7;color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;">发送 ➤</button>
+                </div>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:11px;color:#bbb;margin-top:8px;">My Agent 可能产生错误，请核实重要信息</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="pros-cons" style="margin-top:12px;">
+    <div class="pros">
+      <h4>优点</h4>
+      <ul>
+        <li>极简白底，长时间工作不疲劳</li>
+        <li>图标侧栏节省横向空间，会话列表独立可折叠</li>
+        <li>大圆角输入框居中，对标主流产品</li>
+        <li>对话卡片阴影层次分明</li>
+      </ul>
+    </div>
+    <div class="cons">
+      <h4>缺点</h4>
+      <ul>
+        <li>三栏（图标 + 列表 + 内容）窗口窄时拥挤</li>
+        <li>白底缺少代码高亮风格的视觉冲击</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>对比：上一版暗色双栏</h3>
+  <p style="color:#888;font-size:13px;">保留作为 B 选项：暗色双栏（左 240px 固定会话列表），适合长时间代码工作。</p>
+  <div style="display:flex;gap:8px;font-size:12px;color:#666;">
+    <div>✅ 优点：信息密度高、零切换延迟</div>
+    <div>❌ 缺点：会话多时拥挤、白天环境刺眼</div>
+  </div>
+</div>
+
+<div class="options">
+  <div class="option" data-choice="kimi" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>KIMI 极简白底</h3>
+      <p>推荐。三栏布局（图标侧栏 + 会话列表 + 内容），大圆角输入框居中，对标主流产品体验。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="dark" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>保留暗色双栏</h3>
+      <p>原方案。深色双栏适合长时间代码编辑、夜间使用，但白天的视觉负担较大。</p>
+    </div>
+  </div>
+  <div class="option" data-choice="both" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>提供切换</h3>
+      <p>同时支持亮/暗主题，通过 CSS 变量切换，用户在设置中选择。开发成本约 +20%。</p>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:24px;">
+  <p style="color:#888;font-size:13px;">确认对话页方案后，继续设计 <strong>设置页</strong> 和 <strong>Skill 管理页</strong>。</p>
+</div>

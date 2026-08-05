@@ -1,0 +1,241 @@
+<h2>会话管理页 — 批量管理、搜索、清理</h2>
+<p class="subtitle">用于会话列表的批量操作：搜索 / 筛选 / 删除 / 归档 / 导出。复用对话页的侧栏与白底风格。</p>
+
+<div class="section">
+  <h3>会话管理页 — 完整视图</h3>
+  <div class="mockup">
+    <div class="mockup-header">会话管理（白底 · 表格视图）</div>
+    <div class="mockup-body" style="padding:0;display:flex;height:680px;overflow:hidden;font-family:-apple-system,'PingFang SC',sans-serif;">
+
+      <!-- 图标侧栏 -->
+      <div style="width:64px;min-width:64px;background:#fafafa;border-right:1px solid #eee;display:flex;flex-direction:column;align-items:center;padding:14px 0;">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6c5ce7,#a29bfe);display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:700;margin-bottom:18px;">M</div>
+        <div style="display:flex;flex-direction:column;gap:4px;align-items:center;">
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="对话">💬</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="项目">📁</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="Skills">🧩</div>
+          <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;" title="定时任务">⏰</div>
+        </div>
+        <div style="flex:1;"></div>
+        <div style="width:40px;height:40px;border-radius:10px;color:#666;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;margin-bottom:6px;" title="设置">⚙️</div>
+        <div style="width:36px;height:36px;border-radius:50%;background:#6c5ce7;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;cursor:pointer;">Q</div>
+      </div>
+
+      <!-- 主区 -->
+      <div style="flex:1;display:flex;flex-direction:column;background:#fff;">
+        <!-- 顶栏 -->
+        <div style="padding:14px 28px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:14px;">
+            <h2 style="margin:0;font-size:18px;color:#222;">会话管理</h2>
+            <span style="color:#999;font-size:13px;">共 24 个会话 · 3 个项目</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">📥 导出全部</button>
+            <button style="background:#6c5ce7;color:#fff;border:none;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:13px;">＋ 新建会话</button>
+          </div>
+        </div>
+
+        <!-- 筛选条 -->
+        <div style="padding:14px 28px;border-bottom:1px solid #f0f0f0;display:flex;gap:12px;align-items:center;background:#fafafa;">
+          <input class="mock-input" placeholder="🔍 搜索会话标题或内容..." style="flex:1;background:#fff;border:1px solid #e5e5e5;height:34px;font-size:13px;border-radius:8px;padding:4px 14px;">
+          <select class="mock-input" style="background:#fff;border:1px solid #e5e5e5;height:34px;font-size:13px;border-radius:8px;padding:0 12px;color:#333;">
+            <option>📁 全部项目</option>
+            <option>my-agent</option>
+            <option>Orkas</option>
+            <option>临时对话</option>
+          </select>
+          <select class="mock-input" style="background:#fff;border:1px solid #e5e5e5;height:34px;font-size:13px;border-radius:8px;padding:0 12px;color:#333;">
+            <option>📅 全部时间</option>
+            <option>今天</option>
+            <option>本周</option>
+            <option>本月</option>
+          </select>
+          <select class="mock-input" style="background:#fff;border:1px solid #e5e5e5;height:34px;font-size:13px;border-radius:8px;padding:0 12px;color:#333;">
+            <option>🧠 全部模型</option>
+            <option>deepseek-chat</option>
+            <option>claude-sonnet</option>
+          </select>
+        </div>
+
+        <!-- 工具条（选中时显示） -->
+        <div style="padding:10px 28px;background:rgba(108,92,231,0.08);border-bottom:1px solid #e5e5e5;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:#333;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <input type="checkbox" checked style="accent-color:#6c5ce7;">
+            <strong style="color:#6c5ce7;">已选 3 个会话</strong>
+            <span style="color:#999;">· 占用 12.4K tokens</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">📦 归档</button>
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">📥 导出</button>
+            <button style="background:#fff;border:1px solid #ff6b6b;color:#ff6b6b;padding:5px 12px;border-radius:6px;cursor:pointer;font-size:12px;">🗑️ 删除</button>
+          </div>
+        </div>
+
+        <!-- 表格 -->
+        <div style="flex:1;overflow-y:auto;padding:0 28px;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead>
+              <tr style="border-bottom:1px solid #f0f0f0;">
+                <th style="text-align:left;padding:14px 8px;color:#999;font-weight:500;width:32px;">
+                  <input type="checkbox" style="accent-color:#6c5ce7;">
+                </th>
+                <th style="text-align:left;padding:14px 8px;color:#999;font-weight:500;">会话</th>
+                <th style="text-align:left;padding:14px 8px;color:#999;font-weight:500;">项目</th>
+                <th style="text-align:left;padding:14px 8px;color:#999;font-weight:500;">模型</th>
+                <th style="text-align:right;padding:14px 8px;color:#999;font-weight:500;">消息</th>
+                <th style="text-align:right;padding:14px 8px;color:#999;font-weight:500;">Token</th>
+                <th style="text-align:left;padding:14px 8px;color:#999;font-weight:500;">更新时间</th>
+                <th style="text-align:right;padding:14px 8px;color:#999;font-weight:500;width:80px;">操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- 行 1：选中 -->
+              <tr style="border-bottom:1px solid #f5f5f5;background:rgba(108,92,231,0.04);">
+                <td style="padding:14px 8px;"><input type="checkbox" checked style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">重构 utils.ts</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">utils 里的日期处理太乱了，帮我重构下...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 my-agent</td>
+                <td style="padding:14px 8px;color:#666;">deepseek-chat</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">12</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">2.4K</td>
+                <td style="padding:14px 8px;color:#666;">10 分钟前</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 2：选中 -->
+              <tr style="border-bottom:1px solid #f5f5f5;background:rgba(108,92,231,0.04);">
+                <td style="padding:14px 8px;"><input type="checkbox" checked style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">分析 AgentRunner</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">解释双循环的 retry 逻辑...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 my-agent</td>
+                <td style="padding:14px 8px;color:#666;">deepseek-chat</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">18</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">5.2K</td>
+                <td style="padding:14px 8px;color:#666;">1 小时前</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 3 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">修复 npm test 报错</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">sqlite ABI 不匹配...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 my-agent</td>
+                <td style="padding:14px 8px;color:#666;">claude-sonnet</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">8</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">1.8K</td>
+                <td style="padding:14px 8px;color:#666;">昨天</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 4 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">调研 session 系统</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">sidecar 模式怎么落地...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 Orkas</td>
+                <td style="padding:14px 8px;color:#666;">claude-sonnet</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">24</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">8.6K</td>
+                <td style="padding:14px 8px;color:#666;">昨天</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 5 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">写 Electron 主进程</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">main.ts 入口设计...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 Orkas</td>
+                <td style="padding:14px 8px;color:#666;">claude-sonnet</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">32</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">12.1K</td>
+                <td style="padding:14px 8px;color:#666;">3 天前</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 6 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">Python 装饰器解释</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">@property 用法...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">💬 临时</td>
+                <td style="padding:14px 8px;color:#666;">deepseek-chat</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">4</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">0.6K</td>
+                <td style="padding:14px 8px;color:#666;">上周</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 7 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">性能优化建议</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">冷启动 8s 太慢了...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 my-agent</td>
+                <td style="padding:14px 8px;color:#666;">deepseek-chat</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">14</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">3.6K</td>
+                <td style="padding:14px 8px;color:#666;">2 周前</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+              <!-- 行 8 -->
+              <tr style="border-bottom:1px solid #f5f5f5;">
+                <td style="padding:14px 8px;"><input type="checkbox" style="accent-color:#6c5ce7;"></td>
+                <td style="padding:14px 8px;">
+                  <div style="font-weight:500;color:#222;">写登录页面</div>
+                  <div style="color:#999;font-size:12px;margin-top:2px;">用 Tailwind 重构...</div>
+                </td>
+                <td style="padding:14px 8px;color:#666;">📁 my-agent</td>
+                <td style="padding:14px 8px;color:#666;">claude-sonnet</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">22</td>
+                <td style="padding:14px 8px;text-align:right;color:#666;">5.2K</td>
+                <td style="padding:14px 8px;color:#666;">3 天前</td>
+                <td style="padding:14px 8px;text-align:right;color:#aaa;">⋯</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- 空状态：未来如果筛掉所有会话 -->
+          <!-- <div style="padding:60px;text-align:center;color:#999;">没有匹配的会话</div> -->
+        </div>
+
+        <!-- 底部分页 -->
+        <div style="padding:12px 28px;border-top:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#666;">
+          <span>显示 1 - 8 / 24</span>
+          <div style="display:flex;gap:4px;">
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#ccc;padding:4px 10px;border-radius:6px;cursor:not-allowed;">‹</button>
+            <button style="background:#6c5ce7;color:#fff;border:none;padding:4px 10px;border-radius:6px;cursor:pointer;">1</button>
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:4px 10px;border-radius:6px;cursor:pointer;">2</button>
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:4px 10px;border-radius:6px;cursor:pointer;">3</button>
+            <button style="background:#fff;border:1px solid #e5e5e5;color:#333;padding:4px 10px;border-radius:6px;cursor:pointer;">›</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>关键设计点</h3>
+  <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:#555;">
+    <div>✅ <strong>顶栏</strong>：标题 + 统计 + 导出 / 新建按钮</div>
+    <div>✅ <strong>多维筛选</strong>：搜索框 + 项目 / 时间 / 模型三个下拉，支持组合筛选</div>
+    <div>✅ <strong>批量操作条</strong>：选中后自动浮现，显示已选数和 token 占用 + 归档 / 导出 / 删除</div>
+    <div>✅ <strong>表格列</strong>：勾选 / 会话（含首条预览）/ 项目 / 模型 / 消息数 / Token / 更新时间 / 操作</div>
+    <div>✅ <strong>排序与分页</strong>：每列可点击排序，底部分页器</div>
+    <div>✅ <strong>删除按钮</strong>：用红色边框区分危险操作，避免误点</div>
+  </div>
+</div>
+
+<div class="section">
+  <p style="color:#888;font-size:13px;">下一屏：<strong>设置页</strong>。</p>
+</div>

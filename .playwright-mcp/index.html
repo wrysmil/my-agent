@@ -1,0 +1,230 @@
+<!-- electron/renderer/index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'">
+  <title>My Agent</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/sessions.css">
+  <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/skills.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ===== 图标侧栏 ===== -->
+    <aside id="sidebar">
+      <div id="sidebar-logo" title="My Agent" data-nav="chat">M</div>
+      <nav id="sidebar-nav">
+        <div class="sidebar-icon active" data-nav="chat" title="对话">💬</div>
+        <div class="sidebar-icon" data-nav="sessions" title="会话管理">📋</div>
+        <div class="sidebar-icon" data-nav="skills" title="Skills">🧩</div>
+        <div class="sidebar-icon" data-nav="settings" title="设置">⚙️</div>
+      </nav>
+      <div id="sidebar-footer">
+        <div id="sidebar-avatar" title="用户">Q</div>
+      </div>
+    </aside>
+
+    <!-- ===== 会话列表面板（仅对话页显示） ===== -->
+    <aside id="session-panel">
+      <div class="session-panel-header">
+        <span class="session-panel-title">对话</span>
+        <button class="btn btn-icon btn-ghost" id="btn-new-session" title="新建对话">+</button>
+      </div>
+      <div class="session-panel-search">
+        <input class="input input-search" id="session-search" placeholder="🔍 搜索对话">
+      </div>
+      <div class="session-list" id="session-list"></div>
+      <div class="session-panel-footer">
+        <span id="session-count">共 0 个对话</span>
+        <span class="btn btn-ghost btn-sm" data-nav="sessions">管理</span>
+      </div>
+    </aside>
+
+    <!-- ===== 主区 ===== -->
+    <main id="main">
+      <!-- 对话页 -->
+      <section id="page-chat" class="page active">
+        <div id="chat-topbar">
+          <div class="chat-topbar-left">
+            <span class="chat-topbar-title" id="chat-title">新对话</span>
+          </div>
+          <div class="chat-topbar-right">
+            <span class="chip" id="topbar-model">🧠 deepseek-chat</span>
+            <span id="topbar-tokens" style="cursor:pointer;">📊 0</span>
+            <span id="topbar-tools" style="cursor:pointer;">🔄 0</span>
+            <button class="btn btn-icon btn-ghost">⋯</button>
+          </div>
+        </div>
+        <div id="chat-messages">
+          <div class="empty-state">
+            <div class="empty-state-icon">💬</div>
+            <div>开始一段新对话</div>
+            <div style="margin-top:4px;font-size:12px;">Enter 发送，Shift+Enter 换行</div>
+          </div>
+        </div>
+        <div id="chat-input-area">
+          <div class="input-context-bar">
+            <span class="chip" id="ctx-project">📁 my-agent ⌄</span>
+            <span class="chip" id="ctx-model">🧠 deepseek-chat ⌄</span>
+            <span class="chip" id="ctx-tools">🧩 工具已启用</span>
+          </div>
+          <div class="input-wrapper">
+            <textarea id="chat-input" rows="2"
+              placeholder="输入消息... Enter 发送，Shift+Enter 换行"></textarea>
+            <div class="input-toolbar">
+              <div class="input-toolbar-left">
+                <button class="btn btn-icon btn-ghost" title="附件">📎</button>
+                <button class="btn btn-icon btn-ghost" title="Slash 命令">/</button>
+              </div>
+              <div class="input-toolbar-right">
+                <button class="btn btn-sm btn-secondary" id="btn-stop">停止</button>
+                <button class="btn btn-primary" id="btn-send">发送 ➤</button>
+              </div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:11px;color:#bbb;margin-top:8px;">
+            My Agent 可能产生错误，请核实重要信息 · 工具结果已脱敏
+          </div>
+        </div>
+      </section>
+
+      <!-- 会话管理页 -->
+      <section id="page-sessions" class="page">
+        <div class="topbar">
+          <div class="topbar-title">
+            <h2 style="margin:0;font-size:18px;">会话管理</h2>
+            <span id="sessions-stats" style="color:#999;font-size:13px;">共 0 个会话</span>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary">📥 导出全部</button>
+            <button class="btn btn-primary" id="btn-new-session-2">＋ 新建</button>
+          </div>
+        </div>
+
+        <div id="sessions-filter-bar">
+          <input class="input" id="sessions-search" placeholder="🔍 搜索会话标题或内容...">
+          <select class="select" id="sessions-filter-project">
+            <option value="">📁 全部项目</option>
+          </select>
+          <select class="select" id="sessions-filter-time">
+            <option value="">📅 全部时间</option>
+            <option value="today">今天</option>
+            <option value="week">本周</option>
+            <option value="month">本月</option>
+          </select>
+        </div>
+
+        <div id="sessions-batch-bar">
+          <div class="batch-bar-info">
+            <span class="batch-bar-count" id="batch-count">已选 0 个会话</span>
+          </div>
+          <div class="batch-bar-actions">
+            <button class="btn btn-secondary btn-sm" id="btn-batch-archive">📦 归档</button>
+            <button class="btn btn-secondary btn-sm" id="btn-batch-export">📥 导出</button>
+            <button class="btn btn-danger btn-sm" id="btn-batch-delete">🗑️ 删除</button>
+          </div>
+        </div>
+
+        <div id="sessions-table-wrap">
+          <table id="sessions-table">
+            <thead>
+              <tr>
+                <th class="col-checkbox"><input type="checkbox" id="select-all"></th>
+                <th>会话</th>
+                <th>项目</th>
+                <th>模型</th>
+                <th class="col-count">消息</th>
+                <th class="col-tokens">Token</th>
+                <th>更新时间</th>
+                <th class="col-actions">操作</th>
+              </tr>
+            </thead>
+            <tbody id="sessions-tbody"></tbody>
+          </table>
+        </div>
+
+        <div id="sessions-pagination">
+          <span id="pagination-info">显示 0 - 0 / 0</span>
+          <div class="pagination-btns" id="pagination-btns"></div>
+        </div>
+      </section>
+
+      <!-- Skills 管理页 -->
+      <section id="page-skills" class="page">
+        <div class="topbar">
+          <div class="topbar-title">
+            🧩 Skills 管理
+            <span id="skills-stats" style="color:#999;font-size:13px;font-weight:400;">已启用 0 / 0</span>
+          </div>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary">📥 从市场安装</button>
+            <button class="btn btn-secondary">📂 打开目录</button>
+            <button class="btn btn-primary">＋ 新建 Skill</button>
+          </div>
+        </div>
+
+        <div class="skills-chip-bar">
+          <span style="font-size:12px;color:#999;margin-right:4px;">分类：</span>
+          <button class="chip active" data-category="all">全部</button>
+          <button class="chip" data-category="开发">💻 开发</button>
+          <button class="chip" data-category="写作">📝 写作</button>
+          <button class="chip" data-category="数据">📊 数据</button>
+          <button class="chip" data-category="研究">🔍 研究</button>
+          <button class="chip" data-category="创意">🎨 创意</button>
+          <label style="margin-left:auto;font-size:12px;color:#666;display:flex;align-items:center;gap:4px;cursor:pointer;">
+            <input type="checkbox" id="show-enabled-only" style="accent-color:var(--color-primary);">
+            仅显示已启用
+          </label>
+        </div>
+
+        <div class="content-area" id="skills-grid"></div>
+      </section>
+
+      <!-- 设置页 -->
+      <section id="page-settings" class="page" style="flex-direction:row;">
+        <!-- 二级导航 -->
+        <nav id="settings-subnav">
+          <div class="settings-subnav-label">设置</div>
+          <div class="settings-subnav-item active" data-tab="models">🤖 模型</div>
+          <div class="settings-subnav-item" data-tab="tools">🔧 工具</div>
+          <div class="settings-subnav-item" data-tab="paths">📁 路径与权限</div>
+          <div class="settings-subnav-item" data-tab="context">🧠 上下文</div>
+          <div class="settings-subnav-item" data-tab="appearance">🎨 外观</div>
+          <div class="settings-subnav-item" data-tab="developer">🧪 开发者</div>
+          <div id="settings-version">v0.3.0 · Electron 33</div>
+        </nav>
+        <!-- 主区 -->
+        <div id="settings-main">
+          <div class="topbar" style="border-bottom:1px solid var(--border-light);">
+            <h2 style="margin:0;font-size:18px;" id="settings-tab-title">🤖 模型设置</h2>
+          </div>
+          <div class="settings-content" id="settings-content"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 第三方 -->
+  <script src="vendor/marked.min.js"></script>
+
+  <!-- 模块 -->
+  <script src="js/api.js"></script>
+  <script src="modules/markdown.js"></script>
+
+  <!-- 页面 -->
+  <script src="js/pages/chat.js"></script>
+  <script src="js/pages/sessions.js"></script>
+  <script src="js/pages/settings.js"></script>
+  <script src="js/pages/skills.js"></script>
+
+  <!-- 入口 -->
+  <script src="js/app.js"></script>
+</body>
+</html>
