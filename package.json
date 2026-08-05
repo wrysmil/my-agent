@@ -2,7 +2,7 @@
   "name": "my-agent",
   "version": "0.1.0",
   "type": "module",
-  "main": "dist/electron/main.js",
+  "main": "dist/electron/main.cjs",
   "scripts": {
     "check": "tsc --noEmit",
     "test": "vitest run",
