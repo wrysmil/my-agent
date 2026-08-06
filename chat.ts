@@ -18,6 +18,7 @@
 import * as readline from "node:readline";
 import * as path from "node:path";
 import * as os from "node:os";
+import { fileURLToPath } from "node:url";
 import { loadConfig } from "./src/config/loader.js";
 import type { CoreAgentConfig } from "./src/config/schema.js";
 import { AgentRunner } from "./src/agent/runner.js";
@@ -28,7 +29,9 @@ import { BUILTIN_TOOLS } from "./src/tools/builtin.js";
 import { PersistentSession } from "./src/agent/persistent-session.js";
 import { SessionStore } from "./src/storage/session-store.js";
 import { ProvidersStore, type ProviderConfigEntry } from "./src/storage/providers-store.js";
+import { userSkillsDir, userMarketplaceSkillsDir } from "./src/storage/paths.js";
 import { SkillLoader } from "./src/skills/loader.js";
+import { buildAvailableSkillsBlock } from "./src/skills/index.js";
 import type { SkillSpec, SkillContent } from "./src/skills/types.js";
 import { pickDescription } from "./src/skills/types.js";
 import { buildSystemPrompt } from "./src/prompts/system-prompt-builder.js";
@@ -136,8 +139,13 @@ const getTime = defineTool({
 // Skills
 // ============================================================================
 
-const skillDir = new URL("./skills", import.meta.url).pathname;
-const skillSpecs: SkillSpec[] = SkillLoader.scan(skillDir, "system");
+// 仓库内示例 skill 目录（S1.4 迁移方案 A：过渡期兼容保留，先到先得排在 dataRoot 之后）
+// new URL(...).pathname 在 Windows 下产出 /D:/... 无效路径，必须 fileURLToPath
+const repoSkillDir = fileURLToPath(new URL("./skills", import.meta.url));
+const skillLoader = new SkillLoader({
+  dirs: [userMarketplaceSkillsDir(), userSkillsDir(), repoSkillDir],
+});
+const skillSpecs: SkillSpec[] = skillLoader.list();
 const skillMap = new Map<string, SkillContent>();
 for (const spec of skillSpecs) {
   const content = SkillLoader.load(spec);
@@ -145,14 +153,13 @@ for (const spec of skillSpecs) {
 }
 
 function buildSkillContext(): string {
-  if (skillSpecs.length === 0) return "";
-  const lines = ["## 可用技能 (Skills)", ""];
-  for (const spec of skillSpecs) {
-    const desc = pickDescription(spec);
-    lines.push(`- **${spec.name}** (\`${spec.id}\`): ${desc}`);
-  }
-  lines.push("", "通过描述中的关键词触发相应 Skill 的指令规范。");
-  return lines.join("\n");
+  return buildAvailableSkillsBlock(skillLoader, {
+    roots: {
+      custom: userSkillsDir(),
+      marketplace: userMarketplaceSkillsDir(),
+      builtin: repoSkillDir,
+    },
+  });
 }
 
 const allTools: AgentTool[] = [...BUILTIN_TOOLS, calculator, getTime];
