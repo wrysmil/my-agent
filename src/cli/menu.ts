@@ -9,7 +9,7 @@ import {
   colorize,
 } from "./io.js";
 
-export const mainMenuChoices = ["start", "settings", "view", "quit"] as const;
+export const mainMenuChoices = ["start", "history", "settings", "view", "quit"] as const;
 export const providerMenuChoices = ["list", "edit", "switch", "toggle", "delete", "back"] as const;
 
 export type MainMenuChoice = (typeof mainMenuChoices)[number];
@@ -30,9 +30,10 @@ export function renderMainMenu(store: ProvidersStore): string {
       : `   ${colorize("⚠️  没有可用 provider，请进入设置", 31)}`,
     "",
     formatMenuItem(1, "开始对话"),
-    formatMenuItem(2, "设置模型提供商"),
-    formatMenuItem(3, "查看当前提供商"),
-    formatMenuItem(4, "退出"),
+    formatMenuItem(2, "加载历史对话"),
+    formatMenuItem(3, "设置模型提供商"),
+    formatMenuItem(4, "查看当前提供商"),
+    formatMenuItem(5, "退出"),
     "",
   ];
   return lines.join("\n");
@@ -44,18 +45,20 @@ export async function runMainMenu(
 ): Promise<MainMenuChoice> {
   for (;;) {
     console.log(renderMainMenu(store));
-    const ans = await prompt(rl, "请选择 (1-4): ");
+    const ans = await prompt(rl, "请选择 (1-5): ");
     switch (ans) {
       case "1":
         return "start";
       case "2":
-        return "settings";
+        return "history";
       case "3":
-        return "view";
+        return "settings";
       case "4":
+        return "view";
+      case "5":
         return "quit";
       default:
-        console.log(colorize("  无效输入，请输入 1-4", 31));
+        console.log(colorize("  无效输入，请输入 1-5", 31));
     }
   }
 }

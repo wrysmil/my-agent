@@ -38,7 +38,7 @@ import {
   type MainMenuChoice,
 } from "./src/cli/menu.js";
 import { runProviderMenu } from "./src/cli/provider-menu.js";
-import { confirm } from "./src/cli/io.js";
+import { confirm, prompt, colorize, menuColor } from "./src/cli/io.js";
 
 // ============================================================================
 // CLI 解析（导出供测试）
@@ -69,6 +69,16 @@ export function parseArgs(argv: string[]) {
   const loadIdx = argv.indexOf("--load");
   const loadId = loadIdx >= 0 ? argv[loadIdx + 1] : undefined;
   return { flagList, loadId };
+}
+
+/**
+ * 解析历史会话列表选择。返回 1-based 索引；0 = 返回主菜单；null = 无效输入。
+ */
+export function pickHistoryIndex(input: string, count: number): number | null {
+  if (input === "0") return 0;
+  const idx = Number(input);
+  if (!Number.isInteger(idx) || idx < 1 || idx > count) return null;
+  return idx;
 }
 
 /** 加载 providers 并解析参数（不进入交互）。供测试与 main 共用。 */
@@ -233,8 +243,16 @@ async function main() {
               continue;
             }
           }
-          await runChat({ config, store, session: undefined });
+          await runChat({ config, store, session: undefined, rl });
           return;
+        }
+        case "history": {
+          const loaded = await runHistoryMenu(rl);
+          if (loaded) {
+            await runChat({ config, store, session: loaded, rl });
+            return;
+          }
+          continue;
         }
         case "settings":
           await runProviderMenu(rl, store);
@@ -253,6 +271,44 @@ async function main() {
 }
 
 // ============================================================================
+// 历史会话选择
+// ============================================================================
+
+async function runHistoryMenu(
+  rl: readline.Interface,
+): Promise<PersistentSession | undefined> {
+  const sessionStore = new SessionStore();
+  const sessions = sessionStore.list();
+
+  console.log("");
+  if (sessions.length === 0) {
+    console.log("📭 没有已保存的会话\n");
+    return undefined;
+  }
+
+  console.log(`📋 已保存的会话 (${sessions.length}):\n`);
+  for (let i = 0; i < sessions.length; i++) {
+    const s = sessions[i];
+    console.log(`  ${colorize("•", menuColor(i + 1))} ${i + 1}. ${s.name}  (${s.id})`);
+  }
+  console.log(`  ${colorize("•", 31)} 0. 返回主菜单\n`);
+
+  for (;;) {
+    const ans = await prompt(rl, "  选择要加载的会话 (0 返回): ");
+    const idx = pickHistoryIndex(ans, sessions.length);
+    if (idx === 0) return undefined;
+    if (idx === null) {
+      console.log(colorize("  无效输入", 31));
+      continue;
+    }
+    const session = sessionStore.get(sessions[idx - 1].id);
+    if (session) return session;
+    console.log(colorize(`  会话不存在或已损坏: ${sessions[idx - 1].id}`, 31));
+    return undefined;
+  }
+}
+
+// ============================================================================
 // 对话主循环
 // ============================================================================
 
@@ -260,6 +316,8 @@ async function runChat(opts: {
   config: CoreAgentConfig;
   store: ProvidersStore;
   session: PersistentSession | undefined;
+  /** 外部传入时复用该 readline（避免与主菜单双实例共享 stdin 导致双重回显）；缺省时自建 */
+  rl?: readline.Interface;
 }): Promise<void> {
   const sessionStore = new SessionStore();
   let session: PersistentSession = opts.session ?? sessionStore.create();
@@ -277,14 +335,19 @@ async function runChat(opts: {
     session,
   });
 
-  console.log(`🆕 新建会话: ${session.sessionId}`);
+  if (opts.session) {
+    console.log(`💬 恢复会话: ${session.sessionId}`);
+  } else {
+    console.log(`🆕 新建会话: ${session.sessionId}`);
+  }
   console.log("🤖 Agent 对话模式");
   console.log(`   Session: ${session.sessionId}`);
   console.log(`   工具: ${allTools.map((t) => t.name).join(", ")}`);
   console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
   console.log("   输入消息后回车，/help 查看命令\n");
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const ownsRl = opts.rl === undefined;
+  const rl = opts.rl ?? readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (): Promise<string> =>
     new Promise((resolve) => {
       rl.question("👤 ", (answer) => resolve(answer.trim()));
@@ -434,7 +497,7 @@ async function runChat(opts: {
       console.log("\n");
     }
   } finally {
-    rl.close();
+    if (ownsRl) rl.close();
   }
 }
 
