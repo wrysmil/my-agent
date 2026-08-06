@@ -11,8 +11,8 @@
 
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as os from "node:os";
 import { randomUUID } from "node:crypto";
+import { sessionsDir } from "./paths.js";
 
 // ============================================================
 // 原子写入
@@ -138,15 +138,10 @@ export function writeJsonLines(
 /**
  * 获取默认的 session 存储目录。
  *
- * 优先级：
- * 1. `MY_AGENT_HOME` 环境变量
- * 2. `~/.my-agent/`
+ * 委托给 paths.ts 集中管理，避免路径逻辑散落多处。
  */
 export function defaultSessionDir(): string {
-  if (process.env.MY_AGENT_HOME) {
-    return path.join(process.env.MY_AGENT_HOME, "sessions");
-  }
-  return path.join(os.homedir(), ".my-agent", "sessions");
+  return sessionsDir();
 }
 
 /**

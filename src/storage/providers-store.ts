@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as os from "node:os";
 import { z } from "zod";
 import { atomicWrite, ensureDir } from "./jsonl.js";
+import { providersFile } from "./paths.js";
 
 // ============================================================================
 // Schema
@@ -55,8 +55,7 @@ export function defaultProvidersConfig(): ProvidersConfig {
 // ============================================================================
 
 export function defaultProvidersFilePath(): string {
-  const home = process.env.MY_AGENT_HOME ?? path.join(os.homedir(), ".my-agent");
-  return path.join(home, "providers.json");
+  return providersFile();
 }
 
 // ============================================================================
@@ -123,12 +122,22 @@ export class ProvidersStore {
   getActiveProvider(): ProviderConfigEntry | undefined {
     const id = this.config.activeProviderId;
     const p = this.config.providers[id];
-    if (p && p.enabled) return p;
+    if (p && p.enabled) return this.resolveEnvApiKey(p);
     // fallback 到第一个 enabled
     for (const cand of Object.values(this.config.providers)) {
-      if (cand.enabled) return cand;
+      if (cand.enabled) return this.resolveEnvApiKey(cand);
     }
     return undefined;
+  }
+
+  /** 若 apiKey 为空，从环境变量 fallback */
+  private resolveEnvApiKey(p: ProviderConfigEntry): ProviderConfigEntry {
+    if (p.apiKey) return p;
+    const envKey = process.env.DEEPSEEK_API_KEY;
+    if (envKey) {
+      return { ...p, apiKey: envKey };
+    }
+    return p;
   }
 
   setActiveProvider(id: string): void {

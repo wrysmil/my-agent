@@ -34,6 +34,7 @@ import {
   removeFile,
   defaultSessionDir,
 } from "../storage/jsonl.js";
+import { sessionFile, contextFile, sessionsDir } from "../storage/paths.js";
 import type {
   SerializedMessage,
   SerializedSessionContext,
@@ -75,11 +76,16 @@ export class PersistentSession extends Session {
 
     this.sessionId = opts.sessionId ?? `session-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
 
-    const dir = opts.sessionDir ?? defaultSessionDir();
+    const dir = opts.sessionDir ?? sessionsDir();
     ensureDir(dir);
 
-    this.sessionFile = path.join(dir, `${this.sessionId}.jsonl`);
-    this.contextFile = path.join(dir, `${this.sessionId}.context.json`);
+    this.sessionFile = opts.sessionDir
+      ? path.join(dir, `${this.sessionId}.jsonl`)
+      : sessionFile(this.sessionId);
+
+    this.contextFile = opts.sessionDir
+      ? path.join(dir, `${this.sessionId}.context.json`)
+      : contextFile(this.sessionId);
 
     const createIfMissing = opts.createIfMissing !== false;
 
@@ -108,9 +114,9 @@ export class PersistentSession extends Session {
     sessionDir?: string,
   ): PersistentSession | null {
     const dir = sessionDir ?? defaultSessionDir();
-    const sessionFile = path.join(dir, `${sessionId}.jsonl`);
+    const file = path.join(dir, `${sessionId}.jsonl`);
 
-    if (!fs.existsSync(sessionFile)) return null;
+    if (!fs.existsSync(file)) return null;
 
     return new PersistentSession({
       sessionId,
