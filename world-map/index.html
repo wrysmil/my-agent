@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>世界地图 - 数据可视化</title>
+<!-- ECharts CDN -->
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; font-family: "Microsoft YaHei", "PingFang SC", Arial, sans-serif; }
+  body {
+    background: #0b1020;
+    color: #e8ecf4;
+    overflow: hidden;
+  }
+
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(11, 16, 32, 0.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(94, 129, 244, 0.25);
+    z-index: 10;
+  }
+  #header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    background: linear-gradient(90deg, #5e81f4, #42d6a4);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  #header .sub { font-size: 12px; color: #8a93b5; }
+
+  #map {
+    position: fixed;
+    top: 60px; left: 0; right: 0; bottom: 0;
+  }
+
+  /* 数据面板 */
+  #info {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    width: 300px;
+    padding: 18px 20px;
+    background: rgba(18, 26, 48, 0.92);
+    border: 1px solid rgba(94, 129, 244, 0.3);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    z-index: 8;
+    transition: opacity .3s;
+  }
+  #info .empty { color: #8a93b5; font-size: 13px; line-height: 1.8; }
+  #info .title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #ffffff;
+  }
+  #info .country { font-size: 22px; font-weight: 700; color: #5e81f4; margin-bottom: 10px; }
+  #info .row {
+    display: flex; justify-content: space-between;
+    padding: 5px 0;
+    font-size: 13px;
+    border-bottom: 1px dashed rgba(94, 129, 244, 0.15);
+  }
+  #info .row:last-child { border: none; }
+  #info .row .k { color: #9aa4c7; }
+  #info .row .v { color: #e8ecf4; font-weight: 500; }
+
+  /* 图例 */
+  #legend {
+    position: fixed;
+    left: 24px;
+    bottom: 24px;
+    padding: 14px 18px;
+    background: rgba(18, 26, 48, 0.92);
+    border: 1px solid rgba(94, 129, 244, 0.3);
+    border-radius: 12px;
+    backdrop-filter: blur(10px);
+    z-index: 8;
+  }
+  #legend .lg-title { font-size: 12px; color: #9aa4c7; margin-bottom: 8px; }
+  #legend .grad {
+    width: 180px; height: 10px;
+    border-radius: 5px;
+    background: linear-gradient(90deg, #1a3a5c, #2c7a7b, #38b2ac, #68d391, #f6e05e);
+  }
+  #legend .labels {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: #8a93b5; margin-top: 4px;
+  }
+
+  /* 样式切换 */
+  #styles {
+    position: fixed;
+    left: 24px;
+    top: 80px;
+    display: flex; gap: 8px;
+    z-index: 9;
+  }
+  .style-btn {
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #c3cbe8;
+    background: rgba(18, 26, 48, 0.9);
+    border: 1px solid rgba(94, 129, 244, 0.3);
+    border-radius: 20px;
+    transition: all .2s;
+  }
+  .style-btn:hover { border-color: #5e81f4; color: #fff; }
+  .style-btn.active { background: #5e81f4; color: #fff; border-color: #5e81f4; }
+
+  #tooltip-title { position: absolute; }
+
+  .loading {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 16px;
+    background: #0b1020; z-index: 20;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid rgba(94, 129, 244, 0.2);
+    border-top-color: #5e81f4;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading p { color: #8a93b5; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div>
+    <h1>世界地图数据可视化</h1>
+    <div class="sub">中国 · 2026 · ECharts 交互式地图</div>
+  </div>
+  <div id="styles">
+    <button class="style-btn active" data-style="default">人口密度</button>
+    <button class="style-btn" data-style="area">国土安全</button>
+    <button class="style-btn" data-style="gdp">GDP</button>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div id="legend">
+  <div class="lg-title">人口密度（人/km²）</div>
+  <div class="grad"></div>
+  <div class="labels"><span>低</span><span>高</span></div>
+</div>
+
+<div id="info">
+  <div class="empty">🖱 鼠标悬停或点击地图上的任意国家，查看详细信息</div>
+</div>
+
+<div class="loading" id="loading">
+  <div class="spinner"></div>
+  <p>正在加载世界地图数据…</p>
+</div>
+
+<script>
+// ============================================================
+// 示例数据（仅演示用途，非精确权威数据）
+// ============================================================
+const countryData = {
+  // 中国及其重点国家 - 人口密度、国土面积(万km²)、GDP(万亿美元)
+  "中国":            { density: 153,  area: 960,   gdp: 17.8,  continent: "亚洲" },
+  "美国":            { density: 37,   area: 983,   gdp: 27.4,  continent: "北美洲" },
+  "印度":            { density: 481,  area: 328,   gdp: 3.7,   continent: "亚洲" },
+  "俄罗斯":          { density: 9,    area: 1710,  gdp: 2.0,   continent: "欧洲" },
+  "加拿大":          { density: 4,    area: 998,   gdp: 2.1,   continent: "北美洲" },
+  "巴西":            { density: 26,   area: 851,   gdp: 2.2,   continent: "南美洲" },
+  "澳大利亚":        { density: 3,    area: 769,   gdp: 1.7,   continent: "大洋洲" },
+  "日本":            { density: 347,  area: 38,    gdp: 4.2,   continent: "亚洲" },
+  "德国":            { density: 240,  area: 36,    gdp: 4.4,   continent: "欧洲" },
+  "英国":            { density: 281,  area: 24,    gdp: 3.4,   continent: "欧洲" },
+  "法国":            { density: 119,  area: 55,    gdp: 3.1,   continent: "欧洲" },
+  "意大利":          { density: 206,  area: 30,    gdp: 2.2,   continent: "欧洲" },
+  "西班牙":          { density: 95,   area: 51,    gdp: 1.6,   continent: "欧洲" },
+  "韩国":            { density: 530,  area: 10,    gdp: 1.7,   continent: "亚洲" },
+  "印度尼西亚":      { density: 148,  area: 190,   gdp: 1.4,   continent: "亚洲" },
+  "沙特阿拉伯":      { density: 15,   area: 215,   gdp: 1.1,   continent: "亚洲" },
+  "土耳其":          { density: 112,  area: 78,    gdp: 1.1,   continent: "亚洲" },
+  "伊朗":            { density: 52,   area: 165,   gdp: 0.4,   continent: "亚洲" },
+  "巴基斯坦":        { density: 300,  area: 88,    gdp: 0.3,   continent: "亚洲" },
+  "孟加拉国":        { density: 1330, area: 15,    gdp: 0.4,   continent: "亚洲" },
+  "菲律宾":          { density: 380,  area: 30,    gdp: 0.4,   continent: "亚洲" },
+  "泰国":            { density: 140,  area: 51,    gdp: 0.5,   continent: "亚洲" },
+  "越南":            { density: 314,  area: 33,    gdp: 0.4,   continent: "亚洲" },
+  "马来西亚":        { density: 99,   area: 33,    gdp: 0.4,   continent: "亚洲" },
+  "新加坡":          { density: 8358, area: 0.07,  gdp: 0.5,   continent: "亚洲" },
+  "缅甸":            { density: 82,   area: 68,    gdp: 0.06,  continent: "亚洲" },
+  "尼日利亚":        { density: 226,  area: 92,    gdp: 0.5,   continent: "非洲" },
+  "埃及":            { density: 106,  area: 100,   gdp: 0.4,   continent: "非洲" },
+  "南非":            { density: 49,   area: 122,   gdp: 0.4,   continent: "非洲" },
+  "埃塞俄比亚":      { density: 115,  area: 114,   gdp: 0.2,   continent: "非洲" },
+  "肯尼亚":          { density: 89,   area: 58,    gdp: 0.1,   continent: "非洲" },
+  "墨西哥":          { density: 66,   area: 196,   gdp: 1.8,   continent: "北美洲" },
+  "阿根廷":          { density: 17,   area: 278,   gdp: 0.6,   continent: "南美洲" },
+  "智利":            { density: 26,   area: 76,    gdp: 0.3,   continent: "南美洲" },
+  "哥伦比亚":        { density: 45,   area: 114,   gdp: 0.4,   continent: "南美洲" },
+  "秘鲁":            { density: 25,   area: 129,   gdp: 0.3,   continent: "南美洲" },
+  "委内瑞拉":        { density: 33,   area: 91,    gdp: 0.1,   continent: "南美洲" },
+  "新西兰":          { density: 19,   area: 27,    gdp: 0.25,  continent: "大洋洲" },
+  "瑞典":            { density: 25,   area: 45,    gdp: 0.6,   continent: "欧洲" },
+  "挪威":            { density: 15,   area: 39,    gdp: 0.5,   continent: "欧洲" },
+  "芬兰":            { density: 18,   area: 34,    gdp: 0.3,   continent: "欧洲" },
+  "丹麦":            { density: 137,  area: 4.3,   gdp: 0.4,   continent: "欧洲" },
+  "荷兰":            { density: 510,  area: 4.2,   gdp: 1.1,   continent: "欧洲" },
+  "比利时":          { density: 383,  area: 3.1,   gdp: 0.6,   continent: "欧洲" },
+  "瑞士":            { density: 220,  area: 4.1,   gdp: 0.9,   continent: "欧洲" },
+  "奥地利":          { density: 109,  area: 8.4,   gdp: 0.5,   continent: "欧洲" },
+  "葡萄牙":          { density: 111,  area: 9.2,   gdp: 0.3,   continent: "欧洲" },
+  "波兰":            { density: 124,  area: 31,    gdp: 0.8,   continent: "欧洲" },
+  "乌克兰":          { density: 76,   area: 60,    gdp: 0.2,   continent: "欧洲" },
+  "希腊":            { density: 81,   area: 13,    gdp: 0.2,   continent: "欧洲" },
+  "哈萨克斯坦":      { density: 7,    area: 273,   gdp: 0.3,   continent: "亚洲" },
+  "蒙古":            { density: 2,    area: 156,   gdp: 0.02,  continent: "亚洲" },
+  "朝鲜":            { density: 212,  area: 12,    gdp: 0.03,  continent: "亚洲" },
+  "阿富汗":          { density: 60,   area: 65,    gdp: 0.01,  continent: "亚洲" },
+  "伊拉克":          { density: 93,   area: 44,    gdp: 0.3,   continent: "亚洲" },
+  "叙利亚":          { density: 115,  area: 19,    gdp: 0.02,  continent: "亚洲" },
+  "约旦":            { density: 115,  area: 8.9,   gdp: 0.05,  continent: "亚洲" },
+  "以色列":          { density: 430,  area: 2.2,   gdp: 0.5,   continent: "亚洲" },
+  "阿联酋":          { density: 131,  area: 8.4,   gdp: 0.5,   continent: "亚洲" },
+  "卡塔尔":          { density: 248,  area: 1.2,   gdp: 0.2,   continent: "亚洲" },
+  "科威特":          { density: 261,  area: 1.8,   gdp: 0.2,   continent: "亚洲" },
+  "阿曼":            { density: 16,   area: 31,    gdp: 0.1,   continent: "亚洲" },
+  "也门":            { density: 56,   area: 53,    gdp: 0.02,  continent: "亚洲" },
+  "苏丹":            { density: 25,   area: 186,   gdp: 0.1,   continent: "非洲" },
+  "阿尔及利亚":      { density: 18,   area: 238,   gdp: 0.2,   continent: "非洲" },
+  "利比亚":          { density: 4,    area: 176,   gdp: 0.05,  continent: "非洲" },
+  "摩洛哥":          { density: 83,   area: 45,    gdp: 0.1,   continent: "非洲" },
+  "突尼斯":          { density: 76,   area: 16,    gdp: 0.05,  continent: "非洲" },
+  "刚果（金）":      { density: 44,   area: 234,   gdp: 0.07,  continent: "非洲" },
+  "坦桑尼亚":        { density: 67,   area: 95,    gdp: 0.08,  continent: "非洲" },
+  "安哥拉":          { density: 26,   area: 125,   gdp: 0.1,   continent: "非洲" },
+  "莫桑比克":        { density: 39,   area: 80,    gdp: 0.02,  continent: "非洲" },
+  "加纳":            { density: 137,  area: 24,    gdp: 0.08,  continent: "非洲" },
+  "科特迪瓦":        { density: 83,   area: 32,    gdp: 0.07,  continent: "非洲" },
+  "喀麦隆":          { density: 55,   area: 48,    gdp: 0.04,  continent: "非洲" },
+  "古巴":            { density: 106,  area: 11,    gdp: 0.1,   continent: "北美洲" },
+  "危地马拉":        { density: 167,  area: 11,    gdp: 0.1,   continent: "北美洲" },
+  "洪都拉斯":        { density: 89,   area: 11,    gdp: 0.03,  continent: "北美洲" },
+  "玻利维亚":        { density: 11,   area: 110,   gdp: 0.05,  continent: "南美洲" },
+  "厄瓜多尔":        { density: 71,   area: 28,    gdp: 0.1,   continent: "南美洲" },
+  "乌拉圭":          { density: 20,   area: 18,    gdp: 0.08,  continent: "南美洲" },
+  "巴拉圭":          { density: 17,   area: 41,    gdp: 0.04,  continent: "南美洲" },
+  "冰岛":            { density: 3,    area: 10,    gdp: 0.03,  continent: "欧洲" },
+  "爱尔兰":          { density: 74,   area: 7,     gdp: 0.6,   continent: "欧洲" },
+  "白俄罗斯":        { density: 47,   area: 21,    gdp: 0.07,  continent: "欧洲" },
+  "罗马尼亚":        { density: 84,   area: 24,    gdp: 0.3,   continent: "欧洲" },
+  "匈牙利":          { density: 107,  area: 9.3,   gdp: 0.2,   continent: "欧洲" },
+  "捷克":            { density: 139,  area: 7.9,   gdp: 0.3,   continent: "欧洲" },
+  "斯洛伐克":        { density: 113,  area: 4.9,   gdp: 0.1,   continent: "欧洲" },
+  "保加利亚":        { density: 64,   area: 11,    gdp: 0.1,   continent: "欧洲" },
+  "塞尔维亚":        { density: 80,   area: 7.7,   gdp: 0.07,  continent: "欧洲" },
+  "克罗地亚":        { density: 73,   area: 5.7,   gdp: 0.08,  continent: "欧洲" },
+  "老挝":            { density: 32,   area: 24,    gdp: 0.02,  continent: "亚洲" },
+  "柬埔寨":          { density: 95,   area: 18,    gdp: 0.03,  continent: "亚洲" }
+};
+
+// ============================================================
+// 配置三个可视化主题
+// ============================================================
+const themes = {
+  // 人口密度
+  density: {
+    name: "人口密度（人/平方公里）",
+    unit: "人/km²",
+    key: "density",
+    palette: ["#1a3a5c", "#2c7a7b", "#38b2ac", "#68d391", "#f6e05e"],
+    min: 0,
+    max: 1000,
+    unknown: "#2a3150",
+    formatter: (v) => v >= 0 ? v.toFixed(0) + " 人/km²" : "暂无数据"
+  },
+  // 国土面积
+  area: {
+    name: "国土面积（万平方公里）",
+    unit: "万km²",
+    key: "area",
+    palette: ["#1e3a8a", "#4f46e5", "#7c3aed", "#c084fc", "#e879f9"],
+    min: 0,
+    max: 1000,
+    unknown: "#2a3150",
+    formatter: (v) => v >= 0 ? v + " 万km²" : "暂无数据"
+  },
+  // GDP
+  gdp: {
+    name: "GDP（万亿美元）",
+    unit: "万亿美元",
+    key: "gdp",
+    palette: ["#14532d", "#15803d", "#22c55e", "#a3e635", "#facc15"],
+    min: 0,
+    max: 30,
+    unknown: "#2a3150",
+    formatter: (v) => v >= 0 ? v + " 万亿美元" : "暂无数据"
+  }
+};
+
+let chart = null;
+let currentTheme = "density";
+let worldGeo = null;
+
+// 获取国家数据
+function getData(name) {
+  return countryData[name] || null;
+}
+
+// 更新图例文字
+function updateLegend(theme) {
+  const legendEl = document.querySelector("#legend .lg-title");
+  legendEl.textContent = theme.name;
+}
+
+// 渲染地图
+function renderMap() {
+  if (!chart || !worldGeo) return;
+
+  const theme = themes[currentTheme];
+  const data = [];
+  for (const name in countryData) {
+    const d = countryData[name];
+    data.push({ name: name, value: d[theme.key] });
+  }
+
+  // 计算颜色分段
+  const visualMax = theme.max;
+  const option = {
+    tooltip: {
+      trigger: "item",
+      backgroundColor: "rgba(11,16,32,0.92)",
+      borderColor: "#5e81f4",
+      borderWidth: 1,
+      textStyle: { color: "#e8ecf4", fontSize: 13 },
+      formatter: (params) => {
+        const d = getData(params.name);
+        if (!d) {
+          return `<b>${params.name}</b><br/>暂无数据`;
+        }
+        let html = `<b style="font-size:15px;color:#5e81f4">${params.name}</b><br/>`;
+        html += `大洲：${d.continent}`;
+        for (const k in themes) {
+          const t = themes[k];
+          html += `<br/>${t.name.split("（")[0]}：${t.formatter(d[t.key])}`;
+        }
+        return html;
+      }
+    },
+    visualMap: {
+      type: "continuous",
+      min: theme.min,
+      max: visualMax,
+      text: ["高", "低"],
+      calculable: true,
+      left: 24,
+      top: 96,
+      itemWidth: 12,
+      itemHeight: 120,
+      inRange: { color: theme.palette },
+      textStyle: { color: "#c3cbe8" },
+      formatter: (v) => {
+        if (v >= visualMax) return ">=" + visualMax;
+        return Math.round(v);
+      }
+    },
+    series: [{
+      name: theme.name,
+      type: "map",
+      map: "world",
+      roam: true,           // 允许缩放 & 平移
+      scaleLimit: { min: 1, max: 8 },
+      label: {
+        show: false,
+        color: "#e8ecf4",
+        fontSize: 10
+      },
+      emphasis: {
+        label: { show: true, fontSize: 14, fontWeight: "bold", color: "#fff" },
+        itemStyle: {
+          areaColor: "#ffd76e",
+          borderColor: "#fff",
+          borderWidth: 1,
+          shadowBlur: 20,
+          shadowColor: "rgba(255,215,110,0.5)"
+        }
+      },
+      itemStyle: {
+        areaColor: theme.unknown,
+        borderColor: "rgba(94,129,244,0.5)",
+        borderWidth: 0.6
+      },
+      data: data
+    }]
+  };
+
+  chart.setOption(option, true);
+}
+
+// 初始化
+function init() {
+  if (typeof echarts === "undefined") {
+    document.getElementById("loading").innerHTML =
+      '<p style="color:#ff6b6b">❌ ECharts 加载失败，请检查网络连接后刷新页面</p>';
+    return;
+  }
+
+  // 请求世界地图 GeoJSON（阿里云 DataV 公开数据）
+  fetch("https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json")
+    .then(res => {
+      if (!res.ok) throw new Error("地图数据请求失败: " + res.status);
+      return res.json();
+    })
+    .then(geo => {
+      worldGeo = geo;
+      echarts.registerMap("world", geo);
+      chart = echarts.init(document.getElementById("map"));
+      window.addEventListener("resize", () => chart && chart.resize());
+      renderMap();
+      document.getElementById("loading").style.display = "none";
+    })
+    .catch(err => {
+      console.error(err);
+      document.getElementById("loading").innerHTML =
+        '<p style="color:#ff6b6b">❌ ' +
+        '世界地图数据加载失败：' + err.message +
+        '<br/><span style="font-size:13px">请确认网络可访问 geo.datav.aliyun.com 后刷新重试</span></p>';
+    });
+
+  // 点击国家显示详情
+  chart && chart.on("click", (params) => {
+    if (!params || !params.name) return;
+    showInfo(params.name);
+  });
+}
+
+// 展示国家详情
+function showInfo(name) {
+  const info = document.getElementById("info");
+  const d = getData(name);
+  if (!d) {
+    info.innerHTML = `<div class="empty">「${name}」暂无详细数据</div>`;
+    return;
+  }
+  let html = `<div class="title">🇺🇭 国家详情</div>`;
+  html += `<div class="country">${name}</div>`;
+  html += `<div class="row"><span class="k">大洲</span><span class="v">${d.continent}</span></div>`;
+  html += `<div class="row"><span class="k">人口密度</span><span class="v">${themes.density.formatter(d.density)}</span></div>`;
+  html += `<div class="row"><span class="k">国土面积</span><span class="v">${d.area} 万km²</span></div>`;
+  html += `<div class="row"><span class="k">GDP</span><span class="v">${d.gdp} 万亿美元</span></div>`;
+  info.innerHTML = html;
+}
+
+// 主题切换
+document.querySelectorAll(".style-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".style-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentTheme = btn.dataset.style;
+    if (chart) {
+      updateLegend(themes[currentTheme]);
+      renderMap();
+    }
+  });
+});
+
+// 启动
+window.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>
