@@ -10,9 +10,11 @@
 | `test/` | TypeScript | Vitest 测试文件 |
 | `docs/spec/` | 文档 | 框架设计规范（仿写Agent框架指南.md） |
 | `docs/plan/` | 文档 | 分模块实现指南（第一阶段实现指南.md） |
-| `harness-kit/` | Harness | Agent Harness 脚手架（不入仓） |
-| `.ai-runtime-artifacts/` | 产物 | AI 运行时产物（不入仓） |
-| `.claude/` | 配置 | Claude Code 平台适配层 |
+| `harness-kit/` | Harness | Agent Harness 脚手架（入仓） |
+| `.ai-runtime-artifacts/` | 产物 | AI 运行时产物（spec / plan / verification 等） |
+| `.claude/` | 配置 | Claude Code 平台适配层（rules / skills / hooks） |
+| `.cursor/` | 配置 | Cursor 平台适配层（rules / skills / hooks） |
+| `.agents/` | 配置 | 共享层 subagent + skills（多平台共用） |
 | `node_modules/` | 依赖 | npm 依赖（不入仓） |
 
 ## 主要入口
@@ -24,6 +26,8 @@
 | `vitest.config.ts` | Vitest 配置，include `test/**/*.test.ts` |
 | `AGENTS.md` | 工具中立 Harness 顶层入口 |
 | `CLAUDE.md` | Claude Code 平台入口 |
+| `.cursor/rules/ai-entry.mdc` | Cursor 统一入口（强制声明 + 阶段门禁 + 文件写入纪律） |
+| `.agents/agents/` | 共享 subagent 壳（coder / implementer / reviewer 等，正文见 `harness-kit/core/orchestration/agents/`） |
 | `harness-kit/core/routing.md` | 路由表与阶段门禁 |
 
 ## 关键模块
