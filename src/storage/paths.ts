@@ -31,6 +31,23 @@ export function tmpDir(): string {
   return path.join(dataRoot(), "tmp");
 }
 
+// ---- Skill 目录 ----
+
+/** 用户自定义 skill 目录 */
+export function userSkillsDir(): string {
+  return path.join(dataRoot(), "skills");
+}
+
+/** 本地预置（marketplace 退化）skill 目录 */
+export function userMarketplaceSkillsDir(): string {
+  return path.join(dataRoot(), "marketplace", "skills");
+}
+
+/** 系统协议 skill 目录（S3 预留，当前可不建） */
+export function userSystemSkillsDir(): string {
+  return path.join(dataRoot(), "system", "skills");
+}
+
 // ---- 文件路径 ----
 
 export function sessionFile(sessionId: string): string {
@@ -57,7 +74,13 @@ let _layoutEnsured = false;
 
 export function ensureDataLayout(): void {
   if (_layoutEnsured) return;
-  for (const dir of [sessionsDir(), logsDir(), tmpDir()]) {
+  for (const dir of [
+    sessionsDir(),
+    logsDir(),
+    tmpDir(),
+    userSkillsDir(),
+    userMarketplaceSkillsDir(),
+  ]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }

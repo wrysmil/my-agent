@@ -15,6 +15,7 @@ import {
   grepFilesTool,
 } from "../src/tools/builtin.js";
 import type { ToolContext } from "../src/tools/base.js";
+import { _resetDataRoot } from "../src/storage/paths.js";
 
 function tempDir() {
   const dir = path.join(os.tmpdir(), `my-agent-tool-test-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
@@ -270,5 +271,110 @@ describe("grep_files 工具", () => {
       ctx(dir),
     );
     expect(result.content).toContain("未找到匹配");
+  });
+});
+
+describe("resolvePath 沙箱：skill 根可达（S1.6）", () => {
+  const originalHome = process.env.MY_AGENT_HOME;
+  let wd: string;
+  let home: string;
+
+  beforeEach(() => {
+    wd = tempDir();
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "my-agent-home-"));
+    process.env.MY_AGENT_HOME = home;
+    _resetDataRoot();
+
+    // custom skill：<home>/skills/hello-skill/SKILL.md
+    const skillDir = path.join(home, "skills", "hello-skill");
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(skillDir, "SKILL.md"),
+      "---\nname: hello-skill\n---\n# Hello Skill\n",
+      "utf-8",
+    );
+
+    // marketplace skill：<home>/marketplace/skills/mkt-skill/SKILL.md
+    const mktDir = path.join(home, "marketplace", "skills", "mkt-skill");
+    fs.mkdirSync(mktDir, { recursive: true });
+    fs.writeFileSync(path.join(mktDir, "SKILL.md"), "# Market Skill\n", "utf-8");
+  });
+
+  afterEach(() => {
+    fs.rmSync(wd, { recursive: true, force: true });
+    fs.rmSync(home, { recursive: true, force: true });
+    if (originalHome) process.env.MY_AGENT_HOME = originalHome;
+    else delete process.env.MY_AGENT_HOME;
+    _resetDataRoot();
+  });
+
+  it("应能读取 userSkillsDir 下的 SKILL.md", async () => {
+    const skillPath = path.join(home, "skills", "hello-skill", "SKILL.md");
+    const result = await readFileTool.execute({ filePath: skillPath }, ctx(wd));
+    expect(result.isError).toBeFalsy();
+    expect(result.content).toContain("Hello Skill");
+  });
+
+  it("应能读取 userMarketplaceSkillsDir 下的 SKILL.md", async () => {
+    const skillPath = path.join(home, "marketplace", "skills", "mkt-skill", "SKILL.md");
+    const result = await readFileTool.execute({ filePath: skillPath }, ctx(wd));
+    expect(result.isError).toBeFalsy();
+    expect(result.content).toContain("Market Skill");
+  });
+
+  it("工作目录与 skill 根之外的路径仍被拒绝", async () => {
+    const outside = fs.mkdtempSync(path.join(os.tmpdir(), "my-agent-outside-"));
+    try {
+      const secret = path.join(outside, "secret.txt");
+      fs.writeFileSync(secret, "top secret", "utf-8");
+      await expect(readFileTool.execute({ filePath: secret }, ctx(wd))).rejects.toThrow(
+        /E_PATH_OUT_OF_SCOPE/,
+      );
+    } finally {
+      fs.rmSync(outside, { recursive: true, force: true });
+    }
+  });
+
+  it(".. 路径穿越仍被拒绝", async () => {
+    // 从 skill 根向上穿越，归一化后落到所有允许根之外
+    const escaped = path.join(home, "skills", "..", "..", "secret.txt");
+    await expect(readFileTool.execute({ filePath: escaped }, ctx(wd))).rejects.toThrow(
+      /E_PATH_(OUT_OF_SCOPE|TRAVERSAL)/,
+    );
+  });
+
+  it("MY_AGENT_HOME 切换后 skill 根跟随新值", async () => {
+    const home1 = home;
+    const skill1 = path.join(home1, "skills", "hello-skill", "SKILL.md");
+    const first = await readFileTool.execute({ filePath: skill1 }, ctx(wd));
+    expect(first.isError).toBeFalsy();
+
+    const home2 = fs.mkdtempSync(path.join(os.tmpdir(), "my-agent-home2-"));
+    try {
+      const skill2Dir = path.join(home2, "skills", "another-skill");
+      fs.mkdirSync(skill2Dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(skill2Dir, "SKILL.md"),
+        "# Another Skill\n",
+        "utf-8",
+      );
+
+      process.env.MY_AGENT_HOME = home2;
+      _resetDataRoot();
+
+      const second = await readFileTool.execute(
+        { filePath: path.join(home2, "skills", "another-skill", "SKILL.md") },
+        ctx(wd),
+      );
+      expect(second.isError).toBeFalsy();
+      expect(second.content).toContain("Another Skill");
+
+      // 旧 home1 的 skill 根不再可达
+      await expect(readFileTool.execute({ filePath: skill1 }, ctx(wd))).rejects.toThrow(
+        /E_PATH_OUT_OF_SCOPE/,
+      );
+    } finally {
+      fs.rmSync(home2, { recursive: true, force: true });
+    }
   });
 });

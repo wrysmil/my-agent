@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 import {
@@ -11,6 +12,9 @@ import {
   assertPathSegment,
   ensureDataLayout,
   _resetDataRoot,
+  userSkillsDir,
+  userMarketplaceSkillsDir,
+  userSystemSkillsDir,
 } from "../../src/storage/paths.js";
 
 describe("paths", () => {
@@ -36,6 +40,66 @@ describe("paths", () => {
     it("MY_AGENT_HOME 环境变量优先", () => {
       process.env.MY_AGENT_HOME = "/custom/path";
       expect(dataRoot()).toBe("/custom/path");
+    });
+  });
+
+  describe("userSkillsDir", () => {
+    it("返回 dataRoot 下的 skills 目录", () => {
+      process.env.MY_AGENT_HOME = "/custom/path";
+      expect(userSkillsDir()).toBe(path.join("/custom/path", "skills"));
+    });
+  });
+
+  describe("userMarketplaceSkillsDir", () => {
+    it("返回 dataRoot 下的 marketplace/skills 目录", () => {
+      process.env.MY_AGENT_HOME = "/custom/path";
+      expect(userMarketplaceSkillsDir()).toBe(
+        path.join("/custom/path", "marketplace", "skills"),
+      );
+    });
+  });
+
+  describe("userSystemSkillsDir", () => {
+    it("返回 dataRoot 下的 system/skills 目录", () => {
+      process.env.MY_AGENT_HOME = "/custom/path";
+      expect(userSystemSkillsDir()).toBe(path.join("/custom/path", "system", "skills"));
+    });
+  });
+
+  describe("skill 目录路径随 MY_AGENT_HOME 切换", () => {
+    it("切换 MY_AGENT_HOME 并 reset 后，路径跟随新值", () => {
+      process.env.MY_AGENT_HOME = "/first/home";
+      const firstSkills = userSkillsDir();
+      const firstMarketplace = userMarketplaceSkillsDir();
+
+      process.env.MY_AGENT_HOME = "/second/home";
+      _resetDataRoot();
+
+      expect(userSkillsDir()).toBe(path.join("/second/home", "skills"));
+      expect(userMarketplaceSkillsDir()).toBe(
+        path.join("/second/home", "marketplace", "skills"),
+      );
+      expect(userSystemSkillsDir()).toBe(path.join("/second/home", "system", "skills"));
+      expect(userSkillsDir()).not.toBe(firstSkills);
+      expect(userMarketplaceSkillsDir()).not.toBe(firstMarketplace);
+    });
+  });
+
+  describe("ensureDataLayout", () => {
+    it("创建 skills 与 marketplace/skills 目录，不建 system/skills", () => {
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "my-agent-layout-"));
+      process.env.MY_AGENT_HOME = home;
+      try {
+        ensureDataLayout();
+        for (const rel of ["skills", path.join("marketplace", "skills")]) {
+          const dir = path.join(home, rel);
+          expect(fs.existsSync(dir)).toBe(true);
+          expect(fs.statSync(dir).isDirectory()).toBe(true);
+        }
+        expect(fs.existsSync(path.join(home, "system", "skills"))).toBe(false);
+      } finally {
+        fs.rmSync(home, { recursive: true, force: true });
+      }
     });
   });
 
