@@ -9,6 +9,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as childProcess from "node:child_process";
 import { defineTool, type AgentTool, type ToolContext } from "./base.js";
+import { guardPath } from "../storage/path-sandbox.js";
 
 // ============================================================
 // 文件读取
@@ -512,8 +513,26 @@ export const BUILTIN_TOOLS: AgentTool[] = [
 // ============================================================
 
 function resolvePath(filePath: string, ctx: ToolContext): string {
-  if (path.isAbsolute(filePath)) return filePath;
-  return path.resolve(ctx.workingDir ?? process.cwd(), filePath);
+  if (!path.isAbsolute(filePath)) {
+    filePath = path.resolve(ctx.workingDir ?? process.cwd(), filePath);
+  }
+
+  const abs = path.resolve(filePath);
+
+  // 路径段校验（防御冗余：guardPath 亦会拒绝越界路径）
+  const segments = abs.split(path.sep);
+  for (const seg of segments) {
+    if (seg === "..") {
+      throw new Error(`E_PATH_TRAVERSAL: path traversal denied: ${filePath}`);
+    }
+  }
+
+  // 沙箱门控：读写路径统一以工作目录为允许根，不区分 isWrite
+  const workingDir = ctx.workingDir ?? process.cwd();
+  const err = guardPath(abs, { allowedRoots: [workingDir] });
+  if (err) throw new Error(err);
+
+  return abs;
 }
 
 function formatSize(bytes: number): string {
