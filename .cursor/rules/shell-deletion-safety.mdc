@@ -1,0 +1,57 @@
+---
+description: 文件删除安全红线（事故：$home 变量误删用户主目录，2026-08-06 发生两次）
+alwaysApply: true
+---
+
+# 文件删除安全红线
+
+## 事故记录（2026-08-06，Skill 系统 B1 批次）
+
+子 Agent 在 PowerShell 诊断脚本中把临时目录变量命名为 `$home`。
+**PowerShell 变量名不区分大小写，`$home` 是只读自动变量 `$HOME`**（= `C:\Users\Huangqh`）。
+赋值失败后 `$home` 仍指向用户主目录，脚本末尾的 `Remove-Item -Recurse -Force $home`
+对主目录递归删除了约 2 分钟（已终止）。该事故在当日集体审查验证时**第二次复现**（同因）。
+
+**后果（`Remove-Item` 不进回收站，属永久删除）**：
+- 已删：`~\.agents`、`~\.claude\skills`、`~\.claude\plugins`、`~\.codex\skills`、
+  `~\.codebuddy` 大部、`~\.cc-switch\logs` 等
+- 幸存：`.cursor`、`.claude\projects`、`.claude.json`、`.gitconfig`、`.npmrc`、`.my-agent`、工作区
+- 恢复仅靠卷影副本 / 文件历史 / 重装
+
+## 硬性红线
+
+1. **禁用 `$home` / `$HOME`（及全部自动变量名）作临时变量名**：PowerShell 大小写不敏感，
+   `$home`、`$HOME`、`$Home` 均指向用户主目录。改用 `$tmpDir`、`$h` 等非自动变量名。
+   自动变量完整列表见 PowerShell 官方文档 `about_Automatic_Variables`。
+
+2. **删除前必须 Test-Path 校验 + 打印目标绝对路径**：任何 `Remove-Item` 前先 `Test-Path`，
+   并用 `Write-Output` 输出将被删除的绝对路径，肉眼确认不是主目录 / 系统目录。
+
+3. **禁止对宽泛路径递归删除**：不得对 `$HOME`、`$env:USERPROFILE`、`C:\Users\*`、
+   以及用户目录下的点目录（`.cursor`、`.claude`、`.codex`、`.agents`、`.config`、`.cache` 等）
+   执行 `Remove-Item -Recurse -Force`。
+
+4. **临时目录一律建在 `$env:TEMP` 下并带 GUID**：
+
+   ```powershell
+   $tmpDir = Join-Path $env:TEMP ("app-" + [guid]::NewGuid().ToString("N"))
+   ```
+
+   清理前必须同时满足：路径非空、以 `$env:TEMP` 开头、`Test-Path` 通过：
+
+   ```powershell
+   if ($tmpDir -and $tmpDir.StartsWith($env:TEMP) -and (Test-Path $tmpDir)) {
+     Remove-Item -Recurse -Force $tmpDir
+   }
+   ```
+
+5. **项目外路径默认只读**：删除工作区之外（如用户主目录、系统目录、其他项目）的任何
+   内容前，必须先向用户说明路径与原因并获得明确授权。
+
+6. **诊断 / 实验 / 清理脚本运行删除命令前必须自检**：检查变量名是否与自动变量冲突、
+   目标路径是否落在允许删除范围内（工作区 `d:\studyspace\project\my-agent` 或 `$env:TEMP` 下自建临时目录）。
+
+## 违规后果
+
+违反上述红线 → 用户主目录被永久删除（不进回收站），只能靠卷影副本 / 文件历史 / 重装恢复，
+属于最高等级事故。Leader 派发子 Agent 时须在 prompt 中附带本红线摘要。
