@@ -254,7 +254,7 @@ describe("SessionStore", () => {
   it("create 应该返回新的 PersistentSession", () => {
     const session = store.create();
     expect(session).toBeInstanceOf(PersistentSession);
-    expect(session.sessionId).toMatch(/^session-/);
+    expect(session.sessionId).toMatch(/^gconv-/);
   });
 
   it("get 应该返回缓存的 session", () => {

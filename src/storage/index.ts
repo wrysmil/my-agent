@@ -9,7 +9,14 @@ export {
   invalidateLineCount,
 } from "./jsonl.js";
 export { sessionLock, fileEditLock } from "./locks.js";
-export { SessionStore } from "./session-store.js";
+export {
+  SessionStore,
+  sessionKindOf,
+  isEphemeralSession,
+  memoryScopeForSession,
+  sweepEphemeralSessions,
+  type SessionKind,
+} from "./session-store.js";
 export {
   ProvidersStore,
   ProvidersConfigSchema,

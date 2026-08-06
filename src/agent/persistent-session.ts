@@ -34,7 +34,7 @@ import {
   removeFile,
   defaultSessionDir,
 } from "../storage/jsonl.js";
-import { sessionFile, contextFile, sessionsDir } from "../storage/paths.js";
+import { sessionFile, contextFile, sessionsDir, assertPathSegment } from "../storage/paths.js";
 import type {
   SerializedMessage,
   SerializedSessionContext,
@@ -113,6 +113,7 @@ export class PersistentSession extends Session {
     sessionId: string,
     sessionDir?: string,
   ): PersistentSession | null {
+    assertPathSegment(sessionId, "sessionId"); // 拼路径前防御
     const dir = sessionDir ?? defaultSessionDir();
     const file = path.join(dir, `${sessionId}.jsonl`);
 
@@ -134,7 +135,8 @@ export class PersistentSession extends Session {
 
     for (const entry of entries) {
       if (!entry.isFile()) continue;
-      const match = entry.name.match(/^(session-[a-z0-9-]+)\.jsonl$/);
+      // 兼容存量 session- 前缀与 gconv/cli/anon/extract kind 前缀
+      const match = entry.name.match(/^((?:session|gconv|cli|anon|extract)-[a-z0-9-]+)\.jsonl$/);
       if (match) ids.add(match[1]);
     }
 
