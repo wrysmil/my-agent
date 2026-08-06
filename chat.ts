@@ -42,6 +42,7 @@ import {
 } from "./src/cli/menu.js";
 import { runProviderMenu } from "./src/cli/provider-menu.js";
 import { confirm, prompt, colorize, menuColor } from "./src/cli/io.js";
+import { renderSessionHistory } from "./src/cli/session-history.js";
 
 // ============================================================================
 // CLI 解析（导出供测试）
@@ -344,6 +345,11 @@ async function runChat(opts: {
 
   if (opts.session) {
     console.log(`💬 恢复会话: ${session.sessionId}`);
+    const history = renderSessionHistory(session);
+    if (history) {
+      console.log("");
+      console.log(history);
+    }
   } else {
     console.log(`🆕 新建会话: ${session.sessionId}`);
   }
