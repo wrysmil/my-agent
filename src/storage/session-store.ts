@@ -124,6 +124,10 @@ export class SessionStore {
    * 创建新的持久化会话，自动生成 `<kind>-<12hex>` 格式 id。
    */
   create(kind: SessionKind = "gconv"): PersistentSession {
+    // 运行时校验 kind，防止外部输入直接拼进 sessionId（进而进 path.join）
+    if (!["gconv", "cli", "anon", "extract"].includes(kind)) {
+      throw new Error(`invalid session kind: "${String(kind)}"`);
+    }
     const tail = randomUUID().replace(/-/g, "").slice(0, 12);
     const sessionId = `${kind}-${tail}`;
     const session = new PersistentSession({ sessionId, sessionDir: this.sessionDir });

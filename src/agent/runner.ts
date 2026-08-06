@@ -1059,18 +1059,21 @@ export class AgentRunner {
     return steered.filter((text) => text && text.trim());
   }
 
-  private foldSteer(params: AgentRunParams): number {
+  private async foldSteer(params: AgentRunParams): Promise<number> {
     return this.appendSteerMessages(this.drainSteer(params), false);
   }
 
-  private appendSteerMessages(steered: string[], startNewTurn: boolean): number {
+  private async appendSteerMessages(
+    steered: string[],
+    startNewTurn: boolean,
+  ): Promise<number> {
     let folded = 0;
     for (const text of steered) {
       if (text && text.trim()) {
         if (startNewTurn && folded === 0) {
-          this.session.beginUserTurn([{ type: "text", text }]);
+          await this.session.beginUserTurn([{ type: "text", text }]);
         } else {
-          this.session.addMessage("user", [{ type: "text", text }]);
+          await this.session.addMessage("user", [{ type: "text", text }]);
         }
         folded++;
       }
@@ -1257,7 +1260,7 @@ export class AgentRunner {
         // 2h. 持久化 assistant 消息
         const finalContent: MessageContent[] =
           streamContent ?? (streamText ? [{ type: "text", text: streamText }] : []);
-        this.session.addAssistantMessage(finalContent);
+        await this.session.addAssistantMessage(finalContent);
 
         const turnText = textFromContent(finalContent);
 
@@ -1272,7 +1275,7 @@ export class AgentRunner {
           const terminalSteer = this.drainSteer(params);
           if (terminalSteer.length > 0) {
             this.session.completeActiveTurn();
-            this.appendSteerMessages(terminalSteer, true);
+            await this.appendSteerMessages(terminalSteer, true);
             attempt = -1;
             continue;
           }
@@ -1564,7 +1567,7 @@ export class AgentRunner {
         `Tool loop round limit (${input.maxToolLoops}) reached. ` +
         "No further tool calls will be executed in this turn.";
       for (const call of toolCalls) {
-        this.session.addToolResult(call.id, skippedMessage, true);
+        await this.session.addToolResult(call.id, skippedMessage, true);
       }
 
       // 最终无工具 LLM 调用生成摘要
@@ -1603,7 +1606,7 @@ export class AgentRunner {
         if (!tool) {
           const msg = `Unknown tool: ${call.name}`;
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
-          this.session.addToolResult(call.id, msg, true);
+          await this.session.addToolResult(call.id, msg, true);
           recordToolObservation(input.recentToolObservations, call.name, msg, true);
           input.permanentToolErrorsRef.value++;
           yield {
@@ -1634,7 +1637,7 @@ export class AgentRunner {
         input.timings.toolMs += Math.max(0, Date.now() - toolStart);
 
         // 持久化结果
-        this.session.addToolResult(
+        await this.session.addToolResult(
           call.id, outcome.result.content, outcome.result.isError,
         );
         recordToolObservation(
@@ -1713,7 +1716,7 @@ export class AgentRunner {
 
         // 按声明顺序处理结果
         for (const { call, outcome } of outcomes) {
-          this.session.addToolResult(
+          await this.session.addToolResult(
             call.id, outcome.result.content, outcome.result.isError,
           );
           recordToolObservation(
@@ -1757,7 +1760,7 @@ export class AgentRunner {
       for (let i = terminalBatchIndex + 1; i < batches.length; i++) {
         for (const call of batches[i]) {
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
-          this.session.addToolResult(call.id, terminalSkipMessage, true);
+          await this.session.addToolResult(call.id, terminalSkipMessage, true);
           yield {
             type: "tool_end", name: call.name, id: call.id,
             result: terminalSkipMessage, isError: true, durationMs: 0,
@@ -1814,7 +1817,7 @@ export class AgentRunner {
     }
 
     // ---- 5h. Interrupt-Steer ----
-    this.foldSteer(params);
+    await this.foldSteer(params);
   }
 
   // ==========================================================

@@ -75,6 +75,8 @@ export class PersistentSession extends Session {
     super();
 
     this.sessionId = opts.sessionId ?? `session-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+    // 统一兜底：无论是否自定义 sessionDir，sessionId 进 path.join 前必须过防御校验
+    assertPathSegment(this.sessionId, "sessionId");
 
     const dir = opts.sessionDir ?? sessionsDir();
     ensureDir(dir);
