@@ -10,6 +10,7 @@ import * as path from "node:path";
 import * as childProcess from "node:child_process";
 import { defineTool, type AgentTool, type ToolContext } from "./base.js";
 import { guardPath } from "../storage/path-sandbox.js";
+import { userSkillsDir, userMarketplaceSkillsDir } from "../storage/paths.js";
 
 // ============================================================
 // 文件读取
@@ -527,9 +528,14 @@ function resolvePath(filePath: string, ctx: ToolContext): string {
     }
   }
 
-  // 沙箱门控：读写路径统一以工作目录为允许根，不区分 isWrite
-  const workingDir = ctx.workingDir ?? process.cwd();
-  const err = guardPath(abs, { allowedRoots: [workingDir] });
+  // 沙箱门控：读写路径统一以工作目录为允许根，不区分 isWrite。
+  // S1.6：追加 data 根下的 skill 目录，使 LLM 可读 custom / marketplace skill。
+  const roots = [
+    ctx.workingDir ?? process.cwd(),
+    userSkillsDir(),
+    userMarketplaceSkillsDir(),
+  ];
+  const err = guardPath(abs, { allowedRoots: roots });
   if (err) throw new Error(err);
 
   return abs;
