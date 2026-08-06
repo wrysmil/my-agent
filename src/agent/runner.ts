@@ -1097,7 +1097,7 @@ export class AgentRunner {
       }
     }
 
-    const turnId = this.session.beginUserTurn(userContent);
+    const turnId = await this.session.beginUserTurn(userContent);
     for (const resource of params.historyResources ?? []) {
       this.session.addHistoryResource({
         ...resource,

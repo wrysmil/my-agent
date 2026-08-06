@@ -12,6 +12,7 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
+import { Mutex } from "async-mutex";
 import { sessionsDir } from "./paths.js";
 
 // ============================================================
@@ -164,4 +165,100 @@ export function removeFile(filePath: string): void {
       throw err;
     }
   }
+}
+
+// ============================================================
+// Per-file Mutex（并发安全）
+// ============================================================
+
+const fileMutexes = new Map<string, Mutex>();
+const fileLineCounts = new Map<string, number>();
+
+function getFileMutex(filePath: string): Mutex {
+  let m = fileMutexes.get(filePath);
+  if (!m) {
+    m = new Mutex();
+    fileMutexes.set(filePath, m);
+  }
+  return m;
+}
+
+function countLinesSync(filePath: string): number {
+  if (!fs.existsSync(filePath)) return 0;
+  const text = fs.readFileSync(filePath, "utf-8");
+  if (!text.trim()) return 0;
+  return text.split("\n").filter((l) => l.trim()).length;
+}
+
+export function invalidateLineCount(filePath: string): void {
+  fileLineCounts.delete(filePath);
+}
+
+// ============================================================
+// 并发安全原子追加
+// ============================================================
+
+export async function appendJsonLineAtomic<T extends Record<string, unknown>>(
+  filePath: string,
+  record: T,
+): Promise<{ record: T; msgIndex: number }> {
+  const mutex = getFileMutex(filePath);
+  const release = await mutex.acquire();
+  try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+
+    // 在临界区内计数 + 追加
+    const count = countLinesSync(filePath);
+    const msgIndex = count + 1;
+
+    const line = JSON.stringify(record) + "\n";
+    fs.appendFileSync(filePath, line, { encoding: "utf-8" });
+
+    fileLineCounts.set(filePath, msgIndex);
+
+    return { record, msgIndex };
+  } finally {
+    release();
+  }
+}
+
+// ============================================================
+// 分页读取
+// ============================================================
+
+export function readJsonLinesPage<T = unknown>(
+  filePath: string,
+  limit: number,
+  before?: number,
+): { records: T[]; nextCursor: number | null } {
+  if (!fs.existsSync(filePath)) {
+    return { records: [], nextCursor: null };
+  }
+
+  const all = readJsonLines<T>(filePath);
+  if (all.length === 0) {
+    return { records: [], nextCursor: null };
+  }
+
+  // before 是字节偏移游标（简化：用记录索引代替）
+  // 实际实现中，before 为 undefined 表示从末尾开始
+  const totalLines = all.length;
+
+  if (before === undefined) {
+    // 首页：返回最后 limit 条
+    const start = Math.max(0, totalLines - limit);
+    const records = all.slice(start);
+    const nextCursor = start > 0 ? start : null;
+    return { records, nextCursor };
+  }
+
+  // 翻页：返回 before 之前的最多 limit 条
+  const end = Math.min(before, totalLines);
+  const start = Math.max(0, end - limit);
+  const records = all.slice(start, end);
+  const nextCursor = start > 0 ? start : null;
+  return { records, nextCursor };
 }

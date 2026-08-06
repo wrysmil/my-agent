@@ -26,7 +26,7 @@ import type {
 } from "./session.js";
 import type { Message, MessageContent } from "../shared/types.js";
 import {
-  appendJsonLine,
+  appendJsonLineAtomic,
   readJsonLines,
   writeJsonLines,
   atomicWrite,
@@ -301,47 +301,59 @@ export class PersistentSession extends Session {
   // ============================================================
 
   /** @override */
-  override beginUserTurn(content: MessageContent[]): number {
-    const tid = super.beginUserTurn(content);
+  override async beginUserTurn(content: MessageContent[]): Promise<number> {
+    const tid = await super.beginUserTurn(content);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
-      appendJsonLine(this.sessionFile, messageToSerialized(last));
+      await appendJsonLineAtomic<SerializedMessage>(
+        this.sessionFile,
+        messageToSerialized(last),
+      );
       this.writeContextToDisk();
     }
     return tid;
   }
 
   /** @override */
-  override addAssistantMessage(content: MessageContent[]): void {
-    super.addAssistantMessage(content);
+  override async addAssistantMessage(content: MessageContent[]): Promise<void> {
+    await super.addAssistantMessage(content);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
-      appendJsonLine(this.sessionFile, messageToSerialized(last));
+      await appendJsonLineAtomic<SerializedMessage>(
+        this.sessionFile,
+        messageToSerialized(last),
+      );
     }
   }
 
   /** @override */
-  override addToolResult(
+  override async addToolResult(
     toolUseId: string,
     content: string,
     isError?: boolean,
-  ): void {
-    super.addToolResult(toolUseId, content, isError);
+  ): Promise<void> {
+    await super.addToolResult(toolUseId, content, isError);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
-      appendJsonLine(this.sessionFile, messageToSerialized(last));
+      await appendJsonLineAtomic<SerializedMessage>(
+        this.sessionFile,
+        messageToSerialized(last),
+      );
     }
   }
 
   /** @override */
-  override addMessage(
+  override async addMessage(
     role: "user" | "assistant",
     content: MessageContent[],
-  ): void {
-    super.addMessage(role, content);
+  ): Promise<void> {
+    await super.addMessage(role, content);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
-      appendJsonLine(this.sessionFile, messageToSerialized(last));
+      await appendJsonLineAtomic<SerializedMessage>(
+        this.sessionFile,
+        messageToSerialized(last),
+      );
     }
   }
 

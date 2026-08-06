@@ -218,7 +218,7 @@ export class Session {
    *   也可包含图片块 `{ type: "image", data, mediaType }`
    * @returns 新轮次的 turnId（自增序号）
    */
-  beginUserTurn(content: MessageContent[]): number {
+  beginUserTurn(content: MessageContent[]): number | Promise<number> {
     this.turnId++;
     this.messages.push({ role: "user", content, turnId: this.turnId });
     return this.turnId;
@@ -231,7 +231,7 @@ export class Session {
    *
    * @param content — assistant 消息的内容块数组，通常包含 text 和/或 tool_use 块
    */
-  addAssistantMessage(content: MessageContent[]): void {
+  addAssistantMessage(content: MessageContent[]): void | Promise<void> {
     this.messages.push({ role: "assistant", content, turnId: this.turnId });
   }
 
@@ -244,7 +244,11 @@ export class Session {
    * @param content — 工具执行结果文本
    * @param isError — 是否为错误结果（影响 UI 展示样式）
    */
-  addToolResult(toolUseId: string, content: string, isError?: boolean): void {
+  addToolResult(
+    toolUseId: string,
+    content: string,
+    isError?: boolean,
+  ): void | Promise<void> {
     this.messages.push({
       role: "user",
       content: [{ type: "tool_result" as const, toolUseId, content, isError }],
@@ -260,7 +264,10 @@ export class Session {
    * @param role — 消息角色：`"user"` 或 `"assistant"`
    * @param content — 消息内容块数组
    */
-  addMessage(role: "user" | "assistant", content: MessageContent[]): void {
+  addMessage(
+    role: "user" | "assistant",
+    content: MessageContent[],
+  ): void | Promise<void> {
     this.messages.push({ role, content, turnId: this.turnId });
   }
 

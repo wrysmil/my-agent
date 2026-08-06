@@ -3,6 +3,11 @@
  */
 
 export { appendJsonLine, readJsonLines, writeJsonLines, atomicWrite, ensureDir, removeFile, defaultSessionDir } from "./jsonl.js";
+export {
+  appendJsonLineAtomic,
+  readJsonLinesPage,
+  invalidateLineCount,
+} from "./jsonl.js";
 export { SessionStore } from "./session-store.js";
 export {
   ProvidersStore,
