@@ -8,6 +8,7 @@ export {
   readJsonLinesPage,
   invalidateLineCount,
 } from "./jsonl.js";
+export { sessionLock, fileEditLock } from "./locks.js";
 export { SessionStore } from "./session-store.js";
 export {
   ProvidersStore,
