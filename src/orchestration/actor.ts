@@ -24,8 +24,9 @@ export function buildGworkerSessionId(cid: string, workerId: string): string {
 /** 按 Actor 路由到对应 session id */
 export function actorSessionId(cid: string, actor: Actor): string {
   if (actor.kind === "commander") return buildGconvSessionId(cid);
-  if (actor.kind === "worker") return buildGworkerSessionId(cid, actor.id);
-  // agent kind 保留给 S2
+  if (actor.kind === "worker" || actor.kind === "agent") {
+    return buildGworkerSessionId(cid, actor.id);
+  }
   throw new Error(`actor ${actor.kind}/${actor.id} has no session`);
 }
 

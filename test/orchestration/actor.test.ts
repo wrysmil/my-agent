@@ -33,9 +33,9 @@ describe("actor", () => {
       expect(actorSessionId("abc123", actor)).toBe("gworker-abc123-w001");
     });
 
-    it("throws for agent kind", () => {
+    it("routes agent to gworker session", () => {
       const actor: Actor = { kind: "agent", id: "coder" };
-      expect(() => actorSessionId("abc123", actor)).toThrow("has no session");
+      expect(actorSessionId("abc123", actor)).toBe("gworker-abc123-coder");
     });
 
     it("throws for user kind", () => {
