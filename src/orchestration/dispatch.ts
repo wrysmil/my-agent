@@ -17,9 +17,10 @@ import type { CoreAgentConfig } from "../config/schema.js";
 // dispatchSlots — 嵌套调度并发上限
 // ============================================================
 
-const DISPATCH_CONCURRENCY = Number(
-  process.env.MY_AGENT_MAX_DISPATCH_CONCURRENCY ?? "4",
-);
+const DISPATCH_CONCURRENCY = (() => {
+  const raw = Number(process.env.MY_AGENT_MAX_DISPATCH_CONCURRENCY ?? "4");
+  return Math.max(1, Math.trunc(raw) || 4);
+})();
 export const dispatchSlots = new Semaphore(DISPATCH_CONCURRENCY);
 
 // ============================================================
@@ -89,17 +90,24 @@ export async function runNestedDispatch(opts: {
     });
 
     // 8. 执行子回合
-    const result: AgentRunResult = await workerRunner.run({
-      message: messageText,
-      systemPrompt,
-      signal: ac.signal,
-      workingDir: opts.workingDir,
-      // 宿主私有元数据（不进入模型上下文），用于追踪本次嵌套调度
-      requestMetadata: sessionId ? { sessionId } : undefined,
-    });
+    try {
+      const result: AgentRunResult = await workerRunner.run({
+        message: messageText,
+        systemPrompt,
+        signal: ac.signal,
+        workingDir: opts.workingDir,
+        // 宿主私有元数据（不进入模型上下文），用于追踪本次嵌套调度
+        requestMetadata: sessionId ? { sessionId } : undefined,
+      });
 
-    // 9. 分类结果
-    return classifyWorkerOutcome(opts.actor, result, ac.signal.aborted);
+      // 9. 分类结果
+      return classifyWorkerOutcome(opts.actor, result, ac.signal.aborted);
+    } catch (err) {
+      // runner 异常（如 "stream ended without done"）统一归入 worker-error 信封
+      const name = escapeXml(opts.actor.name || opts.actor.id);
+      const msg = err instanceof Error ? err.message : String(err);
+      return buildWorkerErrorPayload(name, msg);
+    }
 
   } finally {
     opts.parentSignal?.removeEventListener("abort", abortHandler);
@@ -157,7 +165,8 @@ function classifyWorkerOutcome(
 }
 
 function buildWorkerResultPayload(name: string, text: string): string {
-  const body = text?.trim() || "(no textual reply)";
+  const raw = text?.trim() || "(no textual reply)";
+  const body = escapeXml(raw);
   return `<worker-result from="${name}">\n${body}\n</worker-result>`;
 }
 

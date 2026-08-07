@@ -268,7 +268,7 @@ describe("tools", () => {
 
       expect(result.isError).toBeUndefined();
       // 命名 agent 身份进入 <worker-result from="..."> 信封
-      expect(result.content).toContain("<worker-result from=\"Code Assistant\">");
+      expect(result.content).toContain("<worker-result from=\"Coder\">");
       expect(result.content).toContain("counted 3 files");
     });
   });
