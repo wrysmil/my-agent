@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import * as path from "node:path";
+import { fileURLToPath } from "node:url";
 import { buildDispatchTools, withoutDispatchTools } from "../../src/orchestration/tools.js";
 import { BUILTIN_TOOLS } from "../../src/tools/builtin.js";
 import { AgentRunner } from "../../src/agent/runner.js";
 import { ProviderRegistry } from "../../src/providers/registry.js";
 import { createConfig } from "../../src/config/loader.js";
+import { _resetDataRoot } from "../../src/storage/paths.js";
 import { MockProvider } from "../mocks/provider.js";
 
 // ============================================================
@@ -158,6 +161,115 @@ describe("tools", () => {
       runner.addTool(tool);
       expect(runner.getSession()).toBeDefined();
       expect(runner.getProviders()).toBeDefined();
+    });
+  });
+
+  // ============================================================
+  // S2：run_worker(to) 命名 agent 参数边界
+  //
+  // 将 MY_AGENT_HOME 指向 fixtures/orchestration（其下含 agents/{id}/agent.json），
+  // 使 run_worker 的命名分支能读到真实 agent 规格。断言仅验证 isError / 信封，
+  // 不依赖真实 LLM（成功路径由 MockProvider 预设一次响应）。
+  // ============================================================
+
+  describe("buildDispatchTools run_worker with 'to' param", () => {
+    const fixturesHome = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../fixtures/orchestration",
+    );
+    const savedHome = process.env.MY_AGENT_HOME;
+
+    function createRunnerWithMock() {
+      const config = createConfig({
+        agent: {
+          defaultModel: "claude-sonnet-5",
+          defaultProvider: "mock",
+          maxRetries: 0,
+          maxToolLoops: 10,
+          toolIdleTimeoutMs: 5_000,
+        },
+      });
+      const mockProvider = new MockProvider();
+      const providers = new ProviderRegistry(config);
+      // 直接用 mock provider 替换（绕过工厂注册）
+      (providers as any).providers?.set?.("mock", mockProvider);
+      providers.registerFactory("mock", () => mockProvider);
+      const runner = new AgentRunner({
+        config,
+        providers,
+        tools: [...BUILTIN_TOOLS],
+      });
+      return { runner, mockProvider, config };
+    }
+
+    async function buildRunWorker() {
+      const { runner, config } = createRunnerWithMock();
+      const [tool] = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-to-test",
+      });
+      return tool;
+    }
+
+    afterEach(() => {
+      if (savedHome === undefined) delete process.env.MY_AGENT_HOME;
+      else process.env.MY_AGENT_HOME = savedHome;
+      _resetDataRoot();
+    });
+
+    it("rejects commander as target", async () => {
+      // 指向 fixtures（含 commander/agent.json），使其走「目标必须是 agent」守卫分支
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const tool = await buildRunWorker();
+      const result = await tool.execute(
+        { task: "count files", to: "commander" },
+        { state: {} },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain("target must be an agent");
+      expect(result.content).toContain("commander");
+    });
+
+    it("rejects unknown agent", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const tool = await buildRunWorker();
+      const result = await tool.execute(
+        { task: "count files", to: "nonexistent_agent_12345" },
+        { state: {} },
+      );
+      expect(result.isError).toBe(true);
+      expect(result.content).toContain("unknown agent");
+      expect(result.content).toContain("nonexistent_agent_12345");
+    });
+
+    it("routes to a named agent and returns its result", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const [tool] = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-to-test",
+      });
+
+      // 子 Runner（命名 agent）消费一次响应
+      mockProvider.program({ kind: "text", text: "counted 3 files" });
+
+      const result = await tool.execute(
+        { task: "count files", to: "coder" },
+        { state: {} },
+      );
+
+      expect(result.isError).toBeUndefined();
+      // 命名 agent 身份进入 <worker-result from="..."> 信封
+      expect(result.content).toContain("<worker-result from=\"Code Assistant\">");
+      expect(result.content).toContain("counted 3 files");
     });
   });
 });

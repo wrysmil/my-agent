@@ -1,0 +1,8 @@
+{
+  "agent_id": "coder",
+  "name": "Code Assistant",
+  "description_zh": "代码助手",
+  "description_en": "Code assistant",
+  "workflow": "You are a code specialist.",
+  "skill_list": ["bash", "read_file"]
+}

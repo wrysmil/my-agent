@@ -1,4 +1,8 @@
-import { buildDefaultSystemPrompt } from "../prompts/system-prompt-builder.js";
+import {
+  buildSystemPrompt,
+  buildDefaultSystemPrompt,
+} from "../prompts/system-prompt-builder.js";
+import type { AgentSpec } from "./agent-spec.js";
 
 /**
  * 匿名 worker 的分步程序（注入 system prompt）。
@@ -38,4 +42,26 @@ export function buildWorkerSystemPrompt(params: {
     "## Worker constraints",
     WORKER_WORKFLOW,
   ].join("\n");
+}
+
+/**
+ * 命名 agent 的 system prompt。
+ *
+ * 使用完整模板体系（buildSystemPrompt）+ 注入 agent.json 的 workflow 字段。
+ * 与匿名 worker 不同，命名 agent 有独立身份、可自定义分步程序。
+ */
+export function buildNamedAgentSystemPrompt(
+  spec: AgentSpec,
+  workingDir?: string,
+): string {
+  const assembly = buildSystemPrompt({
+    name: spec.name,
+    workingDir,
+  });
+
+  const workflowBlock = spec.workflow
+    ? `\n\n## Workflow\n\n${spec.workflow}`
+    : "\n\n## Workflow\n\n(not provided)";
+
+  return assembly.systemPrompt + workflowBlock;
 }

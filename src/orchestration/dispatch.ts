@@ -1,7 +1,11 @@
 import { Semaphore } from "async-mutex";
 import type { Actor } from "./actor.js";
 import { actorSessionId } from "./actor.js";
-import { buildWorkerSystemPrompt } from "./workflow.js";
+import type { AgentSpec } from "./agent-spec.js";
+import {
+  buildWorkerSystemPrompt,
+  buildNamedAgentSystemPrompt,
+} from "./workflow.js";
 import { withoutDispatchTools } from "./tools.js";
 import { BUILTIN_TOOLS } from "../tools/builtin.js";
 import { Session } from "../agent/session.js";
@@ -42,6 +46,7 @@ export async function runNestedDispatch(opts: {
   getRunner: () => AgentRunner;
   workingDir?: string;
   attachments?: string[];
+  agentSpec?: AgentSpec; // S2：命名 agent 规格
 }): Promise<string> {
   // 1. abort 级联
   const ac = new AbortController();
@@ -55,10 +60,12 @@ export async function runNestedDispatch(opts: {
   const sessionId = actorSessionId(opts.cid, opts.actor);
 
   // 3. 构建 system prompt
-  const systemPrompt = buildWorkerSystemPrompt({
-    name: opts.actor.name || "Worker",
-    workingDir: opts.workingDir,
-  });
+  const systemPrompt = opts.agentSpec
+    ? buildNamedAgentSystemPrompt(opts.agentSpec, opts.workingDir)
+    : buildWorkerSystemPrompt({
+        name: opts.actor.name || "Worker",
+        workingDir: opts.workingDir,
+      });
 
   // 4. 准备工具集（基础工具 - 调度工具）
   const workerTools = withoutDispatchTools(BUILTIN_TOOLS);

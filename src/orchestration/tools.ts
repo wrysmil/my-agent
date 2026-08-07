@@ -38,6 +38,11 @@ export function buildDispatchTools(opts: {
             type: "string",
             description: "Sub-task instruction, sent verbatim to the worker.",
           },
+          to: {
+            type: "string",
+            description: "Optional agent_id to target a named agent (with agent.json spec). " +
+              "Omit for anonymous worker.",
+          },
         },
         required: ["task"],
         additionalProperties: false,
@@ -46,6 +51,33 @@ export function buildDispatchTools(opts: {
         const task = String(input.task || "").trim();
         if (!task) return { content: "run_worker: `task` is required", isError: true };
 
+        const toRaw = String(input.to || "").trim();
+
+        if (toRaw) {
+          // S2：命名 agent 路径
+          const { loadAgentSpec } = await import("./agent-spec.js");
+          const spec = await loadAgentSpec(toRaw);
+          if (!spec) return { content: `run_worker: unknown agent "${toRaw}"`, isError: true };
+          if (toRaw === "commander" || toRaw === "user") {
+            return { content: `run_worker: target must be an agent, not "${toRaw}"`, isError: true };
+          }
+
+          const namedActor: Actor = { kind: "agent", id: spec.agent_id, name: spec.name };
+          const { runNestedDispatch } = await import("./dispatch.js");
+          const namedResult = await runNestedDispatch({
+            cid: opts.cid,
+            actor: namedActor,
+            task,
+            parentSignal: ctx.signal ?? opts.signal,
+            getRunner: opts.getRunner,
+            config: opts.config,
+            workingDir: ctx.workingDir ?? opts.workingDir,
+            agentSpec: spec,
+          });
+          return { content: namedResult };
+        }
+
+        // 原有的匿名 worker 路径保持不变
         const workerActor: Actor = {
           kind: "worker",
           id: genWorkerId(),
