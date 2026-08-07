@@ -26,6 +26,7 @@ import { DeepSeekProvider } from "./src/providers/deepseek.js";
 import { ProviderRegistry } from "./src/providers/registry.js";
 import { defineTool, type AgentTool } from "./src/tools/base.js";
 import { BUILTIN_TOOLS } from "./src/tools/builtin.js";
+import { buildDispatchTools } from "./src/orchestration/tools.js";
 import { PersistentSession } from "./src/agent/persistent-session.js";
 import { SessionStore } from "./src/storage/session-store.js";
 import { ProvidersStore, type ProviderConfigEntry } from "./src/storage/providers-store.js";
@@ -42,6 +43,7 @@ import {
 } from "./src/cli/menu.js";
 import { runProviderMenu } from "./src/cli/provider-menu.js";
 import { runAgentMenu } from "./src/cli/agent-menu.js";
+import * as fs from "node:fs";
 import { confirm, prompt, colorize, menuColor } from "./src/cli/io.js";
 import { renderSessionHistory } from "./src/cli/session-history.js";
 
@@ -324,6 +326,19 @@ async function runHistoryMenu(
 // 对话主循环
 // ============================================================================
 
+/** 扫描内置 agent 目录，返回 agent_id 列表 */
+function discoverChatAgents(): string[] {
+  const fixturesDir = fileURLToPath(new URL("./fixtures/orchestration/agents", import.meta.url));
+  if (!fs.existsSync(fixturesDir)) return [];
+  try {
+    return fs.readdirSync(fixturesDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && fs.existsSync(`${fixturesDir}/${e.name}/agent.json`))
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+}
+
 async function runChat(opts: {
   config: CoreAgentConfig;
   store: ProvidersStore;
@@ -347,6 +362,19 @@ async function runChat(opts: {
     session,
   });
 
+  // 注入调度工具（run_worker），使主 Agent 可调用子 Agent
+  const dispatchTools = buildDispatchTools({
+    getRunner: () => runner,
+    config: opts.config,
+    cid: session.sessionId,
+  });
+  for (const dt of dispatchTools) {
+    runner.addTool(dt);
+  }
+
+  // 发现可用子Agent
+  const agentIds = discoverChatAgents();
+
   if (opts.session) {
     console.log(`💬 恢复会话: ${session.sessionId}`);
     const history = renderSessionHistory(session);
@@ -359,8 +387,12 @@ async function runChat(opts: {
   }
   console.log("🤖 Agent 对话模式");
   console.log(`   Session: ${session.sessionId}`);
-  console.log(`   工具: ${allTools.map((t) => t.name).join(", ")}`);
+  console.log(`   工具: ${[...allTools.map((t) => t.name), "run_worker"].join(", ")}`);
   console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
+  if (agentIds.length > 0) {
+    console.log(`   子Agent: ${agentIds.map((a) => `\`${a}\``).join(", ")}`);
+    console.log(`   用法: 在对话中说「用 coder 帮我写...」或 LLM 自动调用 run_worker`);
+  }
   console.log("   输入消息后回车，/help 查看命令\n");
 
   const ownsRl = opts.rl === undefined;
