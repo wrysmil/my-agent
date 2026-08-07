@@ -65,9 +65,11 @@ describe("createServer — /healthz", () => {
 // ② /api/* → 404 ROUTE_NOT_FOUND（命中 + 未命中两种形态）
 // ============================================================
 
-describe("createServer — 路由占位 (404 ROUTE_NOT_FOUND)", () => {
-  it("ROUTES 表内但 handler 是占位 → 404 + code ROUTE_NOT_FOUND", async () => {
-    // Arrange：/api/providers 在 ROUTES 表内（本期 handler = placeholder）
+describe("createServer — 路由占位 (404)", () => {
+  it("ROUTES 表内但 handler 是占位 → 404 + code ROUTE_NOT_FOUND（路由表占位）", async () => {
+    // Arrange：/api/providers 在 ROUTES 表内（本期 handler = placeholder）。
+    // 占位 handler 内部直接 res.end JSON(code: "ROUTE_NOT_FOUND")，
+    // 与 WU-02e 的 handleError 走不同路径 —— 保留 router.ts 原语义。
     server = await createServer({ port: 0 });
 
     // Act
@@ -87,7 +89,7 @@ describe("createServer — 路由占位 (404 ROUTE_NOT_FOUND)", () => {
     expect(body.error.message).toBeTruthy();
   });
 
-  it("完全未注册的路径 → 404 + code ROUTE_NOT_FOUND", async () => {
+  it("完全未注册的路径 → 404 + code NOT_FOUND（contract § 3）", async () => {
     // Arrange
     server = await createServer({ port: 0 });
 
@@ -103,7 +105,7 @@ describe("createServer — 路由占位 (404 ROUTE_NOT_FOUND)", () => {
       "application/json; charset=utf-8",
     );
     expect(body.ok).toBe(false);
-    expect(body.error.code).toBe("ROUTE_NOT_FOUND");
+    expect(body.error.code).toBe("NOT_FOUND");
   });
 
   it("404 响应同样带 CSP 头", async () => {

@@ -1,5 +1,5 @@
 /**
- * my-agent Web 前端 — HTTP 服务器骨架（WU-01 / B1）。
+ * my-agent Web 前端 — HTTP 服务器骨架（WU-01 / B1 + WU-02e 错误层接入）。
  *
  * 来源：spec § 6.1 / § 6.3 / § 6.6 + contract § 7 / § 8 / § 9。
  *
@@ -8,12 +8,13 @@
  * - `static.ts`：静态文件中间件（白名单 + 路径防御）
  * - `router.ts`：21 个 API 路由占位（统一回 404 ROUTE_NOT_FOUND）
  * - `graceful-shutdown.ts`：SIGINT/SIGTERM 优雅退出
+ * - `errors.ts`（WU-02e）：ApiErrorCode / ERROR_STATUS_MAP / ApiError /
+ *   handleError —— 异常路径统一写响应（contract § 3）
  *
  * 本期**不做**（留给后续 WU）：
- * - 21 个业务 handler 真实实现（WU-02a/b/c/e，GROUP-2）
+ * - 21 个业务 handler 真实实现（WU-02a/b/c，GROUP-2）
  * - SSE 适配器（WU-02b，sse.ts）
- * - ApiErrorCode 全枚举 + ERROR_STATUS_MAP（WU-02e，errors.ts）
- * - Zod 校验 + PAYLOAD_TOO_LARGE（WU-02e）
+ * - Zod 校验 + PAYLOAD_TOO_LARGE（路由边界加入，handleError 已具备基础）
  *
  * @see .ai-runtime-artifacts/contracts/2026-08-07-web-frontend-api-contract.md
  */
@@ -30,6 +31,7 @@ import type { SessionStore } from "../../storage/session-store.js";
 import { applySecurityHeaders } from "./csp.js";
 import { matchRoute, ROUTES } from "./router.js";
 import { tryServeStatic } from "./static.js";
+import { handleError, ApiErrorCode, ApiError } from "./errors.js";
 
 // ============================================================
 // 公开类型
@@ -94,17 +96,8 @@ const SILENT_LOGGER: Logger = {
 const HEALTHZ_BODY = JSON.stringify({ status: "ok" });
 
 // ============================================================
-// ApiErrorBody（最小子集；WU-02e 会迁移到 errors.ts）
+// ApiErrorBody（取自 errors.ts；不再在 index.ts 维护 —— 一次性迁移）
 // ============================================================
-
-type ApiErrorBody = {
-  ok: false;
-  error: {
-    code: string;
-    message: string;
-    requestId: string;
-  };
-};
 
 // ============================================================
 // createServer 工厂
@@ -139,15 +132,19 @@ export async function createServer(
   );
 
   const server = http.createServer((req, res) => {
-    handleRequest(req, res, { webRoot, log, deps }).catch((err: unknown) => {
-      // 兜底：理论上 errorMiddleware 应该吃掉，但本期没接 middleware
-      log.error("[web] unhandled request error:", err);
-      if (!res.headersSent && !res.writableEnded) {
-        sendJsonError(res, 500, "INTERNAL", "Internal Server Error", "");
-      } else {
-        res.destroy();
-      }
-    });
+    const requestId = randomUUID();
+    handleRequest(req, res, { webRoot, log, deps, requestId }).catch(
+      (err: unknown) => {
+        // 兜底：理论上 handleRequest 已经过 handleError（handleRequest 末尾
+        // 调 handleError 写响应），仅在响应已发 / write 抛错的极端情况下
+        // 走到这里 —— destroy 即可。
+        if (res.headersSent || res.writableEnded) {
+          res.destroy();
+          return;
+        }
+        handleError(err, res, { requestId, logger: log });
+      },
+    );
   });
 
   return new Promise<WebServer>((resolve, reject) => {
@@ -182,6 +179,8 @@ type HandleContext = {
   webRoot: string;
   log: Logger;
   deps: CreateServerDeps;
+  /** 由 http.createServer 回调统一生成；同请求内 handleRequest 与 handleError 共享 */
+  requestId: string;
 };
 
 async function handleRequest(
@@ -190,7 +189,7 @@ async function handleRequest(
   ctx: HandleContext,
 ): Promise<void> {
   // 0) 基础信息
-  const requestId = randomUUID();
+  const { requestId } = ctx;
   res.setHeader("X-Request-Id", requestId);
   applySecurityHeaders(res);
 
@@ -199,7 +198,14 @@ async function handleRequest(
   try {
     pathname = new URL(req.url ?? "/", "http://localhost").pathname;
   } catch {
-    sendJsonError(res, 400, "INVALID_REQUEST", "Bad Request", requestId);
+    handleError(
+      new ApiError(
+        ApiErrorCode.INVALID_JSON,
+        `Bad URL: ${req.url ?? "/"}`,
+      ),
+      res,
+      { requestId, logger: ctx.log },
+    );
     return;
   }
 
@@ -218,28 +224,23 @@ async function handleRequest(
       try {
         await match.handler(req, res, match.params);
       } catch (err) {
-        ctx.log.error("[web] handler error:", err);
-        if (!res.headersSent && !res.writableEnded) {
-          sendJsonError(
-            res,
-            500,
-            "INTERNAL",
-            "Internal Server Error",
-            requestId,
-          );
-        } else {
+        // 业务 handler 抛错：未发送则走 handleError；已发送则 destroy
+        if (res.headersSent || res.writableEnded) {
           res.destroy();
+          return;
         }
+        handleError(err, res, { requestId, logger: ctx.log });
       }
       return;
     }
-    // 未命中 → 404 ROUTE_NOT_FOUND（与命中占位同语义）
-    sendJsonError(
+    // 未命中 → 404 NOT_FOUND（contract § 3: NOT_FOUND=404）
+    handleError(
+      new ApiError(
+        ApiErrorCode.NOT_FOUND,
+        `Route ${method} ${pathname} not registered`,
+      ),
       res,
-      404,
-      "ROUTE_NOT_FOUND",
-      `Route ${method} ${pathname} not registered`,
-      requestId,
+      { requestId, logger: ctx.log },
     );
     return;
   }
@@ -250,28 +251,19 @@ async function handleRequest(
   }
 
   // 4) 兜底 404
-  sendJsonError(res, 404, "NOT_FOUND", "Not Found", requestId);
+  handleError(
+    new ApiError(
+      ApiErrorCode.NOT_FOUND,
+      `Not Found: ${method} ${pathname}`,
+    ),
+    res,
+    { requestId, logger: ctx.log },
+  );
 }
 
 // ============================================================
 // 工具
 // ============================================================
-
-function sendJsonError(
-  res: ServerResponse,
-  status: number,
-  code: string,
-  message: string,
-  requestId: string,
-): void {
-  const body: ApiErrorBody = {
-    ok: false,
-    error: { code, message, requestId },
-  };
-  res.statusCode = status;
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.end(JSON.stringify(body));
-}
 
 /**
  * 关闭 server：
