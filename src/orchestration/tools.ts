@@ -1,17 +1,76 @@
-import { defineTool, type AgentTool } from "../tools/base.js";
+import { defineTool, type AgentTool, type ToolResult } from "../tools/base.js";
 import type { Actor } from "./actor.js";
 import { genWorkerId } from "./actor.js";
 import type { AgentRunner } from "../agent/runner.js";
 import type { CoreAgentConfig } from "../config/schema.js";
+import type { AgentSpec } from "./agent-spec.js";
+
+// ============================================================
+// 内部：执行一次子调度（run_worker / dispatch_to / hand_off_to 共用）
+// ============================================================
+
+async function _executeDispatch(input: Record<string, unknown>, opts: {
+  getRunner: () => AgentRunner;
+  config: CoreAgentConfig;
+  cid: string;
+  workingDir?: string;
+  signal?: AbortSignal;
+}): Promise<{ actor: Actor; result: string; agentSpec?: AgentSpec }> {
+  const task = String(input.task || "").trim();
+
+  const toRaw = String(input.to || "").trim();
+
+  if (toRaw) {
+    const { loadAgentSpec } = await import("./agent-spec.js");
+    const spec = await loadAgentSpec(toRaw);
+    if (!spec) {
+      throw new Error(`unknown agent "${toRaw}"`);
+    }
+    if (toRaw === "commander" || toRaw === "user") {
+      throw new Error(`target must be an agent, not "${toRaw}"`);
+    }
+
+    const actor: Actor = { kind: "agent", id: spec.agent_id, name: spec.name };
+    const { runNestedDispatch } = await import("./dispatch.js");
+    const result = await runNestedDispatch({
+      cid: opts.cid,
+      actor,
+      task,
+      parentSignal: opts.signal,
+      getRunner: opts.getRunner,
+      config: opts.config,
+      workingDir: opts.workingDir,
+      agentSpec: spec,
+    });
+    return { actor, result, agentSpec: spec };
+  }
+
+  // 匿名 worker
+  const actor: Actor = { kind: "worker", id: genWorkerId(), name: "Worker" };
+  const { runNestedDispatch } = await import("./dispatch.js");
+  const result = await runNestedDispatch({
+    cid: opts.cid,
+    actor,
+    task,
+    parentSignal: opts.signal,
+    getRunner: opts.getRunner,
+    config: opts.config,
+    workingDir: opts.workingDir,
+  });
+  return { actor, result };
+}
+
+// ============================================================
+// 构建三个调度工具
+// ============================================================
 
 /**
  * 构建调度工具集（仅注入主会话）。
- * 当前仅含 `run_worker`；S2 追加 `run_worker(to)` 命名分支。
  *
- * `config` 与 `getRunner` 由宿主注入：
- * - `config` — 子 Runner 与主 Runner 共享同一份核心配置（AgentRunner.config 是 private，
- *   无法从主 Runner 读取，必须由调用方持有并传入）。
- * - `getRunner` — 运行时懒取主 Runner，用于继承 ProviderRegistry。
+ * 三个独立工具：
+ * - `run_worker` — 匿名/命名 worker，结果**私密**交回指挥官，指挥官继续综合
+ * - `dispatch_to` — agent 发可见回复，完整结果也回指挥官，指挥官必须还有下一步
+ * - `hand_off_to` — 把控制权交给 agent，答案直接输出（endTurn），回合结束
  */
 export function buildDispatchTools(opts: {
   getRunner: () => AgentRunner;
@@ -20,94 +79,165 @@ export function buildDispatchTools(opts: {
   workingDir?: string;
   signal?: AbortSignal;
 }): AgentTool[] {
-  return [
-    defineTool({
-      name: "run_worker",
-      executionMode: "parallel",
-      description: [
-        "Run a bounded sub-task and get its FULL result handed back to YOU (the commander) " +
-          "within this same call, so you can read it, synthesise, and decide the next step — " +
-          "the in-loop coordinator pattern.",
-        "Use this for a sub-task you own: a bounded job whose output you will build on, " +
-          "or heavy scanning whose bulk you do not want to keep in your own context.",
-      ].join(" "),
-      inputSchema: {
-        type: "object",
-        properties: {
-          task: {
-            type: "string",
-            description: "Sub-task instruction, sent verbatim to the worker.",
-          },
-          to: {
-            type: "string",
-            description: "Optional agent_id to target a named agent (with agent.json spec). " +
-              "Omit for anonymous worker.",
-          },
-        },
-        required: ["task"],
-        additionalProperties: false,
+
+  // 三个工具共享的参数 schema（task + to）
+  const sharedInputSchema = {
+    type: "object" as const,
+    properties: {
+      task: {
+        type: "string",
+        description: "Sub-task instruction, sent verbatim to the worker/agent.",
       },
-      async execute(input, ctx) {
-        const task = String(input.task || "").trim();
-        if (!task) return { content: "run_worker: `task` is required", isError: true };
+      to: {
+        type: "string",
+        description:
+          "Optional agent_id to target a named agent (with agent.json spec). " +
+          "Omit for anonymous worker.",
+      },
+    },
+    required: ["task"],
+    additionalProperties: false,
+  };
 
-        const toRaw = String(input.to || "").trim();
+  // ---- run_worker：私密结果，指挥官继续 ----
 
-        if (toRaw) {
-          // S2：命名 agent 路径
-          const { loadAgentSpec } = await import("./agent-spec.js");
-          const spec = await loadAgentSpec(toRaw);
-          if (!spec) return { content: `run_worker: unknown agent "${toRaw}"`, isError: true };
-          if (toRaw === "commander" || toRaw === "user") {
-            return { content: `run_worker: target must be an agent, not "${toRaw}"`, isError: true };
-          }
+  const runWorker = defineTool({
+    name: "run_worker",
+    executionMode: "parallel",
+    description: [
+      "Spawn an ephemeral worker/agent to complete ONE bounded sub-task. " +
+        "The FULL result is handed back to YOU (the commander) privately — " +
+        "the user does NOT see it. You read it, synthesise, and decide the next step.",
+      "Use when: you need a sub-task done whose output you will build on " +
+        "(heavy scanning, code generation, research).",
+      "Omit `to` for an anonymous worker; pass `to` with an agent_id " +
+        "(e.g. \"coder\", \"reviewer\", \"explorer\") to use a named agent.",
+    ].join(" "),
+    inputSchema: sharedInputSchema,
+    async execute(input, ctx): Promise<ToolResult> {
+      const task = String(input.task || "").trim();
+      if (!task) return { content: "run_worker: `task` is required", isError: true };
 
-          const namedActor: Actor = { kind: "agent", id: spec.agent_id, name: spec.name };
-          const { runNestedDispatch } = await import("./dispatch.js");
-          const namedResult = await runNestedDispatch({
-            cid: opts.cid,
-            actor: namedActor,
-            task,
-            parentSignal: ctx.signal ?? opts.signal,
-            getRunner: opts.getRunner,
-            config: opts.config,
-            workingDir: ctx.workingDir ?? opts.workingDir,
-            agentSpec: spec,
-          });
-          return { content: namedResult };
-        }
+      try {
+        const { result } = await _executeDispatch(input, {
+          ...opts,
+          signal: ctx.signal ?? opts.signal,
+          workingDir: ctx.workingDir ?? opts.workingDir,
+        });
+        return { content: result };
+      } catch (err) {
+        return { content: `run_worker: ${(err as Error).message}`, isError: true };
+      }
+    },
+  });
 
-        // 原有的匿名 worker 路径保持不变
-        const workerActor: Actor = {
-          kind: "worker",
-          id: genWorkerId(),
-          name: "Worker",
-        };
+  // ---- dispatch_to：可见结果，指挥官继续 ----
 
-        // 动态 import 打破循环依赖：
-        // dispatch.ts 静态 import tools.ts 的 withoutDispatchTools（纯函数），
-        // tools.ts 仅在此处动态 import dispatch.ts 的 runNestedDispatch。
-        const { runNestedDispatch } = await import("./dispatch.js");
-        const result = await runNestedDispatch({
-          cid: opts.cid,
-          actor: workerActor,
-          task,
-          parentSignal: ctx.signal ?? opts.signal,
-          getRunner: opts.getRunner,
-          config: opts.config,
+  const dispatchTo = defineTool({
+    name: "dispatch_to",
+    executionMode: "sequential", // 可见消息不适合并行乱序
+    description: [
+      "Send a task to a named agent whose reply IS visible to the user " +
+        "(shown as an agent bubble). The full result also comes back to YOU " +
+        "(the commander) so you can read it and decide the next step.",
+      "Use when: you want the user to see what the agent produced, " +
+        "but YOU still own the conversation and will build on it.",
+      "Requires `to` (agent_id). Unlike run_worker, the output is public.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: {
+          type: "string",
+          description: "Sub-task instruction for the agent.",
+        },
+        to: {
+          type: "string",
+          description: "REQUIRED agent_id to target a named agent.",
+        },
+      },
+      required: ["task", "to"],
+      additionalProperties: false,
+    },
+    async execute(input, ctx): Promise<ToolResult> {
+      const task = String(input.task || "").trim();
+      if (!task) return { content: "dispatch_to: `task` is required", isError: true };
+
+      try {
+        const { actor, result } = await _executeDispatch(input, {
+          ...opts,
+          signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
         });
 
-        return { content: result };
+        // 可见消息：用 [agent] 标记区分，指挥官继续
+        const name = actor.name || actor.id;
+        const label = `\n## 💬 ${name} 说：\n\n`;
+        return { content: `${label}${result}` };
+      } catch (err) {
+        return { content: `dispatch_to: ${(err as Error).message}`, isError: true };
+      }
+    },
+  });
+
+  // ---- hand_off_to：交出控制权，回合结束 ----
+
+  const handOffTo = defineTool({
+    name: "hand_off_to",
+    executionMode: "sequential", // 结束回合，不适合并行
+    description: [
+      "Hand off control to a named agent. The agent's reply is shown directly " +
+        "to the user as the FINAL answer — YOU (the commander) do NOT continue " +
+        "after this. The turn ends.",
+      "Use when: the user's request is fully satisfied by delegating to a " +
+        "specialist, and no further synthesis is needed.",
+      "Requires `to` (agent_id). This is a terminal tool — the turn ends after it.",
+    ].join(" "),
+    inputSchema: {
+      type: "object",
+      properties: {
+        task: {
+          type: "string",
+          description: "The complete request to delegate to the agent.",
+        },
+        to: {
+          type: "string",
+          description: "REQUIRED agent_id to hand off to.",
+        },
       },
-    }),
-  ];
+      required: ["task", "to"],
+      additionalProperties: false,
+    },
+    async execute(input, ctx): Promise<ToolResult> {
+      const task = String(input.task || "").trim();
+      if (!task) return { content: "hand_off_to: `task` is required", isError: true };
+
+      try {
+        const { actor, result } = await _executeDispatch(input, {
+          ...opts,
+          signal: ctx.signal ?? opts.signal,
+          workingDir: ctx.workingDir ?? opts.workingDir,
+        });
+
+        // 交出控制权：结果直接输出，endTurn 终止回合
+        const name = actor.name || actor.id;
+        const label = `\n## 🎯 ${name} 回答：\n\n`;
+        return { content: `${label}${result}`, endTurn: true };
+      } catch (err) {
+        return { content: `hand_off_to: ${(err as Error).message}`, isError: true };
+      }
+    },
+  });
+
+  return [runWorker, dispatchTo, handOffTo];
 }
 
+// ============================================================
+// 工具过滤
+// ============================================================
+
 /**
- * 从工具集中移除调度工具（worker / 命名 agent 使用此过滤后的列表）。
- *
- * 移除 `run_worker` 以及 S2 预留的命名调度工具名，防止子 Agent 递归调度。
+ * 从工具集中移除调度工具（worker/命名 agent 使用此过滤后的列表）。
  */
 export function withoutDispatchTools(tools: AgentTool[]): AgentTool[] {
   const dispatchNames = new Set(["run_worker", "dispatch_to", "hand_off_to"]);

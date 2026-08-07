@@ -83,15 +83,17 @@ describe("tools", () => {
         .join("");
     }
 
-    it("buildDispatchTools 返回 run_worker 工具", () => {
+    it("buildDispatchTools 返回三个调度工具", () => {
       const { runner, config } = createRunnerWithMock();
       const tools = buildDispatchTools({
         getRunner: () => runner,
         config,
         cid: "cid-test",
       });
-      expect(tools.map((t) => t.name)).toEqual(["run_worker"]);
-      expect(tools[0].description).toContain("coordinator");
+      expect(tools.map((t) => t.name)).toEqual(["run_worker", "dispatch_to", "hand_off_to"]);
+      expect(tools[0].description).toContain("commander");
+      expect(tools[1].description).toContain("visible");
+      expect(tools[2].description).toContain("Hand off");
     });
 
     it("addTool 后 run_worker 可端到端执行并回传结果", async () => {
