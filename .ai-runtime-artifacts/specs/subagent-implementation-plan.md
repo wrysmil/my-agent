@@ -107,7 +107,7 @@ my-agent/
 采用 **`runNestedDispatch` 函数** 方案：
 
 - 接收主 Runner 的 `providers`、`config` 引用
-- 内部创建独立的 `Sessid ssadas dson`（指定 `gworker-*` sessionId）
+- 内部创建独立的 `Sessid @ssadas dson`（指定 `gworker-*` sessionId）
 - 过滤掉调度工具后的工具列表传给子 Runner
 - 子 Runner 通过 `new AgentRunner({ ..., session: workerSession, tools: filteredTools })` 创建
 
