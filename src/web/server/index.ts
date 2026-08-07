@@ -1,0 +1,309 @@
+/**
+ * my-agent Web 前端 — HTTP 服务器骨架（WU-01 / B1）。
+ *
+ * 来源：spec § 6.1 / § 6.3 / § 6.6 + contract § 7 / § 8 / § 9。
+ *
+ * 本文件是**装配层**，把以下模块串成可启动的 HTTP server：
+ * - `csp.ts`：CSP / Permissions-Policy / 安全头
+ * - `static.ts`：静态文件中间件（白名单 + 路径防御）
+ * - `router.ts`：21 个 API 路由占位（统一回 404 ROUTE_NOT_FOUND）
+ * - `graceful-shutdown.ts`：SIGINT/SIGTERM 优雅退出
+ *
+ * 本期**不做**（留给后续 WU）：
+ * - 21 个业务 handler 真实实现（WU-02a/b/c/e，GROUP-2）
+ * - SSE 适配器（WU-02b，sse.ts）
+ * - ApiErrorCode 全枚举 + ERROR_STATUS_MAP（WU-02e，errors.ts）
+ * - Zod 校验 + PAYLOAD_TOO_LARGE（WU-02e）
+ *
+ * @see .ai-runtime-artifacts/contracts/2026-08-07-web-frontend-api-contract.md
+ */
+
+import * as http from "node:http";
+import * as path from "node:path";
+import { randomUUID } from "node:crypto";
+import type { IncomingMessage, ServerResponse } from "node:http";
+
+import type { Logger } from "../../shared/logger.js";
+import type { ProvidersStore } from "../../storage/providers-store.js";
+import type { SessionStore } from "../../storage/session-store.js";
+
+import { applySecurityHeaders } from "./csp.js";
+import { matchRoute, ROUTES } from "./router.js";
+import { tryServeStatic } from "./static.js";
+
+// ============================================================
+// 公开类型
+// ============================================================
+
+/**
+ * createServer 的依赖。
+ *
+ * **本期全 optional**：done criteria #2 明示"注入为 undefined 时不崩溃"。
+ * 后续 WU 会按需收紧：
+ * - logger：F0 起需要结构化日志（先 console 兜底）
+ * - providersStore / sessionStore：WU-02a/b/c 起需要接 store
+ */
+export type CreateServerDeps = {
+  logger?: Logger;
+  providersStore?: ProvidersStore;
+  sessionStore?: SessionStore;
+
+  /** 监听端口（默认 4321；环境变量由 bin 入口注入） */
+  port?: number;
+  /** 监听主机（默认 `127.0.0.1`，仅本机） */
+  host?: string;
+  /** 静态资源根目录（默认 `<cwd>/web`） */
+  webRoot?: string;
+};
+
+/**
+ * Server 句柄：暴露端口 + 底层 http.Server + close()。
+ *
+ * 端口传 0 时返回系统分配的空闲端口（测试用）。
+ */
+export type WebServer = {
+  readonly port: number;
+  readonly raw: http.Server;
+  /** 优雅关闭（停止 accept + 关 keep-alive 空闲 socket） */
+  close(): Promise<void>;
+};
+
+// ============================================================
+// 兜底 logger（无依赖 / 无控制台噪音）
+// ============================================================
+
+/**
+ * 静默 logger（默认 logger 缺省时使用）。
+ * 实际服务入口会注入 src/shared/logger.ts 的实例。
+ */
+const SILENT_LOGGER: Logger = {
+  debug: () => {},
+  info: () => {},
+  warn: (msg: string, ...args: unknown[]): void => {
+    console.warn(msg, ...args);
+  },
+  error: (msg: string, ...args: unknown[]): void => {
+    console.error(msg, ...args);
+  },
+};
+
+// ============================================================
+// /healthz 响应
+// ============================================================
+
+const HEALTHZ_BODY = JSON.stringify({ status: "ok" });
+
+// ============================================================
+// ApiErrorBody（最小子集；WU-02e 会迁移到 errors.ts）
+// ============================================================
+
+type ApiErrorBody = {
+  ok: false;
+  error: {
+    code: string;
+    message: string;
+    requestId: string;
+  };
+};
+
+// ============================================================
+// createServer 工厂
+// ============================================================
+
+/**
+ * 创建并启动 HTTP 服务器。
+ *
+ * - 异步返回 WebServer（含实际 port —— 传 0 时是系统分配值）
+ * - 启动失败（端口占用等）会 reject
+ * - 默认监听 `127.0.0.1`（仅本机；spec § 1.4 非目标：「不暴露到远程」）
+ *
+ * 路由分发顺序（每个请求一次）：
+ *   1) `/healthz` → 200 JSON
+ *   2) `/api/*`  → ROUTES 表匹配；命中执行 handler，未命中回 404
+ *   3) 静态资源（GET/HEAD）→ tryServeStatic
+ *   4) 兜底 → 404 ROUTE_NOT_FOUND
+ *
+ * @example
+ *   const server = await createServer({ port: 0 });
+ *   console.log(server.port); // 系统分配端口
+ *   await server.close();
+ */
+export async function createServer(
+  deps: CreateServerDeps = {},
+): Promise<WebServer> {
+  const log: Logger = deps.logger ?? SILENT_LOGGER;
+  const port = deps.port ?? 4321;
+  const host = deps.host ?? "127.0.0.1";
+  const webRoot = path.resolve(
+    deps.webRoot ?? path.join(process.cwd(), "web"),
+  );
+
+  const server = http.createServer((req, res) => {
+    handleRequest(req, res, { webRoot, log, deps }).catch((err: unknown) => {
+      // 兜底：理论上 errorMiddleware 应该吃掉，但本期没接 middleware
+      log.error("[web] unhandled request error:", err);
+      if (!res.headersSent && !res.writableEnded) {
+        sendJsonError(res, 500, "INTERNAL", "Internal Server Error", "");
+      } else {
+        res.destroy();
+      }
+    });
+  });
+
+  return new Promise<WebServer>((resolve, reject) => {
+    const onError = (err: Error): void => {
+      server.removeListener("listening", onListening);
+      reject(err);
+    };
+
+    const onListening = (): void => {
+      server.removeListener("error", onError);
+      const addr = server.address();
+      const actualPort = typeof addr === "object" && addr ? addr.port : port;
+      log.info(`🌐 my-agent Web listening on http://${host}:${actualPort}`);
+      resolve({
+        port: actualPort,
+        raw: server,
+        close: () => closeServer(server),
+      });
+    };
+
+    server.once("error", onError);
+    server.once("listening", onListening);
+    server.listen(port, host);
+  });
+}
+
+// ============================================================
+// 单请求处理
+// ============================================================
+
+type HandleContext = {
+  webRoot: string;
+  log: Logger;
+  deps: CreateServerDeps;
+};
+
+async function handleRequest(
+  req: IncomingMessage,
+  res: ServerResponse,
+  ctx: HandleContext,
+): Promise<void> {
+  // 0) 基础信息
+  const requestId = randomUUID();
+  res.setHeader("X-Request-Id", requestId);
+  applySecurityHeaders(res);
+
+  const method = req.method ?? "GET";
+  let pathname: string;
+  try {
+    pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+  } catch {
+    sendJsonError(res, 400, "INVALID_REQUEST", "Bad Request", requestId);
+    return;
+  }
+
+  // 1) /healthz → 200 JSON
+  if (pathname === "/healthz" && method === "GET") {
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(HEALTHZ_BODY);
+    return;
+  }
+
+  // 2) /api/* → ROUTES 占位表
+  if (pathname.startsWith("/api/")) {
+    const match = matchRoute(method, pathname);
+    if (match) {
+      try {
+        await match.handler(req, res, match.params);
+      } catch (err) {
+        ctx.log.error("[web] handler error:", err);
+        if (!res.headersSent && !res.writableEnded) {
+          sendJsonError(
+            res,
+            500,
+            "INTERNAL",
+            "Internal Server Error",
+            requestId,
+          );
+        } else {
+          res.destroy();
+        }
+      }
+      return;
+    }
+    // 未命中 → 404 ROUTE_NOT_FOUND（与命中占位同语义）
+    sendJsonError(
+      res,
+      404,
+      "ROUTE_NOT_FOUND",
+      `Route ${method} ${pathname} not registered`,
+      requestId,
+    );
+    return;
+  }
+
+  // 3) 静态资源（仅 GET / HEAD）
+  if (method === "GET" || method === "HEAD") {
+    if (tryServeStatic(req, res, ctx.webRoot)) return;
+  }
+
+  // 4) 兜底 404
+  sendJsonError(res, 404, "NOT_FOUND", "Not Found", requestId);
+}
+
+// ============================================================
+// 工具
+// ============================================================
+
+function sendJsonError(
+  res: ServerResponse,
+  status: number,
+  code: string,
+  message: string,
+  requestId: string,
+): void {
+  const body: ApiErrorBody = {
+    ok: false,
+    error: { code, message, requestId },
+  };
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(JSON.stringify(body));
+}
+
+/**
+ * 关闭 server：
+ * 1) http.Server.close() —— 停止 accept + 等在途请求完成
+ * 2) closeIdleConnections() —— 强关 keep-alive 空闲 socket
+ *    （避免 close() 因 keep-alive 长连接而 hang 住）
+ */
+function closeServer(server: http.Server): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const done = (err?: Error): void => {
+      if (settled) return;
+      settled = true;
+      if (err) reject(err);
+      else resolve();
+    };
+
+    server.close((err) => done(err));
+    // Node ≥ 18.2：强关 keep-alive 空闲连接
+    server.closeIdleConnections?.();
+    // Node ≥ 18.2：强关所有活跃 socket（包括在途请求）—— 这里**不**调，
+    // 因为 spec § 6.3 要求「等待在途请求结束」才退出。
+    // 5s 强退由 graceful-shutdown.ts 的 forceTimer 保证。
+  });
+}
+
+// ============================================================
+// 重导出（供后续 WU + bin 入口使用）
+// ============================================================
+
+export { installShutdownHandlers } from "./graceful-shutdown.js";
+export type { InstallShutdownHandlersOptions } from "./graceful-shutdown.js";
+export { ROUTES, matchRoute, isRoutedPath } from "./router.js";
+export type { Handler, Route, RouteMatch } from "./router.js";
+export { CSP_HEADER, PERMISSIONS_POLICY_HEADER } from "./csp.js";
