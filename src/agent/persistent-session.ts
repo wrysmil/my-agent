@@ -16,7 +16,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { randomUUID } from "node:crypto";
-import { Session } from "./session.js";
+import { Mutex } from "async-mutex";
+import { Session, estimateTextTokens } from "./session.js";
 import type {
   CompletedWorkEntry,
   CompletedWorkInput,
@@ -45,6 +46,53 @@ import {
   serializedToMessage,
   isValidSerializedMessage,
 } from "./session-serde.js";
+import { ApiError, ApiErrorCode } from "../web/server/errors.js";
+
+// ============================================================
+// 压缩契约（contract § B8）
+// ============================================================
+
+/**
+ * 压缩估算（`POST /api/sessions/:cid/compact/preview` 响应体）。
+ *
+ * - `beforeTokens` —— 压缩前 session 内消息的估算 token 数
+ * - `afterTokens`  —— 压缩后（被 summary 替换后）的估算 token 数
+ * - `reductionPct` —— 节省百分比（0-100，0 表示无节省）
+ *
+ * **不修改 session 状态** —— 仅用于「先看效果再确认压缩」的前端交互。
+ */
+export type CompactEstimate = {
+  beforeTokens: number;
+  afterTokens: number;
+  reductionPct: number;
+};
+
+/**
+ * 压缩结果（`POST /api/sessions/:cid/compact` 响应体）。
+ *
+ * - `removedMessages`   —— 被替换掉的消息条数
+ * - `summaryMessageId`  —— 新写入的 summary message id（客户端可借此跳到该消息）
+ * - `beforeTokens`      —— 压缩前估算 token 数
+ * - `afterTokens`       —— 压缩后估算 token 数
+ * - `reductionPct`      —— 节省百分比
+ */
+export type CompactResult = {
+  removedMessages: number;
+  summaryMessageId: string | null;
+  beforeTokens: number;
+  afterTokens: number;
+  reductionPct: number;
+};
+
+/**
+ * PersistentSession.compactNow 的输入。
+ *
+ * `summary` 由 `AgentRunner.compactNow` 通过 provider 非流式 completion
+ * 生成（受 `CONTEXT_COMPACTION_SYSTEM_PROMPT` 约束）。
+ */
+export type PersistentCompactInput = {
+  summary: string;
+};
 
 // ============================================================
 // 类型
@@ -70,6 +118,17 @@ export class PersistentSession extends Session {
   private _completedTurns: SerializedTurn[] = [];
   private _resources: HistoryResource[] = [];
   private _loading = false;
+
+  /**
+   * per-cid 串行化互斥锁（spec § 6.5 / R-22）。
+   *
+   * 用于防止同一 session 的并发压缩导致消息竞态：
+   * - 第一个调用进入 `runExclusive`，拿到锁
+   * - 后续调用通过 `isLocked()` 预检发现锁被占，立即抛 `CHAT_SESSION_BUSY`
+   *
+   ** 不用于 chat 流并发（chat 域的互斥在 messages.ts 单独管）。
+   */
+  readonly cidMutex: Mutex = new Mutex();
 
   constructor(opts: PersistentSessionOptions = {}) {
     super();
@@ -439,6 +498,84 @@ export class PersistentSession extends Session {
   /** @override */
   override getSessionId(): string {
     return this.sessionId;
+  }
+
+  // ============================================================
+  // 压缩（contract § B8）—— WU-06a
+  // ============================================================
+
+  /**
+   * 估算压缩效果（不动 session 状态）。
+   *
+   * `beforeTokens` 直接调用父类 `estimateModelTokens()`；
+   * `afterTokens` 用 `summaryMaxTokens`（典型一次压缩后 summary 文本的
+   * token 上限，与 runner `TOOL_LOOP_LIMIT_SUMMARY_MAX_TOKENS` 同源）
+   * —— 仅是预览，不发起任何 provider 调用。
+   *
+   * `reductionPct` 是整数百分比（0-100）。
+   *
+   * **不修改 session 状态**，因此不需要 mutex。可重复调用。
+   */
+  async compactPreview(): Promise<CompactEstimate> {
+    const beforeTokens = this.estimateModelTokens();
+    // 估算压缩后 token 数：典型 summary 上限 1200。
+    const summaryMaxTokens = 1200;
+    const afterTokens = beforeTokens > 0
+      ? Math.min(beforeTokens, summaryMaxTokens)
+      : 0;
+    const reductionPct = beforeTokens > 0
+      ? Math.round(((beforeTokens - afterTokens) / beforeTokens) * 100)
+      : 0;
+    return { beforeTokens, afterTokens, reductionPct };
+  }
+
+  /**
+   * 实际压缩（替换全部 messages 为单条 summary message）。
+   *
+   * **mutex 行为：**
+   * - 预检 `cidMutex.isLocked()` → 已锁定则立即抛 `CHAT_SESSION_BUSY`
+   * - 进入 `runExclusive` 串行执行：避免两个并发 compact 把 messages
+   *   列表竞争到不一致（spec § 6.5 R-22 race）
+   *
+   * **磁盘行为：**
+   * - `flushMessagesToDisk` 重写整个 JSONL 为新内容（单条 summary）
+   * - 上下文侧车不变（plan / ledger / turn 与压缩无关）
+   *
+   * @returns `{ removedMessages, summaryMessageId, afterTokens }`
+   *   `beforeTokens` / `reductionPct` 由调用方（AgentRunner）从
+   *   `compactPreview()` 合并；本方法只关心替换后的状态。
+   */
+  async compactNow(
+    opts: PersistentCompactInput,
+  ): Promise<Omit<CompactResult, "beforeTokens" | "reductionPct">> {
+    if (this.cidMutex.isLocked()) {
+      throw new ApiError(
+        ApiErrorCode.CHAT_SESSION_BUSY,
+        `Another compact operation is already in progress for session "${this.sessionId}"`,
+      );
+    }
+    return this.cidMutex.runExclusive(async () => {
+      const removedMessages = this.messages.length;
+
+      // 生成稳定 summary message id（前端可借此滚动到该消息）
+      const summaryMessageId = `msg-${randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
+      const summaryMessage: Message = {
+        role: "assistant",
+        content: [{ type: "text", text: opts.summary }],
+        turnId: this.turnId,
+      };
+
+      // 替换 messages：原列表清空 + push 单条 summary
+      this.messages.length = 0;
+      this.messages.push(summaryMessage);
+
+      // 落盘（重写整个 JSONL 文件）
+      this.flushMessagesToDisk(this.messages);
+
+      const afterTokens = estimateTextTokens(opts.summary);
+      return { removedMessages, summaryMessageId, afterTokens };
+    });
   }
 
   // ============================================================

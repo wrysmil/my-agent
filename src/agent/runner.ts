@@ -21,11 +21,30 @@ import type {
   AgentRunTimings,
 } from "./types.js";
 import { Session } from "./session.js";
+import { PersistentSession } from "./persistent-session.js";
+import type {
+  CompactEstimate,
+  CompactResult,
+} from "./persistent-session.js";
 import {
   buildSystemPrompt,
   buildDefaultSystemPrompt as buildFallbackPrompt,
 } from "../prompts/system-prompt-builder.js";
 import { buildRuntimeDatetimeBlock } from "../prompts/runtime-context.js";
+import { ApiError, ApiErrorCode } from "../web/server/errors.js";
+
+// ============================================================
+// 压缩类型导出（contract § B8 / WU-06a）
+// ============================================================
+
+/**
+ * 压缩估算（`POST /api/sessions/:cid/compact/preview` 响应体）。
+ *
+ * 详见 `PersistentSession.compactPreview()` 注释 —— 此处 re-export
+ * 是为了让 HTTP 路由层（`routes/sessions.ts`）只需 import runner.ts
+ * 即拿到完整契约。
+ */
+export type { CompactEstimate, CompactResult } from "./persistent-session.js";
 
 // ============================================================
 // 重试常量 — 控制 runner 遇到可重试错误时的退避策略
@@ -791,6 +810,134 @@ export class AgentRunner {
    */
   addTool(tool: AgentTool): void {
     this.tools.set(tool.name, tool);
+  }
+
+  // ==========================================================
+  // 上下文压缩（contract § B8 / WU-06a）
+  // ==========================================================
+
+  /**
+   * 主动触发上下文压缩（API 入口 = `POST /api/sessions/:cid/compact`）。
+   *
+   * **流程：**
+   * 1. 调 `session.compactPreview()` 拿 token 估算（不动状态）
+   * 2. `dryRun=true` → 直接返回估算结果，不写 session
+   * 3. 否则：解析 provider → 调 `provider.complete()` 让模型生成 summary
+   *    → 调 `session.compactNow({ summary })` 完成替换
+   *
+   * **串行化：** `session.compactNow()` 内部用 `cidMutex.runExclusive()`
+   * 串行化；并发第二个调用会在预检阶段抛 `CHAT_SESSION_BUSY`
+   * （contract § 6.5 R-22 race 防护）。
+   *
+   * **错误码映射（contract § 3 实际枚举，无 COMPACT_* 自创 code）：**
+   * - provider 不可用 / `complete()` 不支持 → `INTERNAL` (500)
+   * - provider 调用失败 / 返回空 summary → `INTERNAL` (500)
+   * - session 已有压缩在飞 → `CHAT_SESSION_BUSY` (429)
+   *
+   * @param opts.session — 目标 PersistentSession（必须已加载）
+   * @param opts.dryRun  — `true` 时只返回估算，不实际压缩（默认 `false`）
+   * @param opts.model   — 覆盖默认模型（默认 `config.agent.defaultModel`）
+   * @returns `{ ok: true, data: CompactResult }`；抛 `ApiError` 表示失败
+   */
+  async compactNow(opts: {
+    session: PersistentSession;
+    dryRun?: boolean;
+    model?: string;
+  }): Promise<{ ok: true; data: CompactResult }> {
+    const dryRun = opts.dryRun ?? false;
+
+    // ---- Step 1: Preview（不动 session 状态） ----
+    const preview = await opts.session.compactPreview();
+
+    // ---- Step 2: Dry-run short-circuit ----
+    if (dryRun) {
+      return {
+        ok: true,
+        data: {
+          removedMessages: 0,
+          summaryMessageId: null,
+          beforeTokens: preview.beforeTokens,
+          afterTokens: preview.afterTokens,
+          reductionPct: preview.reductionPct,
+        },
+      };
+    }
+
+    // ---- Step 3: 解析 provider ----
+    const modelId = opts.model ?? this.config.agent.defaultModel;
+    const providerId = this.config.agent.defaultProvider;
+    let resolved = this.providers.resolveForModel(`${providerId}/${modelId}`);
+    if (!resolved) {
+      resolved = this.providers.resolveForModel(modelId) ?? undefined;
+    }
+    if (!resolved) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `No provider found for compaction model: ${modelId}`,
+      );
+    }
+    if (typeof resolved.provider.complete !== "function") {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `Provider "${resolved.provider.id}" does not support non-streaming complete()`,
+      );
+    }
+
+    // ---- Step 4: 空 session 早退（无消息可压缩） ----
+    const messages = opts.session.getAllMessages();
+    if (messages.length === 0) {
+      return {
+        ok: true,
+        data: {
+          removedMessages: 0,
+          summaryMessageId: null,
+          beforeTokens: preview.beforeTokens,
+          afterTokens: preview.beforeTokens,
+          reductionPct: 0,
+        },
+      };
+    }
+
+    // ---- Step 5: 调 provider 非流式 completion ----
+    let summaryText = "";
+    try {
+      const result = await resolved.provider.complete!({
+        model: resolved.modelId,
+        messages,
+        systemPrompt: CONTEXT_COMPACTION_SYSTEM_PROMPT,
+        maxTokens: TOOL_LOOP_LIMIT_SUMMARY_MAX_TOKENS,
+        sessionId: opts.session.sessionId,
+      });
+      for (const c of result.content) {
+        if (c.type === "text") summaryText += c.text;
+      }
+    } catch (err) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `Compaction provider call failed: ${formatError(err)}`,
+      );
+    }
+
+    if (!summaryText.trim()) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        "Provider returned empty compaction summary",
+      );
+    }
+
+    // ---- Step 6: 落盘（session.compactNow 内部用 cidMutex 串行化） ----
+    const sessionResult = await opts.session.compactNow({ summary: summaryText });
+
+    return {
+      ok: true,
+      data: {
+        removedMessages: sessionResult.removedMessages,
+        summaryMessageId: sessionResult.summaryMessageId,
+        beforeTokens: preview.beforeTokens,
+        afterTokens: sessionResult.afterTokens,
+        reductionPct: preview.reductionPct,
+      },
+    };
   }
 
   // ==========================================================

@@ -80,3 +80,48 @@ export const AbortStreamSchema = z.object({
 });
 
 export type AbortStreamInput = z.infer<typeof AbortStreamSchema>;
+
+// ============================================================
+// 压缩域（contract § B8 / WU-06a）
+// ============================================================
+
+/**
+ * `POST /api/sessions/:cid/compact/preview` body。
+ *
+ * 客户端**可选**传 `dryRun=true` 用于「先估算再确认压缩」两步式交互。
+ * 即便 body 缺失或为空对象也合法（前端 chat.js 默认行为）。
+ */
+export const CompactPreviewSchema = z.object({
+  dryRun: z.boolean().optional(),
+});
+
+export type CompactPreviewInput = z.infer<typeof CompactPreviewSchema>;
+
+/**
+ * `POST /api/sessions/:cid/compact` body。
+ *
+ * 行为同 preview，但执行实际压缩（替换 messages 为单条 summary）。
+ *
+ * 客户端可选传 `model` 覆盖默认模型（与 runner `compactNow({ model })`
+ * 对齐）。缺省时使用 `config.agent.defaultModel`。
+ */
+export const CompactRequestSchema = z.object({
+  model: z.string().min(1).max(256).optional(),
+  dryRun: z.boolean().optional(),
+});
+
+export type CompactRequestInput = z.infer<typeof CompactRequestSchema>;
+
+/**
+ * `POST /api/sessions/:cid/compact/cancel` body。
+ *
+ * **当前实现语义**：cancel 是 noop，因 `cidMutex` 串行化下没有 cancel
+ * 语义（要么已上锁在跑、要么没在跑）。保留端点供前端调用契约对齐。
+ *
+ * body 可选（前端可发 `{}`）。
+ */
+export const CompactCancelSchema = z.object({
+  reason: z.string().max(512).optional(),
+});
+
+export type CompactCancelInput = z.infer<typeof CompactCancelSchema>;

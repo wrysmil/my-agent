@@ -424,11 +424,11 @@ describe("DELETE /api/sessions/:id", () => {
 });
 
 // ============================================================
-// ⑤ POST /api/sessions/:cid/compact  → 501
+// ⑤ POST /api/sessions/:cid/compact  → 真实实现（WU-06a 替换 WU-02b 占位）
 // ============================================================
 
 describe("POST /api/sessions/:cid/compact", () => {
-  it("任意 cid → 501 NOT_IMPLEMENTED（WU-06a 占位）", async () => {
+  it("不存在的会话 → 404 SESSION_NOT_FOUND", async () => {
     const { req, res } = makeMockReqRes({
       method: "POST",
       url: "/api/sessions/gconv-deadbeef/compact",
@@ -437,12 +437,113 @@ describe("POST /api/sessions/:cid/compact", () => {
     const route = ROUTES.find(
       ([m, p]) => m === "POST" && p instanceof RegExp && p.source.includes("/compact$"),
     );
+    expect(route).toBeDefined();
     await route![2](req, res, { cid: "gconv-deadbeef" });
 
-    expect(res.statusCode).toBe(501);
-    const body = parseJson<{ error: { code: string; details?: { cid?: string } } }>(res.body);
-    expect(body.error.code).toBe("NOT_IMPLEMENTED");
-    expect(body.error.details?.cid).toBe("gconv-deadbeef");
+    expect(res.statusCode).toBe(404);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("SESSION_NOT_FOUND");
+  });
+
+  it("非法路径段 → 404 SESSION_NOT_FOUND", async () => {
+    const { req, res } = makeMockReqRes({
+      method: "POST",
+      url: "/api/sessions/..%2Fbad/compact",
+      body: "{}",
+    });
+    const route = ROUTES.find(
+      ([m, p]) => m === "POST" && p instanceof RegExp && p.source.includes("/compact$"),
+    );
+    await route![2](req, res, { cid: "../bad" });
+
+    expect(res.statusCode).toBe(404);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("SESSION_NOT_FOUND");
+  });
+
+  it("未注入 agentRunner → 500 INTERNAL", async () => {
+    const session = sessionStore.create("gconv");
+    const { req, res } = makeMockReqRes({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/compact`,
+      body: "{}",
+    });
+    const route = ROUTES.find(
+      ([m, p]) => m === "POST" && p instanceof RegExp && p.source.includes("/compact$"),
+    );
+    // installSessionRoutes 在 beforeEach 调用时未注入 agentRunner
+    await route![2](req, res, { cid: session.sessionId });
+
+    expect(res.statusCode).toBe(500);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("INTERNAL");
+  });
+});
+
+// ============================================================
+// ⑥ POST /api/sessions/:cid/compact/preview  → WU-06a 新增
+// ============================================================
+
+describe("POST /api/sessions/:cid/compact/preview", () => {
+  it("未注入 agentRunner → 500 INTERNAL", async () => {
+    const session = sessionStore.create("gconv");
+    const { req, res } = makeMockReqRes({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/compact/preview`,
+      body: "{}",
+    });
+    const route = ROUTES.find(
+      ([m, p]) =>
+        m === "POST" && p instanceof RegExp && p.source.includes("compact\\/preview"),
+    );
+    expect(route).toBeDefined();
+    await route![2](req, res, { cid: session.sessionId });
+
+    expect(res.statusCode).toBe(500);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("INTERNAL");
+  });
+
+  it("不存在的会话 → 404 SESSION_NOT_FOUND", async () => {
+    const { req, res } = makeMockReqRes({
+      method: "POST",
+      url: "/api/sessions/gconv-nope/compact/preview",
+      body: "{}",
+    });
+    const route = ROUTES.find(
+      ([m, p]) =>
+        m === "POST" && p instanceof RegExp && p.source.includes("compact\\/preview"),
+    );
+    expect(route).toBeDefined();
+    await route![2](req, res, { cid: "gconv-nope" });
+
+    expect(res.statusCode).toBe(404);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("SESSION_NOT_FOUND");
+  });
+});
+
+// ============================================================
+// ⑦ POST /api/sessions/:cid/compact/cancel  → WU-06a 新增（noop 端点）
+// ============================================================
+
+describe("POST /api/sessions/:cid/compact/cancel", () => {
+  it("不存在的会话 → 404 SESSION_NOT_FOUND", async () => {
+    const { req, res } = makeMockReqRes({
+      method: "POST",
+      url: "/api/sessions/gconv-nope/compact/cancel",
+      body: "{}",
+    });
+    const route = ROUTES.find(
+      ([m, p]) =>
+        m === "POST" && p instanceof RegExp && p.source.includes("compact\\/cancel"),
+    );
+    expect(route).toBeDefined();
+    await route![2](req, res, { cid: "gconv-nope" });
+
+    expect(res.statusCode).toBe(404);
+    const body = parseJson<{ error: { code: string } }>(res.body);
+    expect(body.error.code).toBe("SESSION_NOT_FOUND");
   });
 });
 
