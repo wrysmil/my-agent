@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import * as readline from "node:readline";
 import { fileURLToPath } from "node:url";
-import { loadAgentSpec, type AgentSpec } from "../orchestration/agent-spec.js";
+import { loadAgentSpec, loadAgentSpecFromDir, type AgentSpec } from "../orchestration/agent-spec.js";
 import { dataRoot, userSkillsDir } from "../storage/paths.js";
 import { formatBanner, formatMenuItem, prompt, colorize, menuColor } from "./io.js";
 
@@ -78,22 +78,7 @@ async function discoverAgents(): Promise<AgentEntry[]> {
 }
 
 /** 从指定目录加载 agent spec（绕过 dataRoot） */
-async function loadAgentSpecFromDir(dir: string, agentId: string): Promise<AgentSpec | null> {
-  const filePath = path.join(dir, agentId, "agent.json");
-  try {
-    const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    return {
-      agent_id: agentId,
-      name: raw.name || agentId,
-      description_zh: raw.description_zh,
-      description_en: raw.description_en,
-      workflow: raw.workflow,
-      skill_list: raw.skill_list,
-    };
-  } catch {
-    return null;
-  }
-}
+// 使用 agent-spec.ts 导出的 loadAgentSpecFromDir，此处不再重复定义
 
 // ============================================================================
 // Agent 详情展示
