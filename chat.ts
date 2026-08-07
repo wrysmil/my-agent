@@ -27,6 +27,8 @@ import { ProviderRegistry } from "./src/providers/registry.js";
 import { defineTool, type AgentTool } from "./src/tools/base.js";
 import { BUILTIN_TOOLS } from "./src/tools/builtin.js";
 import { buildDispatchTools } from "./src/orchestration/tools.js";
+import { createExecutionPlanTool, type ExecutionPlanController } from "./src/tools/execution-plan.js";
+import { createViewSkillTool } from "./src/tools/view-skill.js";
 import { PersistentSession } from "./src/agent/persistent-session.js";
 import { SessionStore } from "./src/storage/session-store.js";
 import { ProvidersStore, type ProviderConfigEntry } from "./src/storage/providers-store.js";
@@ -383,7 +385,21 @@ async function runChat(opts: {
   const sessionStore = new SessionStore();
   let session: PersistentSession = opts.session ?? sessionStore.create();
 
-  const registry = buildProviderRegistry(opts.store);
+  // ---- 5.5 / 5.4 工具实例化与注入 ----
+  // executionPlanController 桥接当前 session（闭包捕获 `let session`，
+  // /clear 或 /provider 重建 runner 后仍指向新 session）。
+  const executionPlanController: ExecutionPlanController = {
+    update: (update) =>
+      session.updateExecutionPlan(
+        update as Parameters<typeof session.updateExecutionPlan>[0],
+      ),
+    clear: () => session.clearExecutionPlan(),
+  };
+  const executionPlanTool = createExecutionPlanTool(executionPlanController);
+  const viewSkillTool = createViewSkillTool(skillLoader);
+  allTools.push(executionPlanTool, viewSkillTool);
+
+  let registry = buildProviderRegistry(opts.store);
   const toolsBlock = getToolsSystemPromptBlock(allTools.map((t) => t.name));
   const { systemPrompt } = buildSystemPrompt({
     skillsIndex: skillContext || undefined,
@@ -396,6 +412,8 @@ async function runChat(opts: {
     providers: registry,
     tools: allTools,
     session,
+    executionPlanController,
+    skillLoader,
   });
 
   // 注入调度工具（run_worker / dispatch_to / hand_off_to），使主 Agent 可调用子 Agent
@@ -472,6 +490,23 @@ async function runChat(opts: {
   }
   console.log("   输入消息后回车，/help 查看命令\n");
 
+  // 启动健康检查（惰性，best-effort；失败不阻塞启动）
+  try {
+    const activeProvider = opts.store.getActiveProvider();
+    if (activeProvider) {
+      const providerInst = registry.get(activeProvider.id);
+      if (providerInst) {
+        const ok = await providerInst.validateAuth();
+        if (!ok) {
+          console.log(`⚠️  Provider "${activeProvider.name}" 健康检查失败，可能无法使用。`);
+          console.log(`   可尝试 /provider 切换到其他 Provider。\n`);
+        }
+      }
+    }
+  } catch {
+    // 静默失败，不阻塞启动
+  }
+
   const ownsRl = opts.rl === undefined;
   const rl = opts.rl ?? readline.createInterface({ input: process.stdin, output: process.stdout });
   const ask = (): Promise<string> =>
@@ -489,6 +524,9 @@ async function runChat(opts: {
 │  /tools          列出所有工具（按分组）         │
 │  /skills         列出所有 Skill               │
 │  /skill <id>     查看 Skill 详细内容           │
+│  /plan           查看当前执行计划              │
+│  /compact        手动触发上下文压缩            │
+│  /provider [name] 查看/切换 LLM Provider       │
 │  /mode [mode]    查看/切换 Bash 执行模式        │
 │                   模式: disabled|workspace_only|unrestricted
 │                   当前: ${describeMode(mode)}
@@ -582,13 +620,111 @@ async function runChat(opts: {
               providers: registry,
               tools: allTools,
               session,
+              executionPlanController,
+              skillLoader,
             });
+            // 修复：重建 runner 后调度工具（run_worker/dispatch_to/hand_off_to）丢失，
+            // 必须重新注入，否则子 Agent 编排失效。
+            for (const dt of dispatchTools) {
+              runner.addTool(dt);
+            }
             console.log(`🧹 上下文已清除，新会话: ${session.sessionId}\n`);
             continue;
           case "/save":
             console.log(`💾 当前会话 ID: ${session.sessionId}`);
             console.log(`   下次使用: npx tsx chat.ts --load ${session.sessionId}\n`);
             continue;
+          case "/plan": {
+            const plan = runner.getSession().getExecutionPlan();
+            if (!plan || plan.steps.length === 0) {
+              console.log("📋 当前没有执行计划（模型尚未创建）\n");
+            } else {
+              const done = plan.steps.filter((s) => s.status === "completed").length;
+              const total = plan.steps.length;
+              console.log(`📋 当前执行计划 (${done}/${total} 完成)`);
+              if (plan.objective) {
+                console.log(`   目标: ${plan.objective.slice(0, 120)}${plan.objective.length > 120 ? "..." : ""}`);
+              }
+              console.log("─".repeat(44));
+              for (const step of plan.steps) {
+                const icon = { pending: "⏳", in_progress: "🔄", completed: "✅", blocked: "🚫" }[step.status] ?? "❓";
+                console.log(`  ${icon} ${step.id}. ${step.step}`);
+              }
+              console.log("─".repeat(44) + "\n");
+            }
+            continue;
+          }
+          case "/compact": {
+            const activeProvider = opts.store.getActiveProvider();
+            const provider = activeProvider ? registry.get(activeProvider.id) : undefined;
+            const modelId = activeProvider?.defaultModel ?? opts.config.agent.defaultModel;
+            if (!provider) {
+              console.log("⚠️  无活跃 Provider，无法执行压缩\n");
+              continue;
+            }
+            console.log("🧹 上下文压缩中…");
+            const result = await runner.compactNow(provider, modelId);
+            if (!result) {
+              console.log("   ⚠️ 无可压缩的上下文（历史轮次不足）\n");
+            } else {
+              console.log("🧹 上下文压缩完成");
+              console.log(`   📊 压缩前: ~${result.before.toLocaleString()} tokens`);
+              console.log(`   📊 压缩后: ~${result.after.toLocaleString()} tokens`);
+              const pct = result.before > 0 ? ((1 - result.after / result.before) * 100).toFixed(1) : "0.0";
+              console.log(`   ✅ 节省 ${pct}% (${(result.before - result.after).toLocaleString()} tokens)\n`);
+            }
+            continue;
+          }
+          case "/provider": {
+            const arg = rest[0];
+            if (!arg) {
+              const active = opts.store.getActiveProvider();
+              if (!active) {
+                console.log("📡 无活跃 Provider\n");
+              } else {
+                console.log(`📡 当前 Provider: ${active.id} (${active.name})`);
+                console.log(`   Model: ${active.defaultModel}`);
+                console.log(`   Fallback 链: ${active.fallbackModels?.length ? active.fallbackModels.join(" → ") : "(无同 provider 备用模型)"}`);
+                console.log(`   跨 Provider Fallback: ${active.fallbackProvider ?? "(无)"}`);
+                console.log(`   状态: ✅ 正常\n`);
+              }
+            } else {
+              const available = Object.keys(opts.store.getConfig().providers);
+              if (!available.includes(arg)) {
+                console.log(`❌ Provider 不存在: ${arg}。可用: ${available.join(", ") || "(无)"}\n`);
+                continue;
+              }
+              console.log(`⚠️  切换到 ${arg} 需要重建 Agent 上下文。`);
+              console.log(`   当前对话历史保留，但底层 provider 将变更。继续？(y/n)`);
+              const confirmAns = await ask();
+              if (confirmAns.toLowerCase() !== "y") {
+                console.log("   已取消\n");
+                continue;
+              }
+              try {
+                opts.store.setActiveProvider(arg);
+                await opts.store.save();
+                session.close();
+                session = sessionStore.create();
+                registry = buildProviderRegistry(opts.store);
+                runner = new AgentRunner({
+                  config: opts.config,
+                  providers: registry,
+                  tools: allTools,
+                  session,
+                  executionPlanController,
+                  skillLoader,
+                });
+                for (const dt of dispatchTools) {
+                  runner.addTool(dt);
+                }
+                console.log(`✅ 已切换至 ${arg}\n`);
+              } catch (err) {
+                console.log(`❌ 切换失败: ${String(err)}\n`);
+              }
+            }
+            continue;
+          }
           case "/tools":
             showTools();
             continue;

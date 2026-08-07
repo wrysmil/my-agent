@@ -62,11 +62,11 @@ export function buildAvailableSkillsBlock(
   const lines: string[] = [
     "## Available skills (skills)",
     "",
-    "`read_file(<ROOT>/<id>/SKILL.md)` — ROOT by Source:",
+    "`view_skill(<id>)` — load full SKILL.md body by internal read id.",
+    "Skill directories (for reference):",
     ...rootLines,
-    "Use these ROOT values verbatim. `<id>` is the internal read id for read_file paths only,",
-    "even when it differs from display name.",
-    "These entries are skills, not tool names: read SKILL.md and follow it;",
+    "`<id>` is the internal read id shown after the skill name.",
+    "These entries are skills, not tool names: use view_skill to load and follow them;",
     "never call the display name or id as a tool.",
     "",
   ];

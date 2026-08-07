@@ -402,12 +402,15 @@ export class PersistentSession extends Session {
   /** @override */
   override updateExecutionPlan(
     update: {
-      steps?: Array<{ step: string; status: ExecutionPlanStepStatus }>;
+      steps?: Array<{ step: string; status: ExecutionPlanStepStatus; id?: number }>;
+      replace_objective?: boolean;
+      explanation?: string;
+      objectiveUserMessageDigest?: string;
     },
-  ): ExecutionPlanState {
-    const plan = super.updateExecutionPlan(update);
+  ): { ok: boolean; error?: string } {
+    const result = super.updateExecutionPlan(update);
     this.writeContextToDisk();
-    return plan;
+    return result;
   }
 
   /** @override */

@@ -127,6 +127,16 @@ const CATALOG: ToolCatalogEntry[] = [
     group: "meta",
     ownerAgent: "commander",
   },
+  {
+    name: "manage_execution_plan",
+    summary: "Maintain durable milestones for long tasks.",
+    group: "meta",
+  },
+  {
+    name: "view_skill",
+    summary: "Load the full instructions for a skill by its internal read id.",
+    group: "meta",
+  },
 ];
 
 // ============================================================

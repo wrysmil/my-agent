@@ -89,6 +89,8 @@ export type ExecutionPlanState = {
   objectiveTurnId: number;
   /** 最后更新步骤状态的轮次 ID */
   updatedTurnId: number;
+  /** 锚定时的用户指令摘要（用于 replace_objective 校验） */
+  updatedUserMessageDigest?: string;
   /** 步骤列表（按顺序执行） */
   steps: ExecutionPlanStep[];
 };
@@ -428,25 +430,78 @@ export class Session {
   /**
    * 更新执行计划的步骤列表。
    *
-   * 会完全替换现有步骤（非增量更新）。
+   * 会完全替换现有步骤（非增量更新），并附带两条代码级校验防止静默损坏：
+   * 1. `completed` 步骤不可回退到其他状态
+   * 2. 已存在步骤的文本不可变更
    *
-   * @param update.steps — 新的步骤列表，每项包含 step 描述文本和 status 状态。
-   *   不传则不做任何修改（仅确保计划锚点存在）。
-   * @returns 更新后的执行计划
+   * `replace_objective=true` 时校验用户指令 digest 是否变更：
+   * digest 未变则拒绝替换 objective（防换话题误判）。
+   *
+   * @param update.steps — 新的步骤列表，每项包含 step 描述文本和 status 状态；
+   *   `id` 可选，缺省时按列表位置（i+1）对齐现有步骤
+   * @param update.replace_objective — 是否替换任务目标
+   * @param update.objectiveUserMessageDigest — 最新用户指令摘要（替换 objective 时校验用）
+   * @param update.explanation — 可选说明（暂未消费，为未来审计预留）
+   * @returns `{ ok: true }` 表示更新成功；`{ ok: false, error }` 表示校验拒绝
    */
-  updateExecutionPlan(
-    update: { steps?: Array<{ step: string; status: ExecutionPlanStepStatus }> },
-  ): ExecutionPlanState {
+  updateExecutionPlan(update: {
+    steps?: Array<{ step: string; status: ExecutionPlanStepStatus; id?: number }>;
+    replace_objective?: boolean;
+    explanation?: string;
+    objectiveUserMessageDigest?: string;
+  }): { ok: boolean; error?: string } {
     const plan = this.ensureExecutionPlanAnchor();
+
+    // replace_objective=true：校验用户指令 digest 是否变更
+    if (update.replace_objective) {
+      if (
+        update.objectiveUserMessageDigest &&
+        update.objectiveUserMessageDigest === plan.updatedUserMessageDigest
+      ) {
+        return {
+          ok: false,
+          error: "replace_objective denied: user instruction digest unchanged",
+        };
+      }
+      // 允许替换 objective（记录新指令 digest，作为下一次 replace_objective 校验的锚点）
+      plan.updatedUserMessageDigest = update.objectiveUserMessageDigest;
+    }
+
     if (update.steps) {
+      // 校验 1: completed 不可回退
+      for (let i = 0; i < update.steps.length; i++) {
+        const newStep = update.steps[i];
+        const id = newStep.id ?? i + 1;
+        const prev = plan.steps.find((s) => s.id === id);
+        if (prev && prev.status === "completed" && newStep.status !== "completed") {
+          return {
+            ok: false,
+            error: `Step ${id} ("${prev.step}") is completed and cannot regress to "${newStep.status}"`,
+          };
+        }
+      }
+      // 校验 2: 步骤文本不可变
+      for (let i = 0; i < update.steps.length; i++) {
+        const newStep = update.steps[i];
+        const id = newStep.id ?? i + 1;
+        const prev = plan.steps.find((s) => s.id === id);
+        if (prev && prev.step !== newStep.step) {
+          return {
+            ok: false,
+            error: `Step ${id} text cannot change from "${prev.step}" to "${newStep.step}"`,
+          };
+        }
+      }
+      // 应用更新
       plan.steps = update.steps.map((s, i) => ({
-        id: i + 1,
+        id: s.id ?? i + 1,
         step: s.step,
         status: s.status,
       }));
       plan.updatedTurnId = this.turnId;
     }
-    return plan;
+
+    return { ok: true };
   }
 
   /**
@@ -510,46 +565,118 @@ export class Session {
   /**
    * 获取待归档的历史轮次候选。
    *
-   * runner 调用此方法检查是否有旧轮次可以被压缩为摘要。
+   * 已完成轮次（当前活跃轮次之前的所有轮次）的消息构成压缩候选。
+   * runner 调用此方法检查是否有旧轮次可以被压缩为摘要；
    * 返回 null 表示当前无需压缩。
    *
    * @returns 压缩候选或 null
    */
   getPendingHistoryArchive(): HistoryArchiveCandidate | null {
-    return null;
+    // 已完成轮次 = 最后一个活跃轮次（this.turnId）之前的所有轮次
+    const activeTurnId = this.turnId;
+    const completedTurns = new Map<number, Message[]>();
+    for (const msg of this.messages) {
+      const tid = msg.turnId;
+      if (tid !== undefined && tid < activeTurnId) {
+        const list = completedTurns.get(tid) ?? [];
+        list.push(msg);
+        completedTurns.set(tid, list);
+      }
+    }
+    if (completedTurns.size === 0) return null;
+
+    const turnIds = [...completedTurns.keys()].sort((a, b) => a - b);
+    // 估算 token 数（粗略：4 字符 ≈ 1 token）
+    const allMessages = [...completedTurns.values()].flat();
+    const rawTokens = Math.ceil(
+      allMessages.reduce((sum, m) => sum + JSON.stringify(m.content).length, 0) / 4,
+    );
+    return { turnIds, rawTokens };
   }
 
   /**
    * 用 LLM 生成的摘要替换指定轮次的原始消息。
    *
    * 压缩后消息列表变短，释放上下文窗口空间。
+   * 每个被压缩轮次的原始消息被替换为一条 user 摘要消息（保留原轮次 ID）。
    *
-   * @param _summary — LLM 生成的摘要文本
-   * @param _turnIds — 被替换的轮次 ID 列表
+   * @param summary — LLM 生成的摘要文本
+   * @param turnIds — 被替换的轮次 ID 列表
    */
-  applyHistorySummary(_summary: string, _turnIds: readonly number[]): void {
-    // 在完整实现中会用摘要替换旧轮次
+  applyHistorySummary(summary: string, turnIds: readonly number[]): void {
+    const turnIdSet = new Set(turnIds);
+    const summaryText = `[History summary for turns ${turnIds.join(",")}]: ${summary}`;
+
+    const result: Message[] = [];
+    const insertedTurnIds = new Set<number>();
+    for (const msg of this.messages) {
+      const tid = msg.turnId;
+      if (tid !== undefined && turnIdSet.has(tid)) {
+        // 每个被压缩轮次只插入一条摘要消息（保留原轮次 ID）
+        if (!insertedTurnIds.has(tid)) {
+          result.push({
+            role: "user",
+            content: [{ type: "text", text: summaryText }],
+            turnId: tid,
+          });
+          insertedTurnIds.add(tid);
+        }
+      } else {
+        result.push(msg);
+      }
+    }
+    this.messages = result;
   }
 
   /**
    * 获取待压缩的活跃检查点候选。
    *
+   * 当前轮（this.turnId）的工具调用/结果组构成活跃检查点候选。
    * 与历史归档不同，活跃检查点保留在上下文中但被压缩为结构化格式。
    *
    * @returns 压缩候选或 null
    */
-  getPendingActiveCheckpoint(): ActiveCheckpointCandidate | null {
-    return null;
+  getPendingActiveCheckpoint(): HistoryArchiveCandidate | null {
+    const currentTurnMessages = this.messages.filter((m) => m.turnId === this.turnId);
+    if (currentTurnMessages.length === 0) return null;
+
+    // 估算 token 数（粗略：4 字符 ≈ 1 token）
+    const rawTokens = Math.ceil(
+      currentTurnMessages.reduce((sum, m) => sum + JSON.stringify(m.content).length, 0) / 4,
+    );
+    return { turnIds: [this.turnId], rawTokens };
   }
 
   /**
    * 应用活跃检查点压缩摘要。
    *
-   * @param _summary — 结构化摘要
-   * @param _epoch — 压缩周期编号
+   * 当前轮的所有消息被替换为一条摘要消息（保留轮次 ID）。
+   *
+   * @param summary — 结构化摘要
+   * @param epoch — 压缩周期编号
    */
-  applyActiveCheckpointSummary(_summary: string, _epoch: number): void {
-    // 在完整实现中会更新活动检查点
+  applyActiveCheckpointSummary(summary: string, epoch: number): void {
+    const activeTurnId = this.turnId;
+    let replaced = false;
+    const result: Message[] = [];
+    for (const msg of this.messages) {
+      if (msg.turnId === activeTurnId) {
+        if (!replaced) {
+          result.push({
+            role: "user",
+            content: [
+              { type: "text", text: `[Active checkpoint summary (epoch ${epoch})]: ${summary}` },
+            ],
+            turnId: activeTurnId,
+          });
+          replaced = true;
+        }
+        // 跳过当前轮的其他原始消息
+      } else {
+        result.push(msg);
+      }
+    }
+    this.messages = result;
   }
 
   // ---- 工具测试辅助 ----

@@ -52,12 +52,12 @@ describe("buildAvailableSkillsBlock", () => {
     const block = buildAvailableSkillsBlock(loader, { roots: roots() });
 
     expect(block).toContain("## Available skills (skills)");
-    expect(block).toContain("`read_file(<ROOT>/<id>/SKILL.md)` — ROOT by Source:");
+    expect(block).toContain("`view_skill(<id>)` — load full SKILL.md body by internal read id.");
     expect(block).toContain(`- custom: ${customRoot}`);
     expect(block).toContain(`- marketplace: ${marketplaceRoot}`);
-    expect(block).toContain("Use these ROOT values verbatim.");
+    expect(block).toContain("`<id>` is the internal read id shown after the skill name.");
     expect(block).toContain(
-      "These entries are skills, not tool names: read SKILL.md and follow it;",
+      "These entries are skills, not tool names: use view_skill to load and follow them;",
     );
     expect(block).toContain("never call the display name or id as a tool.");
     expect(block).not.toContain("## Resource locations");

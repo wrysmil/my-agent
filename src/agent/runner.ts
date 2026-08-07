@@ -1,5 +1,11 @@
 import { createHash } from "node:crypto";
-import type { Message, MessageContent, Usage, ToolUseContent } from "../shared/types.js";
+import type {
+  Message,
+  MessageContent,
+  StreamEvent,
+  Usage,
+  ToolUseContent,
+} from "../shared/types.js";
 import {
   AuthError,
   ContextOverflowError,
@@ -34,6 +40,12 @@ import {
 } from "../tools/tool-result-cap.js";
 import { toolResultsDir } from "../storage/paths.js";
 import { Mutex } from "async-mutex";
+import {
+  createExecutionPlanTool,
+  type ExecutionPlanController,
+} from "../tools/execution-plan.js";
+import { createViewSkillTool } from "../tools/view-skill.js";
+import { SkillLoader } from "../skills/loader.js";
 
 // ============================================================
 // 重试常量 — 控制 runner 遇到可重试错误时的退避策略
@@ -575,6 +587,17 @@ export function compactionRunCaps(maxToolLoops: number): {
   return { maxEpochs: cap, maxAttempts: cap };
 }
 
+/**
+ * 压缩必须达到的最小"有效节省" token 数。
+ *
+ * 介于 64 与 6000 之间，与压缩前 token 数成正比（默认比例 10%）。
+ * 压缩后的 token 数低于此门槛时，压缩被视为无效（上下文已足够紧凑），
+ * 不应用摘要，避免无意义的压缩循环与信息丢失。
+ */
+function minimumValidatedCompactionSavings(beforeTokens: number): number {
+  return Math.max(64, Math.min(6000, Math.floor(beforeTokens * MIN_COMPACTION_SAVINGS_RATIO)));
+}
+
 // ============================================================
 // 重试退避算法
 // ============================================================
@@ -692,6 +715,12 @@ export class AgentRunner {
   private readonly session: Session;
   private readonly toolContextState: Record<string, unknown>;
 
+  /** 5.6 模型回退链（构造器注入；首选模型失败时依次尝试） */
+  private readonly fallbackModels: string[];
+
+  /** 5.1 压缩控制（提升为实例字段，跨 run 保留 attemptedFingerprints） */
+  private compactionControl: CompactionControl;
+
   /**
    * @param opts.config — 核心 Agent 配置（模型列表、重试次数、工具循环上限等）。
    *   必填，通常从 `config/schema.ts` 的 `CoreAgentConfig` 加载。
@@ -735,16 +764,44 @@ export class AgentRunner {
     session?: Session;
     disableTools?: boolean;
     toolContextState?: Record<string, unknown>;
+    /** 5.5 执行计划控制器（宿主注入）；传入则注册 manage_execution_plan 工具 */
+    executionPlanController?: ExecutionPlanController;
+    /** 5.4 Skill 加载器（宿主注入）；传入则注册 view_skill 工具 */
+    skillLoader?: SkillLoader;
+    /** 5.6 首选模型失败（rate-limit 等）时依次尝试的回退模型 ID 列表 */
+    fallbackModels?: string[];
   }) {
     this.config = opts.config;
     this.providers = opts.providers ?? new ProviderRegistry(opts.config);
     this.session = opts.session ?? new Session();
     this.toolContextState = { ...(opts.toolContextState ?? {}) };
+    this.fallbackModels = opts.fallbackModels ?? [];
+
+    // 5.1 压缩控制初始化（attemptedFingerprints 跨 run 保留）
+    this.compactionControl = {
+      attemptedFingerprints: new Set(),
+      attempts: 0,
+      failures: 0,
+      epochs: 0,
+      maxEpochs: 0,
+      maxAttempts: 0,
+      limitLogged: false,
+    };
 
     // 注册工具
     if (!opts.disableTools) {
       for (const tool of opts.tools ?? []) {
         this.tools.set(tool.name, tool);
+      }
+
+      // 5.5 执行计划工具（宿主注入 controller 时注册）
+      if (opts.executionPlanController) {
+        this.addTool(createExecutionPlanTool(opts.executionPlanController));
+      }
+
+      // 5.4 Skill 查看工具（宿主注入 loader 时注册）
+      if (opts.skillLoader) {
+        this.addTool(createViewSkillTool(opts.skillLoader));
       }
     }
   }
@@ -1040,17 +1097,267 @@ export class AgentRunner {
   }
 
   // ==========================================================
-  // 上下文压缩检查（简化版：初期可跳过实际压缩逻辑）
+  // 上下文压缩检查（5.1）
   // ==========================================================
+
+  /**
+   * 每次模型调用前执行的上下文压缩检查。
+   *
+   * 分层压缩：
+   * - 第一层「历史摘要」：将已完成轮次（历史归档候选）压缩为摘要，
+   *   仅在节省量达到 `minimumValidatedCompactionSavings` 时才应用。
+   * - 第二层「活跃检查点」：将当前活跃轮次的工具上下文压缩为结构化摘要。
+   *
+   * 两个候选都通过 `attemptedFingerprints` 去重，同一候选在本实例
+   * 生命周期内只尝试一次（避免重复付费的 LLM 摘要调用）。
+   *
+   * @yields `compaction` 事件，携带压缩前后 token 估算与摘要文本。
+   */
   private async *prepareContextBeforeModelCall(
-    _provider: LLMProvider,
-    _modelId: string,
+    provider: LLMProvider,
+    modelId: string,
     _cacheRetention: string | undefined,
-    _compactionControl: CompactionControl,
-    _recordUsage: (usage: Usage) => void,
-    _incrementCompactionCount: () => void,
+    compactionControl: CompactionControl,
+    recordUsage: (usage: Usage) => void,
+    incrementCompactionCount: () => void,
   ): AsyncIterable<AgentRunEvent> {
-    // Phase 4 实现。初期跳过实际压缩。
+    const HISTORY_THRESHOLD = 12000;
+    const ACTIVE_THRESHOLD = 18000;
+
+    // 第一层：历史摘要
+    const historyCandidate = this.session.getPendingHistoryArchive();
+    if (historyCandidate && historyCandidate.rawTokens > HISTORY_THRESHOLD) {
+      const fp = `history:${historyCandidate.turnIds.join(",")}`;
+      if (!compactionControl.attemptedFingerprints.has(fp)) {
+        compactionControl.attemptedFingerprints.add(fp);
+        const summary = await this.summarizeContextMessages(
+          provider,
+          modelId,
+          historyCandidate,
+        );
+        if (summary) {
+          const savings = minimumValidatedCompactionSavings(historyCandidate.rawTokens);
+          if (summary.compactedTokens >= savings) {
+            this.session.applyHistorySummary(summary.text, historyCandidate.turnIds);
+            recordUsage(summary.usage);
+            incrementCompactionCount();
+            yield {
+              type: "compaction",
+              tokensBefore: historyCandidate.rawTokens,
+              tokensAfter: summary.compactedTokens,
+              summary: summary.text,
+              usage: summary.usage,
+            };
+          }
+        }
+      }
+    }
+
+    // 第二层：活动检查点
+    const activeCandidate = this.session.getPendingActiveCheckpoint();
+    if (activeCandidate && activeCandidate.rawTokens > ACTIVE_THRESHOLD) {
+      const fp = `active:${compactionControl.epochs}`;
+      if (!compactionControl.attemptedFingerprints.has(fp)) {
+        compactionControl.attemptedFingerprints.add(fp);
+        const summary = await this.summarizeContextMessages(
+          provider,
+          modelId,
+          activeCandidate,
+        );
+        if (summary) {
+          this.session.applyActiveCheckpointSummary(summary.text, compactionControl.epochs);
+          recordUsage(summary.usage);
+          incrementCompactionCount();
+          compactionControl.epochs++;
+          yield {
+            type: "compaction",
+            tokensBefore: activeCandidate.rawTokens,
+            tokensAfter: this.session.estimateModelTokens(),
+            summary: summary.text,
+            usage: summary.usage,
+          };
+        }
+      }
+    }
+  }
+
+  // ==========================================================
+  // 上下文摘要生成（5.1）
+  // ==========================================================
+
+  /**
+   * 用 LLM 将候选轮次的消息压缩为一段摘要。
+   *
+   * 优先使用 provider 的非流式 `complete()`；不支持时退化为 `stream()` 收集。
+   * 返回 null 表示摘要为空（视为压缩失败，不应用）。
+   *
+   * @returns 摘要文本、压缩后估算 token 数（chars / 4）与 LLM 用量。
+   */
+  private async summarizeContextMessages(
+    provider: LLMProvider,
+    modelId: string,
+    candidate: { turnIds: readonly number[]; rawTokens: number },
+  ): Promise<{ text: string; compactedTokens: number; usage: Usage } | null> {
+    const turnIdSet = new Set(candidate.turnIds);
+    const messages = this.session
+      .getAllMessages()
+      .filter((m) => m.turnId !== undefined && turnIdSet.has(m.turnId))
+      .map((m) => ({
+        role: m.role,
+        content: JSON.stringify(m.content),
+      }));
+
+    const userPrompt =
+      `Please summarize the following conversation history into a concise summary ` +
+      `that preserves key decisions, facts, and context:\n\n` +
+      messages.map((m) => `[${m.role}]: ${m.content}`).join("\n");
+
+    const completionParams: import("../providers/base.js").CompletionParams = {
+      model: modelId,
+      messages: [
+        { role: "user", content: [{ type: "text", text: userPrompt }] },
+      ],
+      systemPrompt: CONTEXT_COMPACTION_SYSTEM_PROMPT,
+      maxTokens: 4000,
+    };
+
+    let text = "";
+    let usage: Usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
+    if (provider.complete) {
+      const result = await provider.complete(completionParams);
+      text = textFromContent(result.content);
+      usage = result.usage;
+    } else {
+      // provider 不支持 complete → 用 stream() 收集完整响应
+      for await (const ev of provider.stream(completionParams)) {
+        if (ev.type === "text_delta") text += ev.text;
+        else if (ev.type === "message_end") {
+          if (ev.usage) usage = ev.usage as Usage;
+        } else if (ev.type === "error") throw ev.error;
+      }
+    }
+
+    if (!text.trim()) return null;
+    const compactedTokens = Math.ceil(text.length / 4);
+    return { text, compactedTokens, usage };
+  }
+
+  /**
+   * 立即对当前历史归档执行一次压缩。
+   *
+   * 供宿主（UI/编排层）按需触发主动压缩。
+   *
+   * @returns 压缩前后 token 估算与摘要文本；无候选或压缩失败时返回 null。
+   */
+  async compactNow(
+    provider: LLMProvider,
+    modelId: string,
+  ): Promise<{ before: number; after: number; summary: string } | null> {
+    const before = this.session.estimateModelTokens();
+    const candidate = this.session.getPendingHistoryArchive();
+    if (!candidate) return null;
+
+    const result = await this.summarizeContextMessages(provider, modelId, candidate);
+    if (!result) return null;
+
+    this.session.applyHistorySummary(result.text, candidate.turnIds);
+    const after = this.session.estimateModelTokens();
+    return { before, after, summary: result.text };
+  }
+
+  // ==========================================================
+  // 执行计划 Reconciliation（5.5）
+  // ==========================================================
+
+  /**
+   * 检测执行计划锚定的用户指令摘要与最新用户消息是否一致。
+   *
+   * 当存在更新的用户指令（计划仍锚定旧指令）时，返回 reconciliation 提示，
+   * 要求 agent 在继续实质性工作前更新或清空执行计划。
+   */
+  private buildReconciliationControls(): string[] {
+    const plan = this.session.getExecutionPlan();
+    if (!plan?.updatedUserMessageDigest) return [];
+
+    // 找到最近一条真实用户消息（含文本块、非纯 tool_result）
+    const messages = this.session.getAllMessages();
+    let latestUserText = "";
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.role !== "user") continue;
+      const textBlocks = m.content.filter((b) => b.type === "text");
+      if (textBlocks.length === 0) continue;
+      latestUserText = textBlocks
+        .map((b) => (b as { text: string }).text)
+        .join("\n")
+        .trim();
+      break;
+    }
+    if (!latestUserText) return [];
+
+    const latestUserDigest = createHash("sha256")
+      .update(latestUserText, "utf-8")
+      .digest("hex");
+    if (latestUserDigest === plan.updatedUserMessageDigest) return [];
+
+    return [
+      "Reconciliation required: a newer user instruction exists. " +
+      "The latest user message overrides this plan; update or clear it before continuing substantive work.",
+    ];
+  }
+
+  // ==========================================================
+  // 模型回退（5.6）
+  // ==========================================================
+
+  /**
+   * 带模型回退的流式调用。
+   *
+   * 按 `[modelId, ...fallbackModels]` 顺序尝试：
+   * - 前导事件（`message_start`）不计入已提交；
+   *   一旦产出内容（任何非前导事件）后出错 → 直接抛出，不降级。
+   * - 401/403 在同 provider 内不降级（共享 API key，降级无意义）。
+   * - rate-limit（429 / "rate"）→ 尝试下一个模型。
+   * - 其他错误直接抛出。
+   *
+   * @yields 首个成功模型的 `StreamEvent` 序列。
+   */
+  private async *streamWithModelFallback(
+    provider: LLMProvider,
+    modelId: string,
+    fallbackModels: string[],
+    params: import("../providers/base.js").CompletionParams,
+  ): AsyncIterable<StreamEvent> {
+    const chain = [modelId, ...fallbackModels];
+    let lastError: unknown;
+    let committed = false;
+
+    for (const model of chain) {
+      try {
+        const stream = provider.stream({ ...params, model });
+        for await (const ev of stream) {
+          // 只有前导事件不计入已提交；其余事件代表已产出内容
+          if (ev.type !== "message_start") {
+            committed = true;
+          }
+          yield ev;
+        }
+        return; // 成功
+      } catch (err: unknown) {
+        lastError = err;
+        if (committed) throw err; // 已产出内容 → 不降级
+
+        const status = (err as { status?: number })?.status;
+        const message = (err as { message?: string })?.message;
+        // 401/403 不在同 provider 内 fallback（共享 API key）
+        if (status === 401 || status === 403) throw err;
+
+        // rate-limit → 尝试下一个 model
+        if (status !== 429 && !String(message ?? "").includes("rate")) throw err;
+      }
+    }
+    throw lastError; // 链耗尽
   }
 
   // ==========================================================
@@ -1137,12 +1444,16 @@ export class AgentRunner {
       providerMs: 0, toolMs: 0, compactionMs: 0, retryWaitMs: 0,
     };
 
-    const compactionControl: CompactionControl = {
-      attemptedFingerprints: new Set(),
-      attempts: 0, failures: 0, epochs: 0,
-      ...compactionRunCaps(maxToolLoops),
-      limitLogged: false,
-    };
+    // 5.1 复用实例级 compactionControl：每次 run 重置计数，
+    // 但保留 attemptedFingerprints（同一候选不重复付费压缩）。
+    const compactionControl = this.compactionControl;
+    compactionControl.attempts = 0;
+    compactionControl.failures = 0;
+    compactionControl.epochs = 0;
+    compactionControl.limitLogged = false;
+    const caps = compactionRunCaps(maxToolLoops);
+    compactionControl.maxEpochs = caps.maxEpochs;
+    compactionControl.maxAttempts = caps.maxAttempts;
 
     const recentToolObservations: ToolObservation[] = [];
     const toolLoopLimitNudgeSentRef = { value: false };
@@ -1185,13 +1496,17 @@ export class AgentRunner {
         const requestControls = [...pendingRequestControls];
         pendingRequestControls.length = 0;
 
+        // 5.5 执行计划 reconciliation：计划锚定的指令摘要与最新用户消息不一致时，
+        // 注入"更新或清空执行计划"的提示，要求先对齐再继续实质性工作。
+        requestControls.push(...this.buildReconciliationControls());
+
         // 注入待处理的 loop nudge
         if (pendingLoopNudge) {
           requestControls.push(pendingLoopNudge);
           pendingLoopNudge = null;
         }
 
-        // 2d. 调用 LLM（流式）
+        // 2d. 调用 LLM（流式，含 5.6 模型回退）
         activeProviderStartedAt = Date.now();
 
         // 合并 turnEphemeral：构建器生成的 + 用户传入的
@@ -1199,7 +1514,7 @@ export class AgentRunner {
           .filter(Boolean)
           .join("\n\n");
 
-        const streamIter = provider.stream({
+        const streamParams: import("../providers/base.js").CompletionParams = {
           model: modelId,
           messages: withRequestScopedControls(
             this.session.getMessagesForModel(
@@ -1216,7 +1531,22 @@ export class AgentRunner {
           sessionId: this.session.getSessionId(),
           reasoning: params.thinkingLevel as "off" | "low" | "high" | undefined,
           cacheRetention: params.cacheRetention,
-        });
+        };
+
+        // 5.6 回退链：优先取 provider 配置中的 fallbackModels，否则用构造器注入的
+        // this.fallbackModels。当前阶段简化：不按 supportsTools 过滤，配置时由宿主保证。
+        const providerConfig = this.config.models.providers?.[provider.name] ?? {};
+        const rawFallbacks: string[] =
+          (providerConfig as { fallbackModels?: string[] }).fallbackModels ??
+          this.fallbackModels;
+        const fallbackModels = rawFallbacks ?? [];
+
+        const streamIter = this.streamWithModelFallback(
+          provider,
+          modelId,
+          fallbackModels,
+          streamParams,
+        );
 
         // 2e. 消费流事件
         let streamText = "";

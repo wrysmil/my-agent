@@ -154,7 +154,7 @@ describe("ProvidersConfigSchema", () => {
           deepseek: {
             id: "deepseek",
             name: "DeepSeek",
-            type: "openai" as any, // 故意错
+            type: "invalid_provider" as any, // 故意错
             apiKey: "",
             baseUrl: "https://api.deepseek.com/v1",
             defaultModel: "deepseek-chat",

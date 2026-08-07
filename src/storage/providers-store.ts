@@ -11,11 +11,13 @@ import { providersFile } from "./paths.js";
 export const ProviderConfigEntrySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  type: z.literal("deepseek"),
+  type: z.enum(["deepseek", "openai", "anthropic", "custom"]),
   apiKey: z.string(),
   baseUrl: z.string().url(),
   defaultModel: z.string().min(1),
   enabled: z.boolean(),
+  fallbackModels: z.array(z.string()).max(5).optional(),
+  fallbackProvider: z.string().optional(),
 });
 
 export type ProviderConfigEntry = z.infer<typeof ProviderConfigEntrySchema>;
@@ -45,6 +47,7 @@ export function defaultProvidersConfig(): ProvidersConfig {
         baseUrl: "https://api.deepseek.com/v1",
         defaultModel: "deepseek-chat",
         enabled: true,
+        fallbackModels: [],
       },
     },
   };
