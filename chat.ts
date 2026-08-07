@@ -41,6 +41,7 @@ import {
   type MainMenuChoice,
 } from "./src/cli/menu.js";
 import { runProviderMenu } from "./src/cli/provider-menu.js";
+import { runAgentMenu } from "./src/cli/agent-menu.js";
 import { confirm, prompt, colorize, menuColor } from "./src/cli/io.js";
 import { renderSessionHistory } from "./src/cli/session-history.js";
 
@@ -267,6 +268,9 @@ async function main() {
           continue;
         case "view":
           showCurrentProvider(store);
+          continue;
+        case "agents":
+          await runAgentMenu(rl);
           continue;
         case "quit":
           console.log("👋 再见！");

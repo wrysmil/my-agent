@@ -9,7 +9,7 @@ import {
   colorize,
 } from "./io.js";
 
-export const mainMenuChoices = ["start", "history", "settings", "view", "quit"] as const;
+export const mainMenuChoices = ["start", "history", "settings", "view", "agents", "quit"] as const;
 export const providerMenuChoices = ["list", "edit", "switch", "toggle", "delete", "back"] as const;
 
 export type MainMenuChoice = (typeof mainMenuChoices)[number];
@@ -33,7 +33,8 @@ export function renderMainMenu(store: ProvidersStore): string {
     formatMenuItem(2, "加载历史对话"),
     formatMenuItem(3, "设置模型提供商"),
     formatMenuItem(4, "查看当前提供商"),
-    formatMenuItem(5, "退出"),
+    formatMenuItem(5, "子Agent管理"),
+    formatMenuItem(6, "退出"),
     "",
   ];
   return lines.join("\n");
@@ -45,7 +46,7 @@ export async function runMainMenu(
 ): Promise<MainMenuChoice> {
   for (;;) {
     console.log(renderMainMenu(store));
-    const ans = await prompt(rl, "请选择 (1-5): ");
+    const ans = await prompt(rl, "请选择 (1-6): ");
     switch (ans) {
       case "1":
         return "start";
@@ -56,9 +57,11 @@ export async function runMainMenu(
       case "4":
         return "view";
       case "5":
+        return "agents";
+      case "6":
         return "quit";
       default:
-        console.log(colorize("  无效输入，请输入 1-5", 31));
+        console.log(colorize("  无效输入，请输入 1-6", 31));
     }
   }
 }

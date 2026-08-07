@@ -3,12 +3,13 @@ import { mainMenuChoices, providerMenuChoices } from "../src/cli/menu.js";
 import { pickHistoryIndex } from "../chat.js";
 
 describe("menu choices", () => {
-  it("mainMenu returns the five canonical choices", () => {
+  it("mainMenu returns the six canonical choices", () => {
     expect(mainMenuChoices).toEqual([
       "start",
       "history",
       "settings",
       "view",
+      "agents",
       "quit",
     ]);
   });
