@@ -5,6 +5,7 @@ const ChatPage = {
   currentAssistantEl: null,
   _cancelFn: null,
   _initialized: false,
+  _currentFullText: '',
 
   init() {
     if (this._initialized) {
@@ -36,6 +37,27 @@ const ChatPage = {
     });
 
     this.loadSessionList();
+
+    // 订阅权限推送（阶段5）
+    if (typeof window.myAgent !== 'undefined' && typeof window.myAgent.onPushEvent === 'function') {
+      var self = this;
+      try {
+        window.myAgent.onPushEvent('bash:permission', function (info) {
+          self._handleBashPermission(info);
+        });
+      } catch (_) { /* 推送频道可能未注册 */ }
+
+      try {
+        window.myAgent.onPushEvent('delete_file.confirm', function (info) {
+          self._handleDeleteConfirm(info);
+        });
+      } catch (_) { /* 推送频道可能未注册 */ }
+    }
+
+    // 若当前有活跃会话，启动轮询
+    if (this.currentSessionId && typeof startPolling === 'function') {
+      startPolling(this.currentSessionId);
+    }
   },
 
   async loadSessionList() {
@@ -73,6 +95,14 @@ const ChatPage = {
           <div class="session-item-preview">${s.model} · ${this.formatTokens(s.inputTokens + s.outputTokens)}</div>
         `;
         item.addEventListener("click", () => this.switchSession(s.id));
+        (function(sessionId) {
+          item.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            if (typeof SessionsPage !== 'undefined' && SessionsPage.showRowMenu) {
+              SessionsPage.showRowMenu(sessionId, e);
+            }
+          });
+        })(s.id);
         container.appendChild(item);
       }
     }
@@ -107,14 +137,24 @@ const ChatPage = {
   },
 
   async switchSession(id) {
+    if (this.currentSessionId && typeof stopPolling === 'function') {
+      stopPolling(this.currentSessionId);
+    }
+
     this.currentSessionId = id;
-    const container = document.getElementById("chat-messages");
+    this._currentFullText = '';
+
+    var container = document.getElementById("chat-messages");
     container.innerHTML = "";
 
-    const { sessions } = await api.sessions.list({ limit: 50 });
-    this.renderSessionList(sessions);
+    var resp = await api.sessions.list({ limit: 50 });
+    this.renderSessionList(resp.sessions);
 
     this.loadHistory(id);
+
+    if (id && typeof startPolling === 'function') {
+      startPolling(id);
+    }
   },
 
   async loadHistory(sessionId) {
@@ -252,129 +292,38 @@ const ChatPage = {
     container.appendChild(el);
   },
 
+  /** 用户点击发送——消息入队，不直接发送。 */
   async send() {
-    // 防止并发发送：当前流未结束时忽略新的发送请求
     if (this.currentStream) return;
 
-    const input = document.getElementById("chat-input");
-    const message = input.value.trim();
+    var input = document.getElementById("chat-input");
+    var message = input.value.trim();
     if (!message) return;
 
     input.value = "";
     input.style.height = "auto";
 
-    // 发送中禁用按钮，防止误操作
-    const sendBtn = document.getElementById("btn-send");
+    var msg = {
+      id: 'msg_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      content: message,
+      timestamp: Date.now()
+    };
+
+    var sendBtn = document.getElementById("btn-send");
     if (sendBtn) sendBtn.disabled = true;
 
-    const container = document.getElementById("chat-messages");
-    const empty = container.querySelector(".empty-state");
+    var container = document.getElementById("chat-messages");
+    var empty = container.querySelector(".empty-state");
     if (empty) empty.remove();
 
     this.appendUserMessage(message);
 
-    const self = this;
-    const { el: assistantEl } = this.appendAssistantMessage("");
-    this.currentAssistantEl = assistantEl;
-    var fullText = "";
-
-    // 事件处理器（替代旧 stream.on('event', cb)）
-    const onEvent = function (ev) {
-      switch (ev.type) {
-        case 'text_delta':
-          fullText += ev.text;
-          assistantEl.innerHTML = renderMarkdown(fullText);
-          container.scrollTop = container.scrollHeight;
-          break;
-
-        case 'tool_start':
-          self.appendToolCallCard({
-            name: ev.name,
-            input: ev.input,
-            status: "running"
-          });
-          container.scrollTop = container.scrollHeight;
-          break;
-
-        case 'tool_end':
-          (function () {
-            var cards = container.querySelectorAll(".tool-call-card");
-            var lastCard = cards[cards.length - 1];
-            if (lastCard) {
-              var statusEl = lastCard.querySelector(".tool-call-status");
-              if (statusEl) {
-                if (ev.isError) {
-                  statusEl.className = "tool-call-status error";
-                  lastCard.classList.add("error");
-                  var errMsg = ev.errorCode
-                    ? '❌ ' + ev.result + ' · ' + ev.errorCode
-                    : '❌ ' + ev.result;
-                  statusEl.textContent = errMsg;
-                } else {
-                  statusEl.className = "tool-call-status success";
-                  var summary = ev.result
-                    ? String(ev.result).slice(0, 100)
-                    : "完成";
-                  var timing = ev.durationMs ? ' · ' + ev.durationMs + 'ms' : "";
-                  statusEl.innerHTML = '✅ ' + self.escapeHtml(summary) + timing;
-                }
-              }
-            }
-          })();
-          container.scrollTop = container.scrollHeight;
-          break;
-
-        case 'retry':
-          (function () {
-            var notice = document.createElement("div");
-            notice.className = "retry-notice";
-            notice.textContent = '🔄 重试 #' + ev.attempt + ': ' + ev.reason;
-            container.appendChild(notice);
-          })();
-          container.scrollTop = container.scrollHeight;
-          break;
-      }
-    };
-
-    // 使用新 stream API: {promise, cancel}
-    var streamResult = IPC.chat.send(this.currentSessionId, message, onEvent);
-    this.currentStream = streamResult;
-    this._cancelFn = streamResult.cancel;
-
-    streamResult.promise.then(function (result) {
-      self.currentStream = null;
-      self._cancelFn = null;
-      self.currentAssistantEl = null;
-      var sendBtn = document.getElementById("btn-send");
-      if (sendBtn) sendBtn.disabled = false;
-
-      if (result && result.sessionId) {
-        self.currentSessionId = result.sessionId;
-        self.loadSessionList();
-      }
-
-      var cursor = container.querySelector(".streaming-cursor");
-      if (cursor) cursor.remove();
-    }).catch(function (err) {
-      self.currentStream = null;
-      self._cancelFn = null;
-      self.currentAssistantEl = null;
-      var sendBtn = document.getElementById("btn-send");
-      if (sendBtn) sendBtn.disabled = false;
-
-      // 取消不是错误 — 用户主动停止
-      if (err && err.message === 'stream cancelled') return;
-
-      // 渲染错误气泡
-      var errEl = document.createElement("div");
-      errEl.className = "message assistant";
-      errEl.innerHTML = '<div class="message-content" style="color:#e74c3c;">⚠️ 错误: ' + self.escapeHtml(String(err.message || err)) + '</div>';
-      container.appendChild(errEl);
-      container.scrollTop = container.scrollHeight;
-
-      var cursor = container.querySelector(".streaming-cursor");
-      if (cursor) cursor.remove();
-    });
+    // 委托全局队列处理；回退兼容 state.js 未加载
+    if (typeof enqueueMessage === 'function') {
+      enqueueMessage(this.currentSessionId || '__new__', msg);
+    } else {
+      await this._sendOneMessage(this.currentSessionId || '__new__', msg);
+    }
   },
 
   cancel() {
@@ -384,8 +333,24 @@ const ChatPage = {
     }
     this.currentStream = null;
     this.currentAssistantEl = null;
+
+    var sid = this.currentSessionId || '__new__';
+    if (typeof messageQueues !== 'undefined') messageQueues.delete(sid);
+
+    var container = document.getElementById("chat-messages");
+    var cursor = container && container.querySelector(".streaming-cursor");
+    if (cursor) cursor.remove();
+
     var sendBtn = document.getElementById("btn-send");
     if (sendBtn) sendBtn.disabled = false;
+
+    var notice = document.createElement("div");
+    notice.className = "retry-notice";
+    notice.textContent = typeof t === 'function' ? t('chat.streaming_cancel') : '已停止生成并清空待发送队列';
+    if (container) {
+      container.appendChild(notice);
+      container.scrollTop = container.scrollHeight;
+    }
   },
 
   appendUserMessage(text) {
@@ -416,6 +381,134 @@ const ChatPage = {
     container.appendChild(el);
     container.scrollTop = container.scrollHeight;
     return { el: bubble, wrapper: el };
+  },
+
+  /**
+   * 发送单条消息（由 processMessageQueue 调用）。
+   * 将原 send() 的核心流式逻辑迁移至此。
+   */
+  async _sendOneMessage(sessionId, msg) {
+    var self = this;
+    var container = document.getElementById("chat-messages");
+
+    var assistantResult = this.appendAssistantMessage("");
+    this.currentAssistantEl = assistantResult.el;
+    this._currentFullText = '';
+
+    var onEvent = function (ev) {
+      self._handleStreamEvent(ev, assistantResult.el, container);
+    };
+
+    var streamResult = IPC.chat.send(
+      sessionId === '__new__' ? null : sessionId,
+      msg.content,
+      onEvent
+    );
+    this.currentStream = streamResult;
+    this._cancelFn = streamResult.cancel;
+
+    return streamResult.promise.then(function (result) {
+      self.currentStream = null;
+      self._cancelFn = null;
+      self.currentAssistantEl = null;
+      var sendBtn = document.getElementById("btn-send");
+      if (sendBtn) sendBtn.disabled = false;
+
+      if (result && result.sessionId) {
+        self.currentSessionId = result.sessionId;
+        if (typeof stopPolling === 'function') stopPolling('__new__');
+        if (typeof startPolling === 'function') startPolling(result.sessionId);
+        self.loadSessionList();
+      }
+
+      var cursor = container.querySelector(".streaming-cursor");
+      if (cursor) cursor.remove();
+    }).catch(function (err) {
+      self.currentStream = null;
+      self._cancelFn = null;
+      self.currentAssistantEl = null;
+      var sendBtn = document.getElementById("btn-send");
+      if (sendBtn) sendBtn.disabled = false;
+
+      if (err && err.message === 'stream cancelled') return;
+
+      var errEl = document.createElement("div");
+      errEl.className = "message assistant";
+      errEl.innerHTML = '<div class="message-content" style="color:#e74c3c;">⚠️ 错误: ' + self.escapeHtml(String(err.message || err)) + '</div>';
+      container.appendChild(errEl);
+      container.scrollTop = container.scrollHeight;
+
+      var cursor = container.querySelector(".streaming-cursor");
+      if (cursor) cursor.remove();
+    });
+  },
+
+  /**
+   * 处理流事件（从 send 的 onEvent 回调提取）。
+   */
+  _handleStreamEvent: function (ev, bubbleEl, container) {
+    var self = this;
+    switch (ev.type) {
+      case 'text_delta':
+        this._currentFullText = (this._currentFullText || '') + ev.text;
+        bubbleEl.innerHTML = typeof renderMarkdown === 'function'
+          ? renderMarkdown(this._currentFullText)
+          : this.escapeHtml(this._currentFullText).replace(/\n/g, '<br>');
+        this._highlightMentions(bubbleEl);
+        container.scrollTop = container.scrollHeight;
+        break;
+
+      case 'tool_start':
+        this.appendToolCallCard({
+          name: ev.name,
+          input: ev.input,
+          status: "running"
+        });
+        container.scrollTop = container.scrollHeight;
+        break;
+
+      case 'tool_end':
+        (function (evt) {
+          var cards = container.querySelectorAll(".tool-call-card");
+          var pendingCards = [];
+          for (var i = 0; i < cards.length; i++) {
+            var statusEl = cards[i].querySelector(".tool-call-status");
+            if (statusEl && statusEl.textContent.indexOf('执行中') !== -1) {
+              pendingCards.push({ card: cards[i], statusEl: statusEl });
+            }
+          }
+          var target = pendingCards[pendingCards.length - 1];
+          if (target) {
+            if (evt.isError) {
+              target.statusEl.className = "tool-call-status error";
+              target.card.classList.add("error");
+              var errMsg = evt.errorCode
+                ? '❌ ' + self.escapeHtml(String(evt.result || '').slice(0, 100)) + ' · ' + evt.errorCode
+                : '❌ ' + self.escapeHtml(String(evt.result || '').slice(0, 100));
+              target.statusEl.textContent = errMsg;
+            } else {
+              target.statusEl.className = "tool-call-status success";
+              var summary = evt.result
+                ? String(evt.result).slice(0, 100)
+                : "完成";
+              var timing = evt.durationMs ? ' · ' + evt.durationMs + 'ms' : "";
+              target.statusEl.innerHTML = '✅ ' + self.escapeHtml(summary) + timing;
+            }
+          }
+        })(ev);
+        container.scrollTop = container.scrollHeight;
+        break;
+
+      case 'retry':
+        (function (evt) {
+          var notice = document.createElement("div");
+          notice.className = "retry-notice";
+          notice.textContent = '🔄 重试 #' + evt.attempt + ': ' + evt.reason;
+          container.appendChild(notice);
+        })(ev);
+        container.scrollTop = container.scrollHeight;
+        break;
+    }
   },
 
   appendToolCallCard({ name, input, status }) {
@@ -462,25 +555,24 @@ const ChatPage = {
   },
 
   newSession() {
-    // 若正在生成，先取消流，避免后续回调写入已清空的容器
+    if (this.currentSessionId && typeof stopPolling === 'function') {
+      stopPolling(this.currentSessionId);
+    }
+
     if (this.currentStream) {
       this.currentStream.cancel();
       this.currentStream = null;
     }
     this.currentAssistantEl = null;
     this.currentSessionId = null;
+    this._currentFullText = '';
 
-    const container = document.getElementById("chat-messages");
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-state-icon">💬</div>
-        <div>开始一段新对话</div>
-      </div>
-    `;
+    var container = document.getElementById("chat-messages");
+    container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><div>开始一段新对话</div></div>';
 
     document.getElementById("chat-title").textContent = "新对话";
 
-    const sendBtn = document.getElementById("btn-send");
+    var sendBtn = document.getElementById("btn-send");
     if (sendBtn) sendBtn.disabled = false;
 
     document.getElementById("chat-input").focus();
@@ -491,6 +583,155 @@ const ChatPage = {
   formatTokens(n) {
     if (n >= 1000) return (n / 1000).toFixed(1) + "K";
     return String(n);
+  },
+
+  /**
+   * 轮询检测到新消息时的回调（由 state.js 的 startPolling 定时器调用）。
+   */
+  onPollMessages: function (sessionId, newMessages) {
+    if (sessionId !== this.currentSessionId) return;
+    if (!newMessages || newMessages.length === 0) return;
+
+    var container = document.getElementById("chat-messages");
+    if (!container) return;
+
+    var pollNotice = container.querySelector('.poll-notice');
+    if (!pollNotice) {
+      var notice = document.createElement('div');
+      notice.className = 'retry-notice poll-notice';
+      notice.textContent = typeof t === 'function' ? t('chat.poll_detected') : '检测到进行中的助手响应，正在同步...';
+      container.appendChild(notice);
+    }
+
+    if (this.currentSessionId) {
+      this.loadHistory(this.currentSessionId);
+    }
+  },
+
+  /**
+   * 在渲染后的消息 DOM 中高亮 @-mention。
+   */
+  _highlightMentions: function (rootEl) {
+    if (!rootEl) return;
+    var knownNames = this._collectMentionNames();
+    if (knownNames.length === 0) return;
+
+    knownNames.sort(function (a, b) { return b.length - a.length; });
+    var escaped = knownNames.map(function (n) {
+      return n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    });
+    var re = new RegExp('(' + escaped.join('|') + ')', 'g');
+
+    var walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        if (!node.parentElement) return NodeFilter.FILTER_REJECT;
+        var tag = node.parentElement.tagName;
+        if (tag === 'CODE' || tag === 'PRE' || tag === 'A' || tag === 'SPAN') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+
+    var replacements = [];
+    while (walker.nextNode()) {
+      var node = walker.currentNode;
+      if (node.textContent && re.test(node.textContent)) {
+        replacements.push(node);
+      }
+    }
+
+    for (var i = 0; i < replacements.length; i++) {
+      var node = replacements[i];
+      var span = document.createElement('span');
+      re.lastIndex = 0;
+      span.innerHTML = node.textContent.replace(re, '<span class="msg-mention">$1</span>');
+      if (node.parentNode) {
+        node.parentNode.replaceChild(span, node);
+      }
+    }
+  },
+
+  /**
+   * 收集可用于 @-mention 高亮的已知名称。
+   */
+  _collectMentionNames: function () {
+    var names = [];
+    if (typeof conversations !== 'undefined' && Array.isArray(conversations)) {
+      for (var i = 0; i < conversations.length; i++) {
+        var n = conversations[i].name;
+        if (n && names.indexOf(n) === -1) names.push(n);
+      }
+    }
+    if (typeof _agentsCache !== 'undefined' && _agentsCache) {
+      var agents = Array.isArray(_agentsCache) ? _agentsCache : [];
+      for (var j = 0; j < agents.length; j++) {
+        var an = agents[j].name;
+        if (an && names.indexOf(an) === -1) names.push(an);
+      }
+    }
+    var builtins = ['My Agent', 'Claude', 'Claude Code', 'Codex'];
+    for (var k = 0; k < builtins.length; k++) {
+      if (names.indexOf(builtins[k]) === -1) names.push(builtins[k]);
+    }
+    return names;
+  },
+
+  /**
+   * 处理 Bash 权限推送 — 弹出确认对话框。
+   */
+  _handleBashPermission: async function (info) {
+    var title = typeof t === 'function' ? t('bash.permission.title') : 'Bash 权限确认';
+    var msgTmpl = typeof t === 'function' ? t('bash.permission.message') : 'Agent 请求执行命令:\n\n{command}\n\n是否允许？';
+    var message = msgTmpl.replace('{command}', info.command || '(未知命令)');
+    var allowLabel = typeof t === 'function' ? t('bash.permission.allow_once') : '允许本次';
+    var denyLabel = typeof t === 'function' ? t('bash.permission.deny') : '拒绝';
+
+    var choice = null;
+    if (typeof uiChoice === 'function') {
+      choice = await uiChoice({
+        title: title,
+        message: message,
+        choices: [
+          { id: 'allow_once', label: allowLabel },
+          { id: 'deny', label: denyLabel }
+        ],
+        cancelLabel: denyLabel
+      });
+    }
+
+    try {
+      await window.myAgent.invoke('bash:permission_response', {
+        requestId: info.requestId,
+        allow: choice === 'allow_once'
+      });
+    } catch (_) { /* 主进程可能未实现 */ }
+  },
+
+  /**
+   * 处理文件删除确认推送。
+   */
+  _handleDeleteConfirm: async function (info) {
+    var title = typeof t === 'function' ? t('delete_file.confirm.title') : '确认删除文件';
+    var msgTmpl = typeof t === 'function' ? t('delete_file.confirm.message') : 'Agent 请求删除文件:\n\n{path}\n\n是否确认？';
+    var message = msgTmpl.replace('{path}', info.path || '(未知路径)');
+
+    var confirmed = false;
+    if (typeof uiConfirm === 'function') {
+      confirmed = await uiConfirm({
+        title: title,
+        message: message,
+        confirmLabel: typeof t === 'function' ? t('dialog.confirm') : '确认',
+        cancelLabel: typeof t === 'function' ? t('dialog.cancel') : '取消'
+      });
+    }
+
+    try {
+      await window.myAgent.invoke('delete_file:confirm_response', {
+        requestId: info.requestId,
+        confirmed: confirmed
+      });
+    } catch (_) { /* 主进程可能未实现 */ }
   },
 
   escapeHtml(str) {

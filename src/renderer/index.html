@@ -43,6 +43,7 @@
         <span id="session-count">共 0 个对话</span>
         <span class="btn btn-ghost btn-sm" data-nav="sessions" data-i18n="sidebar.manage">管理</span>
       </div>
+      <div id="session-panel-resize-handle" class="resize-handle"></div>
     </aside>
 
     <!-- ===== 主区 ===== -->
@@ -231,6 +232,12 @@
   <!-- ipc -->
   <script src="js/ipc/ipc-shim.js"></script>
   <script src="js/ipc/api.js"></script>
+
+  <!-- components（依赖 shared/state/ipc，先于 features 加载） -->
+  <script src="js/components/dialogs.js"></script>
+  <script src="js/components/sidebar.js"></script>
+  <script src="js/components/context-menu.js"></script>
+  <script src="js/components/chat-input-form.js"></script>
 
   <!-- features -->
   <script src="js/features/chat.js"></script>

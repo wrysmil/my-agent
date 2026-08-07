@@ -493,3 +493,96 @@ ul, ol { list-style: none; }
 [data-theme="dark"] .message-user .message-bubble,
 [data-theme="dark"] .message-assistant .message-bubble { background: #23233a; border-color: var(--border-default); }
 [data-theme="dark"] .toggle-slider { background: #44445c; }
+
+/* ============================================================
+   11. Components (阶段3 · GROUP-1) — 细化既有节 + 新增组件
+   ============================================================ */
+
+/* --- Dialogs 细化（覆盖 §9 既有节，对齐任务 spec） --- */
+.dialog-overlay { z-index: 1000; }
+.dialog { max-width: 420px; }
+.dialog-footer .btn { min-width: 72px; }
+
+/* --- Context Menu 细化：置于对话框之上 --- */
+.context-menu { z-index: 1100; }
+
+/* ============================================================
+   12. Chat Input Form
+   ============================================================ */
+.chat-form {
+  padding: 12px; margin: 8px 0;
+  border: 1px solid var(--color-primary-border);
+  border-radius: 8px; background: var(--bg-secondary);
+}
+.chat-form-title { font-weight: 600; font-size: 14px; margin-bottom: 10px; color: var(--color-text); }
+.chat-form-field { margin-bottom: 10px; }
+.chat-form-label { display: block; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 4px; }
+.chat-form-input, .chat-form-textarea, .chat-form-select {
+  width: 100%; padding: 6px 10px; font-size: 13px;
+  border: 1px solid var(--color-primary-border); border-radius: 6px;
+  background: var(--bg-main); color: var(--color-text);
+  box-sizing: border-box;
+}
+.chat-form-textarea { min-height: 60px; resize: vertical; }
+.chat-form-submit { margin-top: 12px; }
+.chat-form-checkbox, .chat-form-radio {
+  display: flex; align-items: center; gap: 6px; font-size: 13px;
+  color: var(--color-text); cursor: pointer;
+}
+
+/* ============================================================
+   13. Sidebar Resize
+   ============================================================ */
+.resize-handle {
+  position: absolute; top: 0; right: 0;
+  width: 4px; height: 100%; cursor: col-resize; z-index: 10;
+}
+.resize-handle:hover, .resize-handle:active {
+  background: var(--color-primary); opacity: 0.3;
+}
+
+/* 会话面板宽度绑定 --sidebar-width（sidebar.js 拖拽时以 inline var 驱动） */
+#session-panel {
+  position: relative;
+  --sidebar-width: 260px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+}
+
+/* ============================================================
+   14. @-mention Highlight (Stage 5)
+   ============================================================ */
+.msg-mention {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 500;
+}
+
+/* ============================================================
+   15. Permission Card (Stage 5)
+   ============================================================ */
+.permission-card {
+  margin: 8px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  font-size: 13px;
+}
+.permission-card .perm-cmd {
+  font-family: var(--font-mono, 'Consolas', 'Monaco', monospace);
+  background: rgba(0,0,0,0.06);
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin: 6px 0;
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.permission-card .perm-actions {
+  margin-top: 8px;
+  display: flex;
+  gap: 6px;
+}

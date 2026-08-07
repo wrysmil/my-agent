@@ -1,0 +1,44 @@
+- generic [ref=e2]:
+  - complementary [ref=e3]:
+    - generic "My Agent" [ref=e4] [cursor=pointer]: M
+    - navigation [ref=e5]:
+      - generic "新对话" [ref=e6] [cursor=pointer]
+      - generic "对话" [ref=e9] [cursor=pointer]
+      - generic "Skills" [ref=e11] [cursor=pointer]
+      - generic "设置" [ref=e14] [cursor=pointer]
+    - generic "用户" [ref=e19] [cursor=pointer]: Q
+  - complementary [ref=e20]:
+    - generic [ref=e21]:
+      - generic [ref=e22]: 对话
+      - button "新建" [ref=e23] [cursor=pointer]
+    - textbox "搜索会话标题或内容..." [ref=e26]
+    - generic [ref=e28]:
+      - generic [ref=e29]: 共 0 个对话
+      - generic [ref=e30]: 管理
+  - main [ref=e31]:
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]: 新对话
+        - generic [ref=e36]:
+          - generic [ref=e37] [cursor=pointer]: 🧠 deepseek-chat
+          - generic [ref=e38] [cursor=pointer]: 📊 0
+          - generic [ref=e39] [cursor=pointer]: 🔄 0
+          - button [ref=e40] [cursor=pointer]
+      - generic [ref=e44]:
+        - generic [ref=e49]: 开始一段新对话
+        - generic [ref=e50]: Enter 发送，Shift+Enter 换行
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - generic [ref=e53] [cursor=pointer]: 📁 my-agent ⌄
+          - generic [ref=e54] [cursor=pointer]: 🧠 deepseek-chat ⌄
+          - generic [ref=e55] [cursor=pointer]: 工具已启用
+        - generic [ref=e56]:
+          - textbox "输入消息... Enter 发送，Shift+Enter 换行" [ref=e57]
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - button "附件" [ref=e60] [cursor=pointer]
+              - button "Slash 命令" [ref=e63] [cursor=pointer]
+            - generic [ref=e67]:
+              - button "停止" [ref=e68] [cursor=pointer]
+              - button "发送" [ref=e69] [cursor=pointer]
+        - generic [ref=e70]: My Agent 可能产生错误，请核实重要信息

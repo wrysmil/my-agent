@@ -40,6 +40,79 @@ var _agentsCacheIsSummary = true;
 var _skillsCache = null;
 
 // ============================================================
+// 轮询状态（阶段5）
+// ============================================================
+
+var pollTimers = new Map();
+
+var pollMsgCounts = new Map();
+
+function startPolling(sessionId) {
+  if (pollTimers.has(sessionId)) return;
+  var timer = setInterval(async function () {
+    try {
+      var raw = await window.myAgent.invoke('sessions:getMessages', sessionId);
+      var messages = Array.isArray(raw) ? raw : (raw && raw.messages ? raw.messages : []);
+      var lastCount = pollMsgCounts.get(sessionId) || 0;
+      if (messages.length > lastCount) {
+        pollMsgCounts.set(sessionId, messages.length);
+        if (typeof ChatPage !== 'undefined' && typeof ChatPage.onPollMessages === 'function') {
+          ChatPage.onPollMessages(sessionId, messages.slice(lastCount));
+        }
+      }
+    } catch (_) { /* 忽略轮询错误 */ }
+  }, 3000);
+  pollTimers.set(sessionId, timer);
+}
+
+function stopPolling(sessionId) {
+  var timer = pollTimers.get(sessionId);
+  if (timer) {
+    clearInterval(timer);
+    pollTimers.delete(sessionId);
+  }
+  pollMsgCounts.delete(sessionId);
+}
+
+// ============================================================
+// 消息队列（阶段5）
+// ============================================================
+
+function enqueueMessage(sessionId, msg) {
+  var queue = messageQueues.get(sessionId);
+  if (!queue) {
+    queue = [];
+    messageQueues.set(sessionId, queue);
+  }
+  queue.push(msg);
+  if (queue.length === 1) {
+    processMessageQueue(sessionId);
+  }
+}
+
+async function processMessageQueue(sessionId) {
+  var queue = messageQueues.get(sessionId);
+  if (!queue || queue.length === 0) {
+    messageQueues.delete(sessionId);
+    return;
+  }
+  var msg = queue[0];
+  try {
+    if (typeof ChatPage !== 'undefined' && typeof ChatPage._sendOneMessage === 'function') {
+      await ChatPage._sendOneMessage(sessionId, msg);
+    }
+  } catch (err) {
+    messageQueues.delete(sessionId);
+    return;
+  }
+  queue.shift();
+  if (queue.length === 0) {
+    messageQueues.delete(sessionId);
+  }
+  processMessageQueue(sessionId);
+}
+
+// ============================================================
 // 视图切换
 // ============================================================
 

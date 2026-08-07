@@ -285,7 +285,8 @@ const SettingsPage = {
   },
 
   async deleteProvider(id) {
-    if (!confirm("确定删除此 Provider？")) return;
+    var ok = await uiConfirm({ title: "Providers", message: t('settings.delete_provider_confirm'), danger: true });
+    if (!ok) return;
     await api.providers.delete(id);
     this.loadProviders();
   },
@@ -683,8 +684,9 @@ const SettingsPage = {
     }
   },
 
-  resetDefaults() {
-    if (!confirm("恢复默认设置？")) return;
+  async resetDefaults() {
+    var ok = await uiConfirm({ title: t('settings.title'), message: t('settings.reset_confirm'), danger: true });
+    if (!ok) return;
     this.switchTab(this.currentTab);
   },
 

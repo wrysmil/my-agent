@@ -141,7 +141,7 @@ const SessionsPage = {
     tbody.querySelectorAll(".row-menu").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
-        this.showRowMenu(btn.dataset.id, btn);
+        this.showRowMenu(btn.dataset.id, e);
       });
     });
   },
@@ -209,7 +209,8 @@ const SessionsPage = {
 
   async batchDelete() {
     if (this.selected.size === 0) return;
-    if (!confirm(`确定删除 ${this.selected.size} 个会话？此操作不可撤销。`)) return;
+    var ok = await uiConfirm({ title: t('sessions.delete'), message: t('sessions.delete_batch_confirm', {count: this.selected.size}), danger: true });
+    if (!ok) return;
 
     const ids = [...this.selected];
     await Promise.all(
@@ -227,7 +228,8 @@ const SessionsPage = {
 
   async batchArchive() {
     if (this.selected.size === 0) return;
-    if (!confirm(`确定归档选中的 ${this.selected.size} 个会话？`)) return;
+    var ok = await uiConfirm({ title: t('sessions.archive'), message: t('sessions.archive_batch_confirm', {count: this.selected.size}) });
+    if (!ok) return;
 
     const ids = [...this.selected];
     await Promise.all(
@@ -273,7 +275,7 @@ const SessionsPage = {
     }
 
     if (exported.length === 0) {
-      alert("导出失败：没有可导出的会话数据。");
+      await uiAlert({ title: t('sessions.export'), message: t('sessions.export_fail') });
       return;
     }
 
@@ -290,22 +292,30 @@ const SessionsPage = {
     URL.revokeObjectURL(url);
   },
 
-  showRowMenu(id, anchor) {
-    const action = confirm(
-      "选择操作:\n确定=删除, 取消=重命名"
-    );
-    if (action) {
-      this.deleteSingle(id);
-    } else {
-      const name = prompt("新名称:");
+  async showRowMenu(id, anchor) {
+    var action = await showContextMenu([
+      { id: 'rename', label: t('sessions.context_rename') },
+      { id: 'export_item', label: t('sessions.context_export') },
+      { id: 'delete', label: t('sessions.context_delete'), danger: true },
+    ], anchor.clientX || 0, anchor.clientY || 0);
+
+    if (action === 'rename') {
+      var name = prompt(t('sessions.rename') + ':');
       if (name) {
-        api.sessions.rename(id, name).then(() => this.load());
+        await api.sessions.rename(id, name);
+        await this.load();
       }
+    } else if (action === 'export_item') {
+      this.selected.clear(); this.selected.add(id);
+      await this.batchExport();
+    } else if (action === 'delete') {
+      await this.deleteSingle(id);
     }
   },
 
   async deleteSingle(id) {
-    if (!confirm("确定删除此会话？")) return;
+    var ok = await uiConfirm({ title: t('sessions.delete'), message: t('sessions.delete_single_confirm'), danger: true });
+    if (!ok) return;
     await api.sessions.delete(id);
     await this.load();
   },

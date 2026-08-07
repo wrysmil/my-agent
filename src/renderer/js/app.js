@@ -52,6 +52,18 @@ var App = {
     } else {
       this.applyPage(this.pageFromHash() || 'chat');
     }
+
+    // ── Stage 3: 初始化侧边栏拖拽 ──
+    if (typeof initSidebarResize === 'function') {
+      initSidebarResize({
+        sidebarSelector: '#session-panel',
+        handleSelector: '#session-panel-resize-handle',
+        minWidth: 180,
+        maxWidth: 480,
+        defaultWidth: 260,
+        storageKey: 'myagent:sidebarWidth',
+      });
+    }
   },
 
   _fillIcons: function () {
