@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平潭 · 国际旅游岛 | 相遇那一抹蓝眼泪</title>
+<style>
+  :root {
+    --ocean-deep: #0b2e4d;   /* 深海蓝 */
+    --ocean: #1273b0;        /* 海蓝 */
+    --sky: #3aa3d6;          /* 天蓝 */
+    --lagon: #7fd8d0;        /* 潟湖南 */
+    --sand: #f4ecd8;         /* 沙滩米白 */
+    --cream: #fff9ee;        /* 暖白 */
+    --sunset: #ff8a5c;       /* 日落橙 */
+    --sun-peach: #ffb56b;    /* 桃橙 */
+    --ink: #1d2b36;          /* 深墨 */
+    --muted: #5b6b78;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    color: var(--ink);
+    background: var(--cream);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  a { text-decoration: none; color: inherit; }
+
+  /* ========== 顶部导航 ========== */
+  #nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    height: 60px; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(255, 249, 238, 0.92);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(18, 115, 176, 0.12);
+    transition: box-shadow .3s;
+  }
+  #nav.scrolled { box-shadow: 0 4px 20px rgba(11, 46, 77, 0.10); }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--ocean), var(--sky), var(--sunset));
+    display: grid; place-items: center;
+    color: #fff; font-size: 16px;
+    box-shadow: 0 3px 8px rgba(18, 115, 176, 0.35);
+  }
+  .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: 1px; color: var(--ocean-deep); }
+  .brand .sub { font-size: 11px; color: var(--muted); letter-spacing: 2px; }
+  #navLinks { display: flex; gap: 6px; list-style: none; }
+  #navLinks a {
+    display: block; padding: 7px 14px; border-radius: 20px;
+    font-size: 14px; color: var(--muted); transition: all .25s;
+  }
+  #navLinks a:hover { color: var(--ocean); }
+  #navLinks a.active { background: var(--ocean); color: #fff; }
+  .burger {
+    display: none; flex-direction: column; gap: 5px;
+    background: none; border: none; cursor: pointer; padding: 6px;
+  }
+  .burger span { width: 24px; height: 2px; background: var(--ocean-deep); border-radius: 2px; transition: .3s; }
+
+  @media (max-width: 860px) {
+    .burger { display: flex; }
+    #navLinks {
+      position: fixed; top: 60px; left: 0; right: 0;
+      flex-direction: column; gap: 0;
+      background: var(--cream);
+      border-bottom: 1px solid rgba(18, 115, 176, 0.12);
+      max-height: 0; overflow: hidden; transition: max-height .35s ease;
+      box-shadow: 0 10px 20px rgba(11, 46, 77, 0.08);
+    }
+    #navLinks.open { max-height: 400px; }
+    #navLinks a { padding: 13px 28px; border-radius: 0; font-size: 15px; }
+  }
+
+  /* ========== Hero ========== */
+  .hero {
+    position: relative; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; color: #fff;
+    background:
+      radial-gradient(1200px 500px at 80% 10%, rgba(255, 138, 92, 0.35), transparent 60%),
+      radial-gradient(900px 600px at 10% 80%, rgba(63, 190, 255, 0.35), transparent 60%),
+      linear-gradient(160deg, #0a2d4e 0%, var(--ocean) 45%, #2aa0d8 100%);
+    overflow: hidden;
+    padding: 100px 20px 60px;
+  }
+  /* 波浪潮 */
+  .wave {
+    position: absolute; bottom: -2px; left: 0; width: 100%;
+    height: 90px; line-height: 0; z-index: 2;
+  }
+  .hero .eyebrow {
+    display: inline-block; margin-bottom: 18px;
+    font-size: 13px; letter-spacing: 5px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    padding: 6px 20px; border-radius: 30px;
+  }
+  .hero h1 {
+    font-size: clamp(38px, 8vw, 76px);
+    font-weight: 800; letter-spacing: 6px; line-height: 1.1;
+    text-shadow: 0 8px 30px rgba(0,0,0,0.25);
+    margin-bottom: 16px;
+  }
+  .hero h1 em {
+    font-style: normal;
+    background: linear-gradient(90deg, var(--sunset), var(--sun-peach));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .lead {
+    max-width: 640px; margin: 0 auto 28px;
+    font-size: clamp(15px, 2.4vw, 19px); color: rgba(255,255,255,0.9);
+  }
+  .hero .cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-block; padding: 13px 32px; border-radius: 40px;
+    font-size: 15px; font-weight: 600; transition: all .3s; cursor: pointer;
+  }
+  .btn-primary { background: var(--sunset); color: #fff; box-shadow: 0 8px 24px rgba(255, 138, 92, 0.4); }
+  .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(255, 138, 92, 0.55); }
+  .btn-ghost { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.45); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.25); transform: translateY(-3px); }
+  .scroll-hint {
+    position: absolute; bottom: 34px; left: 50%; transform: translateX(-50%);
+    z-index: 3; color: rgba(255,255,255,0.85); font-size: 13px; letter-spacing: 2px;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .scroll-hint .dot { width: 8px; height: 8px; border-right: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(45deg); animation: bounce 1.6s infinite; }
+  @keyframes bounce { 0%,100%{transform:rotate(45deg) translate(0,0);} 50%{transform:rotate(45deg) translate(4px,4px);} }
+
+  /* ========== 通用区段 ========== */
+  section { padding: 84px 24px; position: relative; }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .section-head { text-align: center; margin-bottom: 48px; }
+  .tag {
+    display: inline-block; font-size: 13px; letter-spacing: 3px; color: var(--ocean);
+    background: rgba(18,115,176,0.10); padding: 5px 16px; border-radius: 30px; margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-size: clamp(26px, 4vw, 38px); color: var(--ocean-deep);
+    font-weight: 800; letter-spacing: 2px; margin-bottom: 12px;
+  }
+  .section-head .desc { color: var(--muted); max-width: 640px; margin: 0 auto; font-size: 15px; }
+
+  /* 网格 */
+  .grid { display: grid; gap: 22px; }
+  .grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 900px) { .grid.c3 { grid-template-columns: repeat(2, 1fr); } .grid.c4 { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .grid.c3, .grid.c4 { grid-template-columns: 1fr; } }
+
+  /* 卡片 */
+  .card {
+    background: #fff; border-radius: 16px; padding: 26px;
+    box-shadow: 0 6px 22px rgba(11, 46, 77, 0.07);
+    border: 1px solid rgba(18,115,176,0.08);
+    transition: transform .3s, box-shadow .3s;
+    position: relative; overflow: hidden;
+  }
+  .card:hover { transform: translateY(-6px); box-shadow: 0 16px 36px rgba(11, 46, 77, 0.14); }
+  .card .icon {
+    width: 54px; height: 54px; border-radius: 14px;
+    display: grid; place-items: center; font-size: 26px; margin-bottom: 16px;
+  }
+  .card h3 { font-size: 18px; color: var(--ocean-deep); margin-bottom: 8px; font-weight: 700; }
+  .card p { color: var(--muted); font-size: 14px; }
+
+  /* ========== 观光特色 ========== */
+  .scenic { background: linear-gradient(180deg, var(--cream) 0%, #eef7ff 100%); }
+  .card[data-tone="ocean"] .icon { background: linear-gradient(135deg,#0b7abf,#3aa3d6); }
+  .card[data-tone="sand"]  .icon { background: linear-gradient(135deg,#e7c98a,#f2dcae); }
+
+  /* ========== 蓝眼泪 ========== */
+  .glow {
+    background:
+      radial-gradient(800px 400px at 50% 0%, rgba(63, 190, 255, 0.22), transparent 60%),
+      linear-gradient(180deg, #0a1e3a 0%, #11315a 100%);
+    color: #dcebfb;
+  }
+  .glow .section-head h2 { color: #eef7ff; }
+  .glow .section-head .desc { color: #9db8d6; }
+  .glow .tag { background: rgba(127,216,208,0.15); color: var(--lagon); }
+  .glow-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(127,216,208,0.22);
+    border-radius: 16px; padding: 22px 26px; text-align: center;
+    transition: transform .3s, background .3s;
+  }
+  .glow-card:hover { transform: translateY(-5px); background: rgba(255,255,255,0.08); }
+  .glow-card .big { font-size: 34px; margin-bottom: 8px; }
+  .glow-card h4 { color: #eef7ff; margin-bottom: 6px; font-size: 16px; }
+  .glow-card p { color: #9db8d6; font-size: 13px; }
+  .glow-tip {
+    max-width: 700px; margin: 34px auto 0; text-align: center;
+    background: rgba(127,216,208,0.10); border-left: 4px solid var(--lagon);
+    padding: 18px 24px; border-radius: 10px; color: #bcd9ee; font-size: 14px;
+  }
+
+  /* ========== 人文民俗 ========== */
+  .culture { background: var(--sand); }
+  .culture .card { background: #fffdf7; }
+
+  /* ========== 大桥带宽图 ========== */
+  .bridge {
+    background: linear-gradient(120deg, #0a2d4e 0%, #1273b0 55%, #2aa0d8 100%);
+    color: #fff; text-align: center;
+  }
+  .bridge .wrap { max-width: 820px; }
+  .bridge h2 { font-size: clamp(26px, 4vw, 36px); font-weight: 800; margin-bottom: 14px; letter-spacing: 2px; }
+  .bridge .desc { color: rgba(255,255,255,0.85); margin-bottom: 28px; }
+  .bridge .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  @media (max-width: 600px){ .bridge .metrics { grid-template-columns: 1fr; } }
+  .metric { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.2); border-radius: 14px; padding: 20px; }
+  .metric .num { font-size: 32px; font-weight: 800; color: var(--sun-peach); font-family: Georgia, serif; }
+  .metric .lab { font-size: 13px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+
+  /* ========== 体验活动 ========== */
+  .activities .act {
+    display: flex; align-items: center; gap: 24px;
+    background: #fff; border-radius: 16px; padding: 24px 28px;
+    box-shadow: 0 6px 22px rgba(11,46,77,0.07); margin-bottom: 18px;
+    transition: transform .3s;
+  }
+  .activities .act:hover { transform: translateX(6px); }
+  .activities .act .emoji { font-size: 40px; flex-shrink: 0; }
+  .activities .act:nth-child(1) .emoji { color: #0b7abf; }
+  .activities .act:nth-child(2) .emoji { color: #2a7a7b; }
+  .activities .act:nth-child(3) .emoji { color: #e07b39; }
+  .activities .act:nth-child(4) .emoji { color: var(--sunset); }
+  .divider { text-align: center; color: var(--ocean); font-size: 22px; margin: 6px 0; opacity: .5; }
+
+  /* ========== 交通 ========== */
+  .transport { background: #eef7ff; }
+  .route {
+    display: flex; align-items: center; gap: 0; justify-content: center;
+    background: #fff; border-radius: 16px; padding: 26px;
+    box-shadow: 0 6px 22px rgba(11,46,77,0.07);
+  }
+  .route .node { text-align: center; flex: 1; padding: 0 8px; }
+  .route .node .ci { font-size: 30px; }
+  .route .node .city { font-weight: 700; color: var(--ocean-deep); margin-top: 4px; }
+  .route .node .mode { font-size: 12px; color: var(--muted); }
+  .route .link { flex: 1.4; text-align: center; color: var(--ocean); font-size: 13px; }
+  .route .link .bar { height: 3px; background: linear-gradient(90deg,var(--ocean),var(--sunset)); border-radius: 3px; margin-bottom: 4px; }
+
+  /* ========== 美食 ========== */
+  .food .card { text-align: center; }
+  .food .dish {
+    width: 84px; height: 84px; margin: 0 auto 14px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 40px;
+    background: linear-gradient(145deg, var(--sand), #ffe9c9);
+    box-shadow: inset 0 -4px 10px rgba(0,0,0,0.06);
+  }
+  .food .name { font-size: 17px; font-weight: 700; color: var(--ocean-deep); }
+  .food .note { font-size: 12px; color: var(--sunset); margin-bottom: 8px; }
+  .food .card p { color: var(--muted); font-size: 13px; }
+
+  /* ========== 最佳时间 ========== */
+  .season { background: linear-gradient(180deg, #fff1df 0%, var(--cream) 100%); }
+  .season .grid { gap: 16px; }
+  .season-card {
+    background: #fff; border-radius: 14px; padding: 22px; text-align: center;
+    box-shadow: 0 5px 18px rgba(11,46,77,0.07); border: 1px solid rgba(255,138,92,0.15);
+    transition: transform .3s;
+  }
+  .season-card:hover { transform: translateY(-5px); }
+  .season-card .mon { font-size: 13px; color: var(--sunset); font-weight: 700; letter-spacing: 1px; }
+  .season-card .t { font-size: 17px; color: var(--ocean-deep); font-weight: 700; margin: 6px 0 8px; }
+  .season-card p { font-size: 13px; color: var(--muted); }
+  .season-card.recommend { border: 2px solid var(--sunset); }
+  .season-card.recommend .badge {
+    position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+    background: var(--sunset); color: #fff; font-size: 11px; padding: 3px 12px; border-radius: 20px; letter-spacing: 1px;
+  }
+
+  /* ========== Footer / 返回顶部 ========== */
+  footer {
+    background: var(--ocean-deep); color: #bfd6ea; text-align: center;
+    padding: 40px 24px; font-size: 14px;
+  }
+  footer .big { font-size: 18px; color: #fff; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; }
+  footer .meta { opacity: .75; margin-bottom: 6px; line-height: 2; }
+
+  #backTop {
+    position: fixed; right: 24px; bottom: 30px; z-index: 90;
+    width: 46px; height: 46px; border-radius: 50%; border: none; cursor: pointer;
+    background: var(--ocean); color: #fff; font-size: 20px;
+    box-shadow: 0 8px 20px rgba(18,115,176,0.4);
+    opacity: 0; visibility: hidden; transform: translateY(20px);
+    transition: all .35s;
+  }
+  #backTop.show { opacity: 1; visibility: visible; transform: translateY(0); }
+  #backTop:hover { background: var(--ocean-deep); }
+
+  /* 滚动浮现 */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity .7s ease, transform .7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  @media (max-width: 760px) {
+    section { padding: 64px 18px; }
+    .activities .act { flex-direction: column; text-align: center; padding: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= 导航 ================= -->
+<nav id="nav">
+  <div class="brand">
+    <div class="logo">🌊</div>
+    <div>
+      <h1>平潭 Pingtan</h1>
+      <div class="sub">国际旅游岛</div>
+    </div>
+  </div>
+  <button class="burger" id="burger" aria-label="菜单"><span></span><span></span><span></span></button>
+  <ul id="navLinks">
+    <li><a href="#hero" class="active">首页</a></li>
+    <li><a href="#scenic">观光</a></li>
+    <li><a href="#glow">蓝眼泪</a></li>
+    <li><a href="#culture">人文</a></li>
+    <li><a href="#activities">体验</a></li>
+    <li><a href="#food">美食</a></li>
+    <li><a href="#season">最佳时间</a></li>
+  </ul>
+</nav>
+
+<!-- ================= Hero ================= -->
+<header class="hero" id="hero">
+  <div>
+    <span class="eyebrow">福建 · 福州 · 平潭</span>
+    <h1>海风吹过<br>遇见<em>蓝眼泪</em>的平潭</h1>
+    <p class="lead">这里是海坛岛，是石头厝，是赶海人与弄潮儿的故乡。<br>距福州一桥之隔，把整片台湾海峡的浪漫，都装进一座岛。</p>
+    <div class="cta">
+      <a href="#scenic" class="btn btn-primary">🌊 开启海岛之旅</a>
+      <a href="#glow" class="btn btn-ghost">✨ 追蓝眼泪去</a>
+    </div>
+  </div>
+  <svg class="wave" viewBox="0 0 1440 90" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,48 C240,90 480,10 720,40 C960,70 1200,20 1440,50 L1440,90 L0,90 Z" fill="#fff9ee"/>
+  </svg>
+  <div class="scroll-hint">向下探索<span class="dot"></span></div>
+</header>
+
+<!-- ================= 观光特色 ================= -->
+<section class="scenic" id="scenic">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">SCENIC · 海岛四绝</span>
+      <h2>来平潭，先看海</h2>
+      <p class="desc">绵延的沙滩、黑沉的礁石、依山而立的古厝与跨海长龙，是一片岛屿最诚实的风景。</p>
+    </div>
+    <div class="grid c4">
+      <div class="card reveal" data-tone="ocean">
+        <div class="icon">🏝️</div>
+        <h3>海坛岛</h3>
+        <p>福建第一大岛、全国第五大岛，海岸线如缎带般环抱全岛，是平潭旅游的核心所在。</p>
+      </div>
+      <div class="card reveal" data-tone="sand">
+        <div class="icon">🪨</div>
+        <h3>北港村石头厝</h3>
+        <p>青灰石块垒砌的古村落，屋顶压着的石块在风中作响，是石头会唱歌的海岛人家。</p>
+      </div>
+      <div class="card reveal" data-tone="ocean">
+        <div class="icon">🏖️</div>
+        <h3>龙凤头浴场</h3>
+        <p>城区最近的滨海浴场，细软白沙与碧蓝海水相接，日出时分格外动人。</p>
+      </div>
+      <div class="card reveal" data-tone="sand">
+        <div class="icon">🌴</div>
+        <h3>坛南湾</h3>
+        <p>被誉为"醉美海湾"，沙质细腻，潮汐平缓，是散步与露营观星的好去处。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 蓝眼泪 ================= -->
+<section class="glow" id="glow">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">BIOLUMINESCENCE · 蓝眼泪</span>
+      <h2>邂逅一场海的星光</h2>
+      <p class="desc">每年春夏之交，夜光藻随潮而涌，被海浪拍打成点点蓝色荧光，如同碎落人间的银河。</p>
+    </div>
+    <div class="grid c3">
+      <div class="glow-card reveal">
+        <div class="big">🌌</div>
+        <h4>什么是蓝眼泪</h4>
+        <p>大量夜光藻受海浪扰动而发出的生物荧光，在黑暗中呈幽蓝色光带，为海洋奇景。</p>
+      </div>
+      <div class="glow-card reveal">
+        <div class="big">📅</div>
+        <h4>最佳观赏季</h4>
+        <p>每年四至六月为盛期，气候转暖、海况平稳的夜晚出现概率更高。</p>
+      </div>
+      <div class="glow-card reveal">
+        <div class="big">📍</div>
+        <h4>观赏地推荐</h4>
+        <p>坛南湾、龙凤头、猴研岛一线开阔沙滩，远离灯光处光带更为清晰。</p>
+      </div>
+    </div>
+    <div class="glow-tip reveal">
+      💡 追泪小贴士：提前查看潮汐与风向，无风、晴朗的夜晚成功率最高；切勿使用强光手电或下水踩踏，让这份浪漫多留几夜。
+    </div>
+  </div>
+</section>
+
+<!-- ================= 人文民俗 ================= -->
+<section class="culture" id="culture">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">HERITAGE · 人文风情</span>
+      <h2>岛上的旧时光</h2>
+      <p class="desc">石头屋里有渔家的炊烟，古街巷中有岁月的纹路，一座岛藏着半部闽海人文。</p>
+    </div>
+    <div class="grid c3">
+      <div class="card reveal">
+        <div class="icon">🏘️</div>
+        <h3>石头厝 · 石屋村落</h3>
+        <p>花岗岩与火山岩垒砌的石屋，冬暖夏凉、抗风坚固，屋顶压石是平潭渔村独有的风景线，被称作"彩色城堡"。</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon">🏯</div>
+        <h3>海坛古城</h3>
+        <p>以闽越建筑为蓝本的古色街市，青石板路、飞檐翘角，集民俗、市集、演艺于一体，是了解海坛文化的一扇窗。</p>
+      </div>
+      <div class="card reveal">
+        <div class="icon">⚓</div>
+        <h3>海岛渔村生活</h3>
+        <p>清晨出海、午后补网、傍晚赶潮，渔歌声里看潮起潮落——在这里，慢是渔村最深的底色。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 平潭海峡大桥 ================= -->
+<section class="bridge" id="bridge">
+  <div class="wrap">
+    <h2 class="reveal">🌉 平潭海峡公铁两用大桥</h2>
+    <p class="desc reveal">世界最长跨海峡公铁两用大桥，如卧波长龙横贯海坛海峡，让"看海"变成举步之遥。</p>
+    <div class="metrics reveal">
+      <div class="metric"><div class="num">16.34<span style="font-size:14px">km</span></div><div class="lab">全长</div></div>
+      <div class="metric"><div class="num">公·铁</div><div class="lab">公路 + 铁路双层通行</div></div>
+      <div class="metric"><div class="num">135<span style="font-size:14px">km/h</span></div><div class="lab">铁路设计时速</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 体验活动 ================= -->
+<section class="activities" id="activities">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">EXPERIENCE · 沉浸体验</span>
+      <h2>在这里，时间随潮汐走</h2>
+      <p class="desc">不赶景点，不必匆匆——用脚踏车丈量海岸，用铲子翻开沙下的秘密。</p>
+    </div>
+    <div class="reveal">
+      <div class="act"><span class="emoji">🦀</span><div><h3 style="color:var(--ocean-deep);margin-bottom:4px;">赶海拾贝</h3><p style="color:var(--muted)">退潮时走进滩涂，翻开石缝，蛏子、蛤蜊、小蟹都藏在这里，是亲子与朋友最朴素的海岛乐趣。</p></div></div>
+      <div class="act"><span class="emoji">🎣</span><div><h3 style="color:var(--ocean-deep);margin-bottom:4px;">出海海钓</h3><p style="color:var(--muted)">跟着渔民的小船，把钓线抛进海坛海峡，等一条石斑或带鱼上钩，把"鲜"字钓回来。</p></div></div>
+      <div class="act"><span class="emoji">🚴</span><div><h3 style="color:var(--ocean-deep);margin-bottom:4px;">骑行环岛</h3><p style="color:var(--muted)">沿滨海环岛路一路向南，左手碧海、右手风车，海风扑面，是最自由的看海方式。</p></div></div>
+      <div class="act"><span class="emoji">🌅</span><div><h3 style="color:var(--ocean-deep);margin-bottom:4px;">看日出日落</h3><p style="color:var(--muted)">清晨在龙王头候一场日出，傍晚站在坛南湾看夕阳沉入海平线，把一天过成两场浪漫。</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 交通 ================= -->
+<section class="transport" id="transport">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">TRANSPORT · 怎么去</span>
+      <h2>一桥飞架，说走就走</h2>
+      <p class="desc">从福建沿海驱车上桥，跨海即达；高铁与航线让这座岛越来越近。</p>
+    </div>
+    <div class="route reveal">
+      <div class="node"><div class="ci">🏙️</div><div class="city">福州</div><div class="mode">出发地</div></div>
+      <div class="link"><div class="bar"></div>平潭海峡公铁两用大桥 · 公路&铁路直达</div>
+      <div class="node"><div class="ci">🌊</div><div class="city">海坛岛</div><div class="mode">平潭主岛</div></div>
+      <div class="link"><div class="bar"></div>岛上公交 / 骑行 / 包车</div>
+      <div class="node"><div class="ci">🏖️</div><div class="city">各大景区</div><div class="mode">坛南湾·龙凤头·猴研岛</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 美食 ================= -->
+<section class="food" id="food">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">CUISINE · 舌尖平潭</span>
+      <h2>把海的味道吃进嘴里</h2>
+      <p class="desc">靠海吃海，平潭人的餐桌从不缺席大海的馈赠——从一屉咸食开始认识这座岛。</p>
+    </div>
+    <div class="grid c4">
+      <div class="card reveal"><div class="dish">🍤</div><div class="name">海鲜大餐</div><div class="note">时令鲜活</div><p>石斑、黄鱼、蛏子、海贝，清蒸白灼便足够鲜甜，尝尽"鲜"的真味。</p></div>
+      <div class="card reveal"><div class="dish">🥟</div><div class="name">时来运转</div><div class="note">滨海咸食</div><p>又称"咸食"，以地瓜粉皮包裹肉馅蒸制，团圆吉祥，是平潭待客的头牌小食。</p></div>
+      <div class="card reveal"><div class="dish">🥠</div><div class="name">海蛎饼</div><div class="note">外酥里嫩</div><p>金黄酥脆的饼皮裹着肥美海蛎，一口咬下去咔吱作响，让人欲罢不能。</p></div>
+      <div class="card reveal"><div class="dish">🍚</div><div class="name">八珍炒糕</div><div class="note">老字号味道</div><p>海味八珍与软糯米糕同炒，咸香兼备，是本地人从小吃到大的乡愁之味。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 最佳旅行时间 ================= -->
+<section class="season" id="season">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="tag">WHEN TO GO · 最佳时间</span>
+      <h2>选对日子，遇见更好的海</h2>
+      <p class="desc">平潭四季各有海味，但挑对季节，能把蓝眼泪、晴好与舒适统统收入行囊。</p>
+    </div>
+    <div class="grid c4" style="padding-top:10px;">
+      <div class="season-card reveal recommend">
+        <div class="badge">⭐ 强烈推荐</div>
+        <div class="mon">4 — 6 月</div>
+        <div class="t">蓝眼泪黄金季</div>
+        <p>气候回暖、海况平稳，蓝眼泪进入盛期，是追泪与亲海的最佳窗口。</p>
+      </div>
+      <div class="season-card reveal">
+        <div class="mon">7 — 9 月</div>
+        <div class="t">盛夏戏水季</div>
+        <p>海水最暖宜下海，但恰逢台风与雨季，出行前多看天气、备好行程备选。</p>
+      </div>
+      <div class="season-card reveal">
+        <div class="mon">10 — 11 月</div>
+        <div class="t">秋高气爽</div>
+        <p>台风渐远、天高云淡，晒秋阳、看日落、骑行环岛都格外舒服。</p>
+      </div>
+      <div class="season-card reveal">
+        <div class="mon">12 — 3 月</div>
+        <div class="t">冬暖慢游</div>
+        <p>游客稀少、价钱宜人，适合避寒慢游，品味石头厝里的渔家烟火。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Footer ================= -->
+<footer>
+  <div class="big">🌊 平潭 · 国际旅游岛</div>
+  <div class="meta">海坛岛 · 石头厝 · 蓝眼泪 · 龙凤头 · 坛南湾 · 公铁大桥</div>
+  <div class="meta">页面仅供宣传展示 · 信息整理自公开资料</div>
+</footer>
+
+<button id="backTop" aria-label="返回顶部">↑</button>
+
+<script>
+// ============================================================
+// 平潭宣传页 · 轻量交互（无外部依赖）
+// ============================================================
+
+// 1. 导航高亮 + 滚动监测
+function onScroll() {
+  const nav = document.getElementById("nav");
+  nav.classList.toggle("scrolled", window.scrollY > 10);
+
+  const links = document.querySelectorAll("#navLinks a");
+  const backTop = document.getElementById("backTop");
+  backTop.classList.toggle("show", window.scrollY > 500);
+
+  // 当前节激活高亮
+  let current = "hero";
+  const sections = ["hero", "scenic", "glow", "culture", "activities", "food", "season"];
+  const pos = window.scrollY + 120;
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.offsetTop <= pos) current = id;
+  });
+  links.forEach(a => {
+    a.classList.toggle("active", a.getAttribute("href") === "#" + current);
+  });
+}
+window.addEventListener("scroll", onScroll, { passive: true });
+
+// 2. 返回顶部
+document.getElementById("backTop").addEventListener("click", () => {
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+
+// 3. 移动端菜单
+const burger = document.getElementById("burger");
+const navLinks = document.getElementById("navLinks");
+burger.addEventListener("click", () => navLinks.classList.toggle("open"));
+navLinks.addEventListener("click", (e) => {
+  if (e.target.tagName === "A") navLinks.classList.remove("open");
+});
+
+// 4. 滚动浮现（IntersectionObserver）
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add("visible");
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.12 });
+document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+
+// 5. 初始滚动状态
+onScroll();
+</script>
+</body>
+</html>

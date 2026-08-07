@@ -42,60 +42,60 @@ const CATALOG: ToolCatalogEntry[] = [
   // ---- fs ----
   {
     name: "read_file",
-    summary: "Read file contents with optional line range.",
+    summary: "读取文件内容，支持指定行号范围。",
     group: "fs",
   },
   {
     name: "write_file",
-    summary: "Write UTF-8 text content to a file (overwrite).",
+    summary: "将 UTF-8 文本写入文件（覆盖已有文件）。",
     group: "fs",
   },
   {
     name: "edit_file",
-    summary: "Exact string replacement in an existing file.",
+    summary: "对现有文件进行精确字符串替换（old→new）。",
     group: "fs",
   },
   {
     name: "delete_file",
-    summary: "Delete a file within the workspace. ⚠️ Irreversible.",
+    summary: "删除工作区内的文件。⚠️ 不可恢复，请谨慎使用。",
     group: "fs",
     destructive: true,
   },
   {
     name: "list_files",
-    summary: "List directory contents with recursive depth control.",
+    summary: "列出目录内容，支持递归深度控制。",
     group: "fs",
   },
   {
     name: "search_files",
-    summary: "Search files by name/glob pattern.",
+    summary: "按文件名/glob 模式搜索文件。",
     group: "fs",
   },
   {
     name: "grep_files",
-    summary: "Search file contents with regex (ripgrep-style).",
+    summary: "在文件内容中搜索文本/正则表达式。",
     group: "fs",
   },
   {
     name: "stat_file",
-    summary: "Get file metadata: size, lines, character count.",
+    summary: "获取文件元信息：大小、行数、字符数。",
     group: "fs",
   },
   {
     name: "tool_result_search",
-    summary: "Search within a persisted oversized tool result by ref.",
+    summary: "在已持久化的超大工具结果中按 ref 搜索。",
     group: "fs",
   },
   {
     name: "tool_result_read_chunk",
-    summary: "Read a bounded byte slice of a persisted tool result.",
+    summary: "按游标读取持久化工具结果的指定片段。",
     group: "fs",
   },
 
   // ---- shell ----
   {
     name: "bash",
-    summary: "Execute a shell command in a subprocess.",
+    summary: "在子进程中执行 shell 命令。⚠️ 具有副作用。",
     group: "shell",
     permission: "localExec",
     destructive: true,
@@ -104,26 +104,26 @@ const CATALOG: ToolCatalogEntry[] = [
   // ---- web ----
   {
     name: "web_fetch",
-    summary: "Fetch a URL and extract text content.",
+    summary: "抓取指定 URL 的网页内容并提取文本。",
     group: "web",
   },
 
   // ---- meta ----
   {
     name: "run_worker",
-    summary: "Spawn an ephemeral worker for a bounded sub-task (private result).",
+    summary: "派生临时 worker 完成有界子任务（结果私密）。",
     group: "meta",
     ownerAgent: "commander",
   },
   {
     name: "dispatch_to",
-    summary: "Send a task to a named agent whose reply is visible to the user.",
+    summary: "向命名 agent 派发任务，其回复对用户可见。",
     group: "meta",
     ownerAgent: "commander",
   },
   {
     name: "hand_off_to",
-    summary: "Hand off control to a named agent; turn ends.",
+    summary: "将控制权移交给命名 agent；本轮结束。",
     group: "meta",
     ownerAgent: "commander",
   },

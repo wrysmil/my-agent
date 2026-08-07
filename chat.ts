@@ -187,12 +187,12 @@ const allTools: AgentTool[] = [...BUILTIN_TOOLS, ...TOOL_RESULT_TOOLS, calculato
 // 注册非 builtin 工具到目录
 registerCatalogEntry({
   name: "calculator",
-  summary: "Evaluate mathematical expressions.",
+  summary: "执行数学表达式计算。",
   group: "meta",
 });
 registerCatalogEntry({
   name: "get_current_time",
-  summary: "Get the current date and time for a timezone.",
+  summary: "获取指定时区的当前日期和时间。",
   group: "meta",
 });
 
@@ -563,9 +563,9 @@ async function runChat(opts: {
 
     // 调度工具（动态注入）
     console.log("  🔀 Task / cross-session state (动态注入)");
-    console.log("    🔧 run_worker — Spawn ephemeral worker for bounded sub-task.");
-    console.log("    🔧 dispatch_to — Send task to named agent (visible reply).");
-    console.log("    🔧 hand_off_to — Hand off control to named agent; turn ends.");
+    console.log("    🔧 run_worker — 派生临时 worker 完成有界子任务（结果私密）。");
+    console.log("    🔧 dispatch_to — 向命名 agent 派发任务，回复对用户可见。");
+    console.log("    🔧 hand_off_to — 将控制权移交给命名 agent，本轮结束。");
     console.log("");
   }
 
@@ -671,7 +671,13 @@ async function runChat(opts: {
               console.log(`   📊 压缩前: ~${result.before.toLocaleString()} tokens`);
               console.log(`   📊 压缩后: ~${result.after.toLocaleString()} tokens`);
               const pct = result.before > 0 ? ((1 - result.after / result.before) * 100).toFixed(1) : "0.0";
-              console.log(`   ✅ 节省 ${pct}% (${(result.before - result.after).toLocaleString()} tokens)\n`);
+              console.log(`   ✅ 节省 ${pct}% (${(result.before - result.after).toLocaleString()} tokens)`);
+              console.log("─".repeat(44));
+              console.log("📝 压缩摘要:");
+              for (const line of result.summary.split("\n")) {
+                console.log(`   ${line}`);
+              }
+              console.log("─".repeat(44) + "\n");
             }
             continue;
           }

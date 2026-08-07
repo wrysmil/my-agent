@@ -5560,9 +5560,39 @@ export function deleteSessionFile(sessionId: string): void {
 
 ---
 
+> **第三阶段完成后的下一条主线（Skill）：** 路径 / 沙箱 / 存储就绪后，my-agent 仍缺「能力说明书」发现与执行管线。请接 [`仿写Skill系统指南.md`](./仿写Skill系统指南.md)（S0 概念 → S1 闭环 → S2 产品层 → S3 全量对齐）。可与下方第四阶段（工具）并行；Skill 的 `read_file` / `run-skill` 依赖文件与 bash 工具可用。  
+> **另一条主线（子 Agent）：** 若想让主 Agent 把子任务拆给独立 LLM 回合（`run_worker` / `dispatch_to` / `hand_off_to`），接 [`仿写子Agent系统指南.md`](./仿写子Agent系统指南.md)——复用 Runner + 会话隔离 + `dispatchSlots`，S1 即可跑通「派发 → 子回合 → 结果交回」闭环，与 Skill 指南并行推进。
+
+---
+
 ## 第四阶段：工具系统
 
-在第二阶段你有了工具抽象，这个阶段是把它变成一个注册、管理和调度系统。
+在第二阶段你有了工具抽象（`AgentTool` 接口 + `execute()`），这个阶段是把它变成一个**注册、权限门控、结果管理的完整系统**。四个子模块的分工如下：
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     AgentRunner                          │
+│  组装 tools[] → 注入 system prompt → 执行 tool-use 轮次    │
+└──────┬──────────────┬──────────────┬────────────────────┘
+       │              │              │
+       ▼              ▼              ▼
+┌────────────┐ ┌────────────┐ ┌──────────────────────┐
+│ 4.1 工具目录 │ │4.2/4.3 工具│ │ 4.4 工具结果管理       │
+│ tool-catalog│ │ file-tools │ │ tool-result-cap       │
+│             │ │ local-tools│ │ tool-result-tools     │
+│ 注册 & 可见性│ │ 执行 & 权限 │ │ 溢出 & 持久化 & GC     │
+└────────────┘ └─────┬──────┘ └──────────────────────┘
+       │              │              │
+       │     ┌────────┴────────┐     │
+       │     ▼                 ▼     │
+       │  bash-permissions  path-sandbox
+       │  (人工审批门控)     (路径沙箱)
+       │                    │
+       └────────────────────┴─────────
+            共用: local_exec 模式 / 敏感路径判定
+```
+
+**阅读顺序建议：** 4.1（目录和分组）→ 4.3（权限模式，因为 4.2 和 4.3 共用同一套门控）→ 4.2（文件工具细节）→ 4.4（结果溢出和持久化）。如果你是第一次仿写，先通读一遍再动手——这四个模块互相引用，单独实现哪个都会遇到依赖。
 
 ### 4.1 工具目录
 
@@ -5629,6 +5659,8 @@ export function isToolVisibleToAgent(name: string, agentId: string): boolean {
 - 目录条目**未声明 `ownerAgent`** → 对所有执行者可见。
 - 声明了 `ownerAgent` → **仅**当 `agentId` 匹配（单个 id 或 id 数组）时注入，对其他每个执行者不可见（含指挥官）。
 - 不在目录中的工具（指挥官调用方提供的 `extraTools` 如 `dispatch_to` / `run_worker` / `marketplace_*`）**永不按所有者门控** → 始终可见。
+- `ownerAgent` 与 `permission` **可以共存**：例如 `video_studio` 同时有 `permission: 'localExec'` 和 `ownerAgent: VIDEO_STUDIO_AGENT_ID`——先过所有者门控（其他 agent 根本看不到），对主人再走权限门控（执行时审批）。
+- 多 agent 共享工具的模式：`research_rerank` 的 `ownerAgent: DEEP_RESEARCH_AGENT_IDS`（长度为 4 的数组），所有深度研究相关 agent 共享同一个工具。
 - **Runner 调用点：** `runner.ts::allTools.filter((tool) => isToolVisibleToAgent(tool.name, agentId))` — 在把 `tools[]` 交给模型前应用。
 
 #### 4.1.4 反漂移测试
@@ -5638,16 +5670,41 @@ export function isToolVisibleToAgent(name: string, agentId: string): boolean {
 #### 4.1.5 渲染：`getToolsSystemPromptBlock`
 
 ```ts
+/** 固定渲染顺序 + 每组的节标题。**必须稳定** — 同输入 → 同输出，KV 缓存友好。 */
+const GROUP_ORDER: ReadonlyArray<{ group: ToolGroup; title: string }> = [
+  { group: 'fs',    title: 'Files / workspace' },
+  { group: 'shell', title: 'Shell' },
+  { group: 'pdf',   title: 'PDF' },
+  { group: 'office',title: 'Office documents' },
+  { group: 'kb',    title: 'Library' },
+  { group: 'chat',  title: 'Conversation history' },
+  { group: 'image', title: 'Image' },
+  { group: 'video', title: 'Video' },
+  { group: 'web',   title: 'Web' },
+  { group: 'connector', title: 'Connectors (third-party services)' },
+  { group: 'meta',  title: 'Task / cross-session state' },
+];
+
+const PREAMBLE =
+  'Built-in tools available in the current session, grouped by purpose. ' +
+  '**Calling a tool does NOT require a skill wrapper** — if a tool can do the job in one call, just call it; ' +
+  'do not design a skill for a single-step task. The real value of a skill is encapsulating multi-step logic, ' +
+  'managing third-party API credentials, or reusing a high-frequency composite flow.';
+
 export function getToolsSystemPromptBlock(names: string[]): string {
   if (!names.length) return '';
-  // 按固定 GROUP_ORDER 组装；组内顺序匹配目录数组 — 同输入 → 同输出，KV 缓存友好
-  // ...
+  // 1. 去重 names → 查 CATALOG_BY_NAME → 收集 present 条
+  // 2. 对 GROUP_ORDER 每组：从 TOOL_CATALOG 取按组内顺序的条目，过滤到 present
+  // 3. 每项输出 `- **name** — summary (gated by local-execution permission)` （若 permission === 'localExec'）
+  // 4. 返回 `## Available tools\n\n{PREAMBLE}\n\n### {title}\n...`
 }
 ```
 
 - **输入必须来自 `runner.ts::allTools.map(t => t.name)`** — 这样运行时条件工具（memory / metacognition / plan_* / uid 门控的 fileTools 等）自动跟随实际注入状态，无"列出但未注入"漂移。
 - 目录中**缺失的 name** → `log.warn` + 跳过该名（永不抛）。
 - 空 `names` → 返回 `""`（core-agent 把空字符串视为"跳过此节"）。
+- **PREAMBLE 的语义**：明确告诉 LLM"调用工具不需要 skill 包装"——防止模型为单步操作（比如读一个文件）设计一个 skill。这是对抗模型过度抽象的关键提示。
+- **`permission === 'localExec'` 时**，渲染结果会追加 `(gated by local-execution permission)` 标记，让模型提前知道哪些工具可能需要用户审批。
 
 #### 4.1.6 连接器的伞形注入
 
@@ -5763,6 +5820,32 @@ async function gatePathAccess(opts, abs, operation, ctx?): Promise<string | null
 | `publish_outputs` | `{ paths }` | 声明本回合完整交付文件清单 |
 | `create_artifact` | `{ files: [{path, content}], title }` | 多文件 HTML/CSS/JS 写到 `<uid>/cloud/chat_artifacts/<cid>/<aid>/`，**`chat-app://` 协议只读服务** |
 
+**`edit_file` 的新鲜度检查（`checkEditFreshness`）：**
+
+```ts
+// read-tracker.ts 记录每次 read_file / grep_files 读取的 (path, mtimeMs)
+// edit_file 执行时：
+//   1. fs.statSync(absPath).mtimeMs
+//   2. 对比 read-tracker 记录的 mtimeMs
+//   3. 若文件被外部修改过（mtime 变了但 model 不知道）→ 拒绝编辑
+//   4. 理由：model 基于旧内容做的 old_string 匹配可能部分命中，产生静默损坏
+```
+
+这是**并发安全 + 外部修改防护**的组合：`fileEditLock` 防止同进程并发写，`checkEditFreshness` 防止基于过时内容编辑。
+
+**`delete_file` 的工作区外确认卡：**
+
+工作区/附件内的文件直接删除。工作区外的文件，每次删除生成一个内联确认 token（`crypto.randomBytes(4).toString('hex')`），token 通过 `<confirm-delete token="...">` 卡片展示给用户。同轮多个工作区外删除合并为一张卡片。只有用户点击确认后，token 才被转交到下一次 `delete_file` 调用完成实际操作。这防止了 LLM 在 unrestricted 模式下静默删除用户文件。
+
+**`publish_outputs` 的验证回调：**
+
+```ts
+// onOutputsPublished(paths) → 回调在 write 侧验证每个路径
+// 返回值是实际存在的路径子集（过滤掉模型幻觉出来的文件）
+// 只有验证通过的路径才出现在消息 footer 的交付清单中
+```
+
+
 #### 4.2.4 文件 indexer 协议（stat_file / read_file / grep_files 共享）
 
 ```ts
@@ -5802,15 +5885,31 @@ function addLineNumbers(text: string, startLine: number): { text: string; lastLi
 
 **`<n>\t<text>`** 是**显示注解**——不是文件内容本身，因此 `edit_file` 的 `old_string` **必须省略**这个前缀。
 
-#### 4.2.6 仿写要点
+#### 4.2.6 Skill 禁用拦截：`guardDisabledSkillAccess`
+
+这是一个容易被忽略的安全点。用户在 UI 中可以禁用某个 skill——但如果 LLM 还能通过 `read_file` 读取该 skill 的 SKILL.md 或脚本文件，就等于绕过了禁用。
+
+```ts
+// file-tools.ts 中的逻辑（简化）：
+// read_file 在执行前检查目标路径是否落在某个 skill 目录下
+// 如果是，且用户禁用了该 skill → 返回 E_SKILL_DISABLED 错误
+// parseSkillPath(absPath) 解析路径，提取 skill_id
+// isSkillEnabled(userId, skillId) → false 则拒绝
+```
+
+**三条 skill 根都会被检查：** 用户自定义 skill 目录（cloud）、平台 marketplace 安装目录（local）、以及内置 skill 目录。这确保了禁用是真正有效的——不只是不注入 skill prompt，而是连文件访问都切断。
+
+#### 4.2.7 仿写要点
 
 1. **`gatePathAccess` 双层门控** — `guardPath`（根列表）→ `gateSensitivePathAccess`（TCC 路径审批）。第一道闸放行 ≠ 第二道闸放行。
 2. **`read_file` 不触发提取** — 富文档必须先 `stat_file`。这是性能与一致性的契约：避免 read 一个 50MB PDF 时静默拖起 pdfjs。
-3. **`edit_file` 用 `fileEditLock` 串行化** — 同文件并行 worker 的 stat→read→write 交错会丢更新。
+3. **`edit_file` 用 `fileEditLock` 串行化 + `checkEditFreshness`** — 锁防止同进程并发写；新鲜度检查（对比 read-tracker 记录的 mtime）防止基于过时内容的编辑。前者防并发，后者防外部修改。
 4. **`write_file` 冲突时 uniquify** — `hasProducedPath` 谓词：本回合自己写的视为精炼，否则目标存在则改名 `-2/-3`。`edit_file` 忽略此谓词（语义是 "modify existing"）。
 5. **`readOnlyExtraRoots` 是单行道** — 只对 read_file / stat_file 可见；所有写侧工具都不接受。群聊指挥官用这个来检查 agent.json 但不给写权限。
 6. **持久化 tool-result 不可由 read_file 读** — 必须用 `tool_result_search` / `tool_result_read_chunk` 走 ref；防止一次无界读取把溢出拉回上下文。
-7. **dispath/skill disable 拦截** — `guardDisabledSkillAccess` 在 read_file 路径上检查用户是否禁用了目标路径所属的 skill_id，避免 LLM 通过读 SKILL.md 绕开禁用。
+7. **skill disable 拦截** — `guardDisabledSkillAccess` 在 read_file 路径上检查用户是否禁用了目标路径所属的 skill_id。三条 skill 根（自定义/平台/内置）都会被检查。禁用不只是不注入 prompt，文件访问也切断。
+8. **`delete_file` 工作区外确认卡** — 工作区外的删除不走 `bash rm` 的权限门控，而是生成内联确认 token + `<confirm-delete>` 卡片，用户点击确认后才执行。同轮合并。
+9. **`publish_outputs` 验证回调** — `onOutputsPublished` 过滤掉模型幻觉出来的文件路径，只有实际存在的文件才出现在交付清单中。
 
 **代码量：** `file-tools.ts` ~1800 行（含 read_file / write_file / edit_file / search_files / grep_files / list_files / stat_file / ocr_file / tool_result_search / tool_result_read_chunk / publish_outputs / create_artifact 全套）。
 
@@ -5939,6 +6038,63 @@ export async function requestBashDecision(opts: {
 - 心跳用 `unref()`：不阻塞进程退出。
 - 不在此自动超时——人类审批时间**不算工具 idle**（这是为了让 watchdog 不误判），调用方可通过心跳显示进度。
 
+#### 4.3.4.1 审批闭环：`requestBashDecision` → `respond()` 的完整 IPC 路径
+
+`requestBashDecision` 返回的 Promise **不会自己 resolve**——它需要 renderer 端用户点击对话框后，通过 IPC 回调 `respond()`。完整链路如下：
+
+```
+Main 进程                              Renderer 进程
+─────────                              ─────────────
+bash.execute()
+  → classifyConfiguredBashCommand(cmd)
+  → sensitivePathReasons(absPath)
+  → requestBashDecision({reasons, ...})
+      │
+      ├─ isCoveredByRun(cid, agentId, reasons)?
+      │   YES → 直接返回 'allow_run'（静默，不弹窗）
+      │
+      ├─ _broadcast('bash:permission', info)
+      │   → ipc.broadcastToRenderer(channel, payload)
+      │                                        → 对话框渲染
+      │                                        → 用户点击 [允许一次] / [本次运行允许] / [拒绝]
+      │                                        → ipc.invoke('bash.permission_response', requestId, decision)
+      │   respond(requestId, decision)   ←─────────┘
+      │   → decision === 'allow_run' → recordRunAllow(cid, agentId, reasons)
+      │   → pending.resolve(decision)    // Promise 兑现
+      └─ return decision
+```
+
+**关键细节：**
+
+- `_broadcast` 通过惰性 `require('../../ipc')` 获取 `broadcastToRenderer`，避免静态 `model → ipc` 导入环，且在测试/无头构建中干净降级。
+- `respond()` 对未知 requestId 静默忽略（超时后的陈旧对话框）。
+- **`COMMAND_PREVIEW_MAX = 800`**：推送到 renderer 的命令文本截断到 800 字符——用户必须看到要运行什么，但无界命令会膨胀推送载荷。
+- **日志隐私**：`requestBashDecision` 只记录风险类别和命令长度，永不记录命令文本本身（符合 CLAUDE.md 隐私规则）。
+
+#### 4.3.4.2 运行生命周期：`cancelForCid`
+
+```ts
+export function cancelForCid(cid: string): void {
+  // 1. 遍历 _pending，兑现所有该 cid 的待定请求为 'deny'
+  // 2. 清除心跳定时器
+  // 3. 遍历 _runAllow，删除所有以 "cid " 开头的键
+}
+```
+
+**调用时机：** 运行结束或用户 abort 时。确保不会出现"上个 run 批了 allow_run，下个 run 复用"的泄漏，也不会遗留未兑现的 Promise 导致内存泄漏。
+
+#### 4.3.4.3 风险分类的两个来源
+
+注意源码中有**两个**独立的分类模块：
+
+| 模块 | 文件 | 职责 |
+|---|---|---|
+| `classifyBashCommand` | `bash-risk.ts` | core-agent 通用的命令风险分类（跨平台基础分类） |
+| `classifyConfiguredBashCommand` | `features/local_access_policy.ts` | PC 层扩展，叠加本地配置的策略规则（正则表扫描命令文本） |
+| `sensitivePathReasons` | `features/local_access_policy.ts` | 扫描**路径前缀**（macOS TCC：~/Desktop, ~/Documents, ~/Downloads → `'tcc'`；~/.ssh, ~/.aws, ~/.kube → `'credentials'`） |
+
+`bash.execute()` 入口同时调用两者，合并风险类别后传给 `requestBashDecision`。**命令文本扫描和路径前缀扫描是两条独立路径**——一个看"你想跑什么命令"，一个看"你想碰什么路径"。
+
 #### 4.3.5 工具子表
 
 | 工具 | 用途 | 风险类别 |
@@ -5969,11 +6125,14 @@ const BASH_PRODUCED_SKIP_DIRS = new Set(['.cache', '.git', '.hg', ...]);
 
 1. **覆盖而非扩展** — 同名工具 last-write-wins；保持 core-agent 内置的精确 name。
 2. **三态权限门 `allow_once` / `allow_run` / `deny`** — 不要简化为布尔。`allow_run` 用 (cid, agentId) 键，进程级 Map；运行结束自动清。
-3. **推送通道损坏 → 静默 deny** — 永不让风险命令因 IPC 异常而静默运行。
-4. **`unref()` 心跳定时器** — 等人类审批的 setInterval 必须 `unref()`，否则不点确认进程不退出。
-5. **每 `execute()` 重读模式** — 不缓存 localExecMode；用户改设置下次调用即生效。
-6. **风险分类 + 敏感路径** — `classifyConfiguredBashCommand` + `sensitivePathReasons` 是两条独立路径：前者扫命令文本，后者扫路径前缀（macOS TCC）。
-7. **shell 端写入绕过 write_file** — bash 工具**自动报告** cwd 下创建/修改的文件，让模型知道产生了什么（不是屏蔽，是补偿）。
+3. **完整的 IPC 审批闭环** — `requestBashDecision` Promise → broadcast → renderer 对话框 → `bash.permission_response` IPC → `respond()` → resolve。三处关键：惰性 IPC 避免导入环、测试/无头降级、未知 requestId 静默忽略。
+4. **`cancelForCid` 不可或缺** — 运行结束/abort 时必须清掉该 cid 的所有待定请求（兑现为 deny）+ 运行作用域授予。否则 Promise 泄漏 + 下个 run 复用旧授权。
+5. **推送通道损坏 → 静默 deny** — 永不让风险命令因 IPC 异常而静默运行。
+6. **`unref()` 心跳定时器** — 等人类审批的 setInterval 必须 `unref()`，否则不点确认进程不退出。
+7. **每 `execute()` 重读模式** — 不缓存 localExecMode；用户改设置下次调用即生效。
+8. **命令分类 + 路径敏感是两条独立路径** — `classifyConfiguredBashCommand`（扫描命令文本）+ `sensitivePathReasons`（扫描路径前缀/macOS TCC），两者合并后传给审批门控。源码中还有 `classifyBashCommand`（core-agent 通用层），PC 层叠加更紧的规则。
+9. **shell 端写入绕过 write_file** — bash 工具**自动报告** cwd 下创建/修改的文件，让模型知道产生了什么（不是屏蔽，是补偿）。
+10. **`COMMAND_PREVIEW_MAX = 800`** — 推送到 renderer 的命令预览截断，日志只记类别+长度不记录命令文本。
 
 **代码量：** `local-tools.ts` ~2200 行 + `bash-permissions.ts` ~250 行。
 
@@ -5984,6 +6143,35 @@ const BASH_PRODUCED_SKIP_DIRS = new Set(['.cache', '.git', '.hg', ...]);
 **对应源码：** `src/main/util/tool-result-cap.ts`（~560 行）、`src/main/model/core-agent/tool-result-tools.ts`（~200 行）
 
 > **AgentRunner 在最终成功结果边界调用 `capToolResult`** —— 统一覆盖内置、宿主工具与晚添加的进化工具。`wrapToolWithCap` 仍可供独立调用方与测试使用。
+
+**`capToolResult` vs `wrapToolWithCap` 的区别：**
+
+| 方式 | 使用场景 | 机制 |
+|---|---|---|
+| `capToolResult(toolName, result, ctx, opts)` | AgentRunner 在工具执行后统一调用 | 裸函数，直接检查结果 → 溢出则持久化替换 |
+| `wrapToolWithCap(tool, opts)` | 独立调用方、CLI agent runner、测试 | 返回包装后的 `AgentTool`，`execute()` 内部调用原始 execute 后再经 `capToolResult` |
+
+**`wrapToolWithCap` 必须保持 `executionMode`：**
+
+```ts
+export function wrapToolWithCap(tool: AgentTool, opts: WrapOpts): AgentTool {
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: tool.inputSchema,
+    // ⚠️ 必须携带原始 executionMode —— 否则包装器会静默使
+    // 每个被封顶的工具串行（runner 的 G4 分区器以 executionMode === 'parallel' 为键），
+    // 破坏并行读/搜索与并发调度（run_worker / dispatch_to）。
+    ...(tool.executionMode ? { executionMode: tool.executionMode } : {}),
+    async execute(input, ctx) {
+      const result = await tool.execute(input, ctx);
+      return capToolResult(tool.name, result, ctx, opts);
+    },
+  };
+}
+```
+
+这是一个容易踩的坑：如果没有 `...(tool.executionMode ? { executionMode: tool.executionMode } : {})`，所有被包装的 `read_file` / `kb_read` 等并行工具都会退化为串行，显著影响性能。
 
 #### 4.4.1 双预算：单结果 + 本轮账本
 
@@ -6065,7 +6253,7 @@ export function persistToolResult(toolResultsDir, toolName, content): string {
   const id = createHash('sha256')
     .update(toolName).update('\0').update(content)
     .digest('hex')
-    .slice(0, TOOL_RESULT_REF_HASH_HEX);  // 64 位 hex（前缀）
+    .slice(0, TOOL_RESULT_REF_HASH_HEX);  // 64 hex chars = 256 bits of SHA-256 (完整的 hex digest 前半)
   const abs = path.join(toolResultsDir, `${safeTool}.${id}.txt`);
   if (fs.existsSync(abs)) return abs;  // 内容寻址：相同内容只存一份
   const tmp = `${abs}.${process.pid}.tmp`;
@@ -6106,6 +6294,33 @@ export function buildBoundedPreview(content: string, maxTokens: number): string 
 ```
 
 **72% head + 28% tail**——保留文件开头（通常是命令头部、文件签名）+ 结尾（通常是错误堆栈 / 结果尾部），中间省略。
+
+底层实现通过 `prefixWithinTokenBudget` / `suffixWithinTokenBudget` 两个 helper：
+
+```ts
+// prefixWithinTokenBudget: 从 content[0] 开始逐字符累积，直到 CJK 感知 token 估算达到 budget
+// suffixWithinTokenBudget:  从 content[content.length - 1] 倒序累积，直到 token 预算耗尽
+// 两者都按 CJK 1.5 token / 其他 4 字符 = 1 token 的方式递增，与 estimateToolResultTokens 一致
+```
+
+**`capToolResult` / `persistToolResult` 的 fallback 行为：**
+
+```ts
+// capToolResult 内部 try-catch：
+//   1. persistToolResult 写磁盘成功 → 返回 <persisted-output> marker（正常路径）
+//   2. persistToolResult 抛异常（磁盘满 / 权限拒绝）
+//      → 不抛！返回 buildBoundedPreview(content, 600 tokens) + 错误提示
+//      → isError: true
+//      → 提示模型 "Retry with a narrower command or query"
+//
+// persistToolResult 内部：
+//   1. 写 tmp 文件
+//   2. renameSync(tmp → abs)
+//   3. 若 rename 失败但 abs 已存在 → 并发竞态，另一写入方胜出，返回 abs
+//   4. 否则抛异常
+```
+
+**设计原则：工具结果处理永不抛异常** —— 溢出不成功就降级为有界预览 + error marker，不让工具调用因磁盘问题而崩溃。
 
 ```ts
 export function buildPersistedOutputMarker(absPath, toolName, content, isError = false): string {
@@ -6193,37 +6408,258 @@ export function sweepToolResults(
 #### 4.4.9 仿写要点
 
 1. **双预算必须都实现** —— 单结果 + 本轮账本。少一个就有 N 次 7K 工具调用叠加撑爆上下文的可能。
-2. **CJK 感知 token 估算** —— 1.5 token/CJK 字符是粗启发式但足够判断溢出；不要用固定字符数。
-3. **内容寻址 + ref 标识** —— 同 `(toolName, content)` 只存一份；ref 是稳定标识。
-4. **`<persisted-output>` XML 标记** —— 内嵌 ref + size + 状态；专为模型解析。
-5. **流式承接必须验证路径** —— `realpath` 双侧 + `isInsideRoot` 检查；不接受 tool-results 外的路径。
-6. **CLI 端走 `maybeSpillToolResult`** —— 不让后端感知溢出策略，CLI 端镜像相同形态。
-7. **GC 是启动期工作** —— `sweepToolResults` 在 `activateUser()` 调，不在工具执行路径上（避免工具卡死）。
+2. **CJK 感知 token 估算** —— 1.5 token/CJK 字符是粗启发式但足够判断溢出；不要用固定字符数。`prefixWithinTokenBudget` / `suffixWithinTokenBudget` 也使用相同估算。
+3. **`wrapToolWithCap` 必须保持 `executionMode`** —— 否则所有被包装的并行工具（read_file、kb_read 等）退化为串行，显著影响性能。Runner 的 G4 分区器以 `executionMode === 'parallel'` 为键分组。
+4. **内容寻址 + ref 标识** —— 同 `(toolName, content)` 只存一份；ref 是稳定标识。
+5. **`<persisted-output>` XML 标记** —— 内嵌 ref + size + 状态；专为模型解析。
+6. **永不抛异常** —— `capToolResult` / `persistToolResult` 的所有异常被 catch，降级为有界预览 + error marker。不让工具调用因磁盘满/权限拒绝而崩溃。
+7. **并发竞态容忍** —— `persistToolResult` 写 tmp + rename，若 rename 失败但目标已存在则视为另一写入方胜出，直接返回目标路径。
+8. **流式承接必须验证路径** —— `realpath` 双侧 + `isInsideRoot` 检查；不接受 tool-results 外的路径。
+9. **CLI 端走 `maybeSpillToolResult`** —— 不让后端感知溢出策略，CLI 端镜像相同形态。
+10. **GC 是启动期工作** —— `sweepToolResults` 在 `activateUser()` 调，不在工具执行路径上（避免工具卡死）。两条驱逐规则：7 天陈旧 + 1GB 配额。
 
 **代码量：** `tool-result-cap.ts` ~560 行 + `tool-result-tools.ts` ~200 行。
 
 ---
 
+
+---
+
 ## 第五阶段：高级特性
 
-这些是可选的进阶模块，按需添加。
+这些是可选的进阶模块，按需添加。与前四个阶段不同，第五阶段的模块**不要求全部做完**——按你的实际需求挑着做。但每个模块的细节足够多，本节逐个展开。
+
+> **核心区别：哪些是 Runner 自动做的，哪些需要注册为工具？**
+>
+> | 模块 | 谁触发？ | 是否需要注册工具？ |
+> |---|---|---|
+> | 上下文压缩 | **Runner 自动**（token 超阈值时透明执行） | ❌ 不需要。模型不感知压缩，runner 在调用 LLM 前后自动完成 |
+> | 循环检测 | **Runner 自动**（每轮工具执行后比对签名） | ❌ 不需要。纯 runner 内部控制 |
+> | Memory | **模型通过工具调用**（`cross_session_memory`） | ✅ 需要注册工具，模型主动调 add/replace/remove/list |
+> | Skill | **模型通过工具调用**（`view_skill`）+ **Runner 自动注入菜单** | ✅ 需要注册 `view_skill` 工具 |
+> | 执行计划 | **双路径**：Runner 自动（用户换话题）+ 模型工具（`manage_execution_plan`） | ✅ 需要注册工具 |
+> | 多 Provider 轮转 | **Provider 层自动**（API 调用失败时透明切换） | ❌ 不需要。模型不感知轮换 |
+
+---
 
 ### 5.1 上下文压缩（Context Compaction）
 
-> 💡 双层压缩架构的完整原理、触发条件、防抖机制已在 **2.2.5 上下文压缩机制** 中详细介绍。本节聚焦于压缩系统提示词和收敛检测的源码参考。
+> 💡 双层压缩架构的完整原理、触发条件、防抖机制已在 **2.2.5 上下文压缩机制** 中详细介绍。本节聚焦**工程实现**：压缩如何被触发、两层压缩分别做什么、为什么模型不需要知道压缩的存在。
 
-**对应源码：** `src/core-agent/src/agent/runner.ts` 中 compaction 相关逻辑
+**对应源码：** `src/core-agent/src/agent/runner.ts` 中 `prepareContextBeforeModelCall()` 及 `summarizeContextMessages()` 方法
 
-**仿写要点：**
+> ⚠️ `compactSession()` 是**已被禁用的旧版整会话压缩**（turn-tracking 下直接 `throw new Error("legacy whole-session compaction is disabled for turn-tracked sessions")`），仅对无 turn-tracking 的旧路径生效。仿写时应使用 `prepareContextBeforeModelCall` 中的双层压缩，不要实现旧版 `compactSession`。
 
-- 触发条件 — 历史摘要在已完成轮次原始 tokens > 12K 时触发；活动检查点在进程 tokens > 18K 时触发
-- 压缩方式 — 将目标消息发送给 LLM 做结构化摘要（固定标题），替换或标记旧消息
-- 防抖动 — `attemptedFingerprints` 记录已压缩的状态哈希，相同状态不重复压缩
-- 压缩预算 — 每 run 有压缩次数上限（max(maxToolLoops/3, 3)），防止压缩死循环
-- 收敛检测 — 短时间大量压缩 + 高工具使用 = 可能空转，触发收敛 nudge
-- 节省量验证 — 每次压缩后必须节省 ≥ max(64, min(6000, before × 10%)) tokens，否则拒绝
+#### 5.1.1 压缩是 Runner 自动的，不是工具
 
-**Orkas 源码参考（`src/core-agent/src/agent/runner.ts` — 压缩触发与收敛检测）：**
+**关键认知：上下文压缩不需要注册任何工具。** 模型完全不知道压缩正在发生——runner 在每次调用 LLM **之前**检查 token 是否超阈值，如果超了就透明地做压缩，然后用压缩后的上下文发起真正的 LLM 调用。流程如下：
+
+```
+┌─ Runner 主循环 ─────────────────────────────────────────────┐
+│                                                             │
+│  1. 用户消息 / 上轮工具结果                                  │
+│       │                                                     │
+│       ▼                                                     │
+│  2. prepareContextBeforeModelCall()  ← 压缩发生在这里        │
+│       │                                                     │
+│       ├─ 历史摘要层：已完成轮次 raw tokens > 12K？           │
+│       │   └─ Yes → 调 LLM（compaction system prompt）生成摘要 │
+│       │          → session.applyHistorySummary() 替换旧消息   │
+│       │                                                     │
+│       ├─ 活动检查点：当前轮进程 tokens > 18K？               │
+│       │   └─ Yes → 调 LLM（compaction system prompt）生成检查点 │
+│       │          → session.applyActiveCheckpoint() 替换旧消息  │
+│       │                                                     │
+│       ▼                                                     │
+│  3. provider.stream()  ← 用压缩后的上下文调真正的 LLM        │
+│       │                                                     │
+│       ▼                                                     │
+│  4. 模型返回 text / tool_use（模型完全不知道发生过压缩）      │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**为什么不让模型调压缩工具？**
+- 压缩时机是**纯工程判断**（token 数 > 阈值），不需要模型决策。
+- 压缩 prompt 是**固定模板**（"You are a context compaction engine..."），告诉 LLM 只做摘要不执行任务——这跟正常 agent 行为完全不同。
+- 让模型决策压缩 = 多一次 tool_use roundtrip = 更慢更贵，且模型可能在压缩前就已经上下文溢出了。
+
+#### 5.1.2 两层压缩架构
+
+Runner 内部有两层压缩，触发条件和目标不同：
+
+| 层 | 方法 | 压缩对象 | 触发条件 | 输出 |
+|---|---|---|---|---|
+| **历史摘要** | `summarizeContextMessages()` → `applyHistorySummary()` | 已完成轮次的旧消息（多轮对话的历史） | 已完成轮次原始 tokens > 12K | 结构化摘要（固定标题），替换旧轮次消息 |
+| **活动检查点** | `summarizeContextMessages()` → `applyActiveCheckpoint()` | 当前轮的工具调用/结果组（单轮内的大量工具交互） | 进程 tokens > 18K | 语义 delta 检查点，替换旧工具组 |
+
+**历史摘要的固定标题模板：**
+
+```
+Durable user goals and preferences:
+- ...
+
+Decisions and constraints:
+- ...
+
+Completed work:
+- ...
+
+Important files/resources:
+- path or resource: purpose/status
+
+User corrections:
+- ...
+
+Pending tasks and open questions:
+- ...
+
+Exact data that must be re-read before editing/quoting:
+- path/log/tool output and why
+```
+
+**活动检查点的标题模板：**
+
+```
+Important observations and decisions:
+- ...
+
+Exact facts to re-read before changing or quoting:
+- ...
+
+Continuation guardrails (current step, next action):
+- ...
+```
+
+两层压缩共享同一基础设施：
+- **同一个 `CONTEXT_COMPACTION_SYSTEM_PROMPT`**——"You are a context compaction engine. Your only task is to transform..."
+- **同一个 `summarizeContextMessages()` 方法**——发送消息 + compaction system prompt → 取回摘要文本
+- **同一个指纹防抖机制**——`attemptedFingerprints` 防止相同状态重复压缩
+
+`summarizeContextMessages` 实现（`runner.ts:2224-2250`）：
+
+```ts
+private async summarizeContextMessages(opts: {
+  provider: LLMProvider;
+  model: string;
+  messages: Message[];
+  prompt: string;
+  maxTokens: number;
+  cacheRetention?: "none" | "short" | "long";
+}): Promise<{ text: string; usage?: Usage }> {
+  const result = await opts.provider.complete({
+    model: opts.model,
+    messages: [
+      ...opts.messages,
+      { role: "user", content: [{ type: "text", text: opts.prompt }] },
+    ],
+    systemPrompt: CONTEXT_COMPACTION_SYSTEM_PROMPT,
+    maxTokens: opts.maxTokens,
+    reasoning: "minimal",
+    cacheRetention: opts.cacheRetention,
+    sessionId: this.session.getSessionId(),
+  });
+  const text = result.content
+    .filter((c) => c.type === "text")
+    .map((c) => (c as { text: string }).text)
+    .join("")
+    .trim();
+  return { text, usage: result.usage };
+}
+```
+
+**关键点：**
+- 用 `provider.complete()`（非流式），因为摘要需要完整结果才能判断节省量——流式对摘要没有意义。
+- `reasoning: "minimal"` — 摘要任务不需要深度推理，减少 token 消耗。
+- system prompt 是 `CONTEXT_COMPACTION_SYSTEM_PROMPT`，确保模型只做摘要不执行任务。
+
+#### 5.1.3 完整压缩流程（源码级）
+
+```ts
+// runner.ts — 每次 LLM 调用前执行
+private async *prepareContextBeforeModelCall(
+  provider: LLMProvider,
+  model: string,
+  cacheRetention?: "none" | "short" | "long",
+  control?: CompactionControl,
+  onUsage?: (usage: Usage) => void,
+  onCompaction?: () => void,
+): AsyncIterable<AgentRunEvent> {
+
+  const compactionControl = control ?? {
+    attemptedFingerprints: new Set<string>(),
+    attempts: 0, failures: 0, epochs: 0,
+    ...compactionRunCaps(0),
+  };
+
+  // ── 第一层：历史摘要 ──
+  const historyCandidate = this.session.getPendingHistoryArchive();
+  const historyFingerprint = historyCandidate
+    ? `history:${historyCandidate.turnIds.join(",")}:${historyCandidate.rawTokens}:${historyCandidate.summaryTokens}`
+    : "";
+
+  if (historyCandidate && this.claimCompactionCandidate(compactionControl, historyFingerprint)) {
+    // 1. 调 LLM 生成历史摘要（用 compaction system prompt）
+    const summary = await this.summarizeContextMessages({
+      provider, model,
+      messages: historyCandidate.messages,
+      prompt: "Update the rolling conversation summary...",  // 固定标题模板
+      maxTokens: HISTORY_SUMMARY_MAX_TOKENS,
+      cacheRetention,
+    });
+
+    // 2. 验证节省量：必须节省 >= max(64, min(6000, before x 10%)) tokens
+    const tokensBefore = this.session.estimateModelTokens();
+    const tokensAfter = this.session.previewHistorySummaryTokens(summary.text, historyCandidate.turnIds);
+    const savings = tokensBefore - tokensAfter;
+    if (savings < minimumValidatedCompactionSavings(tokensBefore)) {
+      throw new Error(`history summary rejected: estimated savings ${savings} < minimum`);
+    }
+
+    // 3. 应用摘要：替换旧轮次消息
+    this.session.applyHistorySummary(summary.text, historyCandidate.turnIds);
+    compactionControl.epochs++;
+    onCompaction?.();
+    yield { type: "compaction", tokensBefore, tokensAfter, summary: summary.text, ... };
+  }
+
+  // ── 第二层：活动检查点 ──
+  const activeCandidate = this.session.getPendingActiveCheckpoint();
+  const activeFingerprint = activeCandidate
+    ? `active:${activeCandidate.checkpointThroughMessageIndex}:${activeCandidate.tokensBefore}`
+    : "";
+
+  if (activeCandidate && this.claimCompactionCandidate(compactionControl, activeFingerprint)) {
+    // 1. 调 LLM 生成检查点摘要
+    const initialSummary = await this.summarizeContextMessages({
+      provider, model,
+      messages: activeCandidate.messages,
+      prompt: "Create or update a compact current-turn semantic-delta checkpoint...",
+      maxTokens: ACTIVE_CHECKPOINT_TARGET_TOKENS,
+      cacheRetention,
+    });
+
+    // 2. shrink 循环：如果摘要超长，迭代压缩直到符合硬上限
+    // ACTIVE_CHECKPOINT_SUMMARY_HARD_MAX_TOKENS 是硬上限，ACTIVE_CHECKPOINT_SUMMARY_MAX_TOKENS 是软目标
+    let summary = initialSummary;
+    for (let i = 0; i < MAX_SHRINKS; i++) {
+      if (summary.text.length <= ACTIVE_CHECKPOINT_SUMMARY_MAX_TOKENS) break;
+      summary = await this.summarizeContextMessages({
+        prompt: `Shorten this checkpoint summary to fit within ${ACTIVE_CHECKPOINT_SUMMARY_MAX_TOKENS} chars...`,
+        messages: [{ role: "user", content: summary.text }],
+        ...
+      });
+    }
+
+    // 3. 应用检查点
+    this.session.applyActiveCheckpoint(summary.text, activeCandidate.groups);
+    compactionControl.epochs++;
+    ...
+  }
+}
+```
+
+#### 5.1.4 压缩控制与防护机制
 
 ```ts
 // 压缩触发比率：消息 tokens 超过上下文窗口 82% 时触发
@@ -6259,9 +6695,21 @@ type CompactionControl = {
   epochs: number;
   maxEpochs: number;
   maxAttempts: number;
+  disabledReason?: string;             // 失败后禁用原因
 };
 
-// 收敛检测：短时间大量压缩 + 高工具使用 = 可能空转
+// 申请压缩候选：指纹去重 + 预算检查
+// claimCompactionCandidate() 做三件事：
+// 1. 检查 attemptedFingerprints 是否已有当前指纹 → 有则跳过（防抖）
+// 2. 检查 epochs >= maxEpochs → 达到上限则跳过
+// 3. 记录指纹到 attemptedFingerprints，返回 true
+```
+
+#### 5.1.5 收敛检测
+
+当短时间内发生大量压缩且工具使用率很高时，可能意味着模型在空转（反复调工具但不推进任务）：
+
+```ts
 export const SPIN_CONVERGENCE_MIN_COMPACTIONS = 2;
 export const SPIN_CONVERGENCE_TOOL_LOOP_RATIO = 0.75;
 
@@ -6292,34 +6740,63 @@ function buildSpinConvergenceNudge(input: {
 }
 ```
 
-**代码量：** ~200 行
+收敛 nudge 被注入到 `pendingRequestControls`，拼在 system prompt 末尾——这是一条温和的提示，告诉模型"你已经压缩多次了，去读磁盘上的持久状态，不要凭记忆重复工作"。
+
+#### 5.1.6 仿写要点
+
+1. **压缩是 Runner 内部行为，绝不注册为工具** — `prepareContextBeforeModelCall()` 在 `provider.stream()` 之前透明执行；模型没有"请求压缩"的概念。
+2. **两层分别处理不同时间尺度** — 历史摘要处理跨轮次的旧对话；活动检查点处理当前轮内的大量工具交互。
+3. **指纹防抖** — `attemptedFingerprints` 基于 (turnIds, rawTokens, summaryTokens) 或 (checkpointIndex, tokensBefore, groups) 计算哈希；相同状态不重复压缩。
+4. **节省量验证** — `minimumValidatedCompactionSavings(before) = max(64, min(6000, before x 10%))`；不达标的压缩被拒绝，防止"压缩了个寂寞"。
+5. **预算上限** — `maxEpochs = max(3, toolLoops/3)`；防止压缩死循环（压缩 → 没省多少 → 又触发压缩）。
+6. **收敛 nudge 是软提示** — 不是强制停止，是给模型的温和提醒；不改变 runner 控制流。
+7. **压缩用专门的 system prompt** — `CONTEXT_COMPACTION_SYSTEM_PROMPT` 明确规定"只做摘要，不要继续任务、不要调工具、不要回答用户"。
+
+**代码量：** ~300 行（`prepareContextBeforeModelCall` ~150 行 + `summarizeContextMessages` ~25 行 + session 侧历史/检查点候选生成 ~80 行 + 收敛检测 ~30 行）
+
+---
 
 ### 5.2 循环检测（Loop Detection）
 
 > 💡 精确重复 + 近重复两级检测的完整原理已在 **2.2.8 循环检测** 中详细介绍。本节聚焦于签名算法的源码参考。
 
-```ts
-function toolCallSignature(call: { name: string; input: unknown }): string {
-  // 对 input keys 排序后 JSON.stringify，保证相同语义的调用产生相同签名
-  const args = stableJson(call.input);
-  return `${call.name}\u0000${args}`;
-}
+**对应源码：** `src/core-agent/src/agent/runner.ts` 中的 `toolCallSignature`、`normalizedToolCallSignature` 及相关常量
+
+#### 5.2.1 检测发生在 Runner 主循环中
+
+循环检测也是**纯 Runner 内部逻辑**，不需要任何工具。每轮工具执行后，runner 计算本次工具调用的签名，跟上一轮的签名比对：
+
+```
+Runner 逐轮循环：
+  for each tool_use from model:
+    1. 执行工具
+    2. sig = toolCallSignature(tool_use)
+    3. if sig === lastSig:
+         loopRepeat++
+         if loopRepeat >= LOOP_HARD (5) → 强制停止
+         if loopRepeat >= LOOP_WARN (3) → nudge 模型
+       else:
+         lastSig = sig
+         loopRepeat = 1
+    4. 同时计算 normalizedSig = normalizedToolCallSignature(tool_use)
+       同样追踪近重复计数
 ```
 
-**Orkas 源码参考（`src/core-agent/src/agent/runner.ts` — 循环检测逻辑）：**
+#### 5.2.2 签名算法：两级检测
 
 ```ts
-// 精确重复阈值
-export const LOOP_WARN = 3;   // 连续 3 次 → nudge 模型
-export const LOOP_HARD = 5;   // 连续 5 次 → 强制停止
+// ── 精确重复检测 ──
+export const LOOP_WARN = 3;   // 连续 3 次相同签名 → nudge 模型
+export const LOOP_HARD = 5;   // 连续 5 次相同签名 → 强制停止
 
-// 近重复阈值（去除 uuid/时间戳后相同）
-export const NEAR_DUP_LOOP_WARN = 6;
+// ── 近重复检测 ──
+export const NEAR_DUP_LOOP_WARN = 6;  // 连续 6 次近重复 → 警告
 
 // 稳定签名：名称 + 排序后的 JSON 参数
+// 关键：对 key 排序，保证相同语义的输入产生相同签名
 export function toolCallSignature(call: { name: string; input: unknown }): string {
   const args = stableToolInputJson(call.input);
-  return `${call.name}\u0000${args}`;
+  return `${call.name} ${args}`;
 }
 
 function stableToolInputJson(value: unknown): string {
@@ -6340,6 +6817,7 @@ function stableToolInputJson(value: unknown): string {
   catch { return String(value); }
 }
 
+// ── 近重复签名：剥离易变字段后的签名 ──
 // 易变参数键（每次调用都变化，不定义调用做什么）
 const VOLATILE_ARG_KEY_RE =
   /^(?:request_?id|req_?id|correlation_?id|idempotency_?key|
@@ -6352,54 +6830,81 @@ export function normalizedToolCallSignature(
   let args: string;
   try { args = JSON.stringify(stripVolatileArgs(call.input ?? {})); }
   catch { args = String(call.input); }
-  return `${call.name}\u0000${args}`;
+  return `${call.name} ${args}`;
 }
-
-// run 循环中的检测逻辑：
-// let loopSig: string | null = null;
-// let loopRepeat = 0;
-//
-// 每轮工具执行后：
-// const sig = toolCallSignature(call);
-// if (sig === loopSig) {
-//   loopRepeat++;
-//   if (loopRepeat >= LOOP_HARD) → 强制停止
-//   if (loopRepeat >= LOOP_WARN && !loopWarned) → nudge 模型
-// } else {
-//   loopSig = sig;
-//   loopRepeat = 1;
-//   loopWarned = false;
-// }
 ```
+
+#### 5.2.3 为什么是两级检测
+
+- **精确重复**（字段完全一致）→ 模型在无意识死循环，需要快速打断。阈值低（3/5）。
+- **近重复**（去掉 uuid/timestamp 后一致）→ 模型在"有意识"地重试，但每次只改 requestId 等易变字段，实质没进展。阈值稍高（6）。
+
+#### 5.2.4 仿写要点
+
+1. **纯 Runner 内部逻辑，不注册工具** — 在主循环的工具执行后计算签名、比对、计数。
+2. **排序 key 是关键** — `Object.keys().sort()` 保证 `{a:1, b:2}` 和 `{b:2, a:1}` 产生相同签名。
+3. **WeakSet 防循环引用** — `stableToolInputJson` 处理嵌套对象中的循环引用。
+4. **易变字段剥离用白名单正则** — `VOLATILE_ARG_KEY_RE` 匹配 `request_id`、`timestamp` 等不改变调用语义的字段。
+5. **nudge 只发一次** — `loopWarned` 标记防止每条重复都注入提示。
 
 **代码量：** ~80 行
 
+---
+
 ### 5.3 Memory 系统
 
-**对应源码：** `src/main/features/memory.ts`（~600 行）、`src/core-agent/src/memory/`
+**对应源码：** `src/main/features/memory.ts`（~600 行）、`src/core-agent/src/tools/memory-tool.ts`（~170 行）
 
-> **与 KB 向量库不同**：KB 是用户管理的内容检索（pdf/docx 嵌入），Memory 是**跨会话的 agent 注释**（每次 LLM 回合后追加一行，§ 分隔）。两者存储与检索算法独立。
+> **与 KB 向量库不同**：KB 是用户管理的内容检索（pdf/docx 嵌入，sqlite 存储），Memory 是**跨会话的 agent 注释**（每次 LLM 回合后追加一行，`§` 分隔，纯文件存储）。两者存储与检索算法独立。
 
-#### 5.3.1 四个作用域
+#### 5.3.1 全景架构：写入、存储、注入、工具四层
 
-| 作用域 | 路径 | 字符预算 | 条目上限 | 写入方 |
-|---|---|---|---|---|
-| `memory`（shared） | `<uid>/cloud/memory/MEMORY.md` | 2500 | 16 | runner / `cross_session_memory` |
-| `user`（profile） | `<uid>/cloud/memory/USER.md` | 1500 | 16 | runner / `cross_session_memory` |
-| `{ agent: id }` | `<uid>/cloud/memory/agents/<aid>/MEMORY.md` | 2000 | 16 | runner 绑定调用 agent |
-| `{ project: id }` | `<uid>/cloud/projects/<pid>/MEMORY.md` | 2500 | 16 | runner 绑定调用 conversation |
+Memory 系统涉及四个层次，缺一不可：
 
-**作用域门控** — `memoryScopeForSession()`（详见 [3.4.3](#343-内存作用域门控)）：
+```
+┌─ 模型视角 ─────────────────────────────────────────────────┐
+│                                                            │
+│  System Prompt 中看到:                                      │
+│    ## Persistent memory                                    │
+│    ### User profile                                        │
+│    § 用户偏好 Markdown 输出                                  │
+│    § 代码风格：4 空格缩进                                    │
+│    ### Shared project notes                                │
+│    § 项目部署在 AWS us-east-1                                │
+│                                                            │
+│  可以调用工具:                                              │
+│    cross_session_memory({action: "add", target: "agent",   │
+│                          content: "该用户讨厌冗长的解释"})    │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 
-- `gconv` → 指挥官 agent（`'commander'` 或 agentId）。
-- `gmember` / `gworker` / `cli` → worker agent 的 agentId。
-- 其它（`agent-edit` / `skill-edit` / `extract-img` / `anon` / `reflect` / `memory-extract`）→ **null**，runner 既不注入 memory 块也不暴露 `cross_session_memory` 工具。
+┌─ 存储层 (features/memory.ts) ──────────────────────────────┐
+│                                                            │
+│  cloud/memory/MEMORY.md   ← § 分隔的纯文本                  │
+│  cloud/memory/USER.md                                      │
+│  cloud/memory/agents/<aid>/MEMORY.md                       │
+│  cloud/projects/<pid>/MEMORY.md                            │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 
-```ts
-export type MemoryScope = 'memory' | 'user' | { agent: string } | { project: string };
+┌─ 工具层 (core-agent/src/tools/memory-tool.ts) ─────────────┐
+│                                                            │
+│  cross_session_memory 工具:                                 │
+│    action: add | replace | remove | list                   │
+│    target: agent | shared | user | project                 │
+│    → MemoryToolHandler 接口 → features/memory.ts           │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+
+┌─ 注入层 (features/memory.ts::formatForSystemPrompt) ───────┘
+│                                                            │
+│  buildMemoryBlock() 在每次 system prompt 构建时被 runner 调用 │
+│  → 读磁盘 MEMORY.md / USER.md → 渲染为 markdown 块          │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
 ```
 
-#### 5.3.2 文件格式：§ 分隔的条目流
+#### 5.3.2 存储格式：`§` 分隔的条目流
 
 ```ts
 export const ENTRY_SEPARATOR = '\n§\n';
@@ -6421,44 +6926,205 @@ export function loadEntries(filePath: string): MemoryEntry[] {
 - 跨平台可见——§ 是 § 字符（U+00A7），人类一眼可辨。
 - 同步策略简单——`notifyMemoryDirty` 通知 sync engine "memory 域的某相对路径变了"，云同步按行级 SHA diff。
 
-#### 5.3.3 原子保存 + 字符/条目限制
+#### 5.3.3 四个作用域及其门控
+
+| 作用域 | 路径 | 字符预算 | 条目上限 | 写入方 | 模型能否写？ |
+|---|---|---|---|---|---|
+| `user`（profile） | `<uid>/cloud/memory/USER.md` | 1500 | 16 | `cross_session_memory` target="user" | ✅ 任何会话 |
+| `shared` | `<uid>/cloud/memory/MEMORY.md` | 2500 | 16 | `cross_session_memory` target="shared" | ✅ 任何会话 |
+| `agent` | `<uid>/cloud/memory/agents/<aid>/MEMORY.md` | 2000 | 16 | `cross_session_memory` target="agent"（默认） | ✅ 只能写自己的 agent 作用域 |
+| `project` | `<uid>/cloud/projects/<pid>/MEMORY.md` | 2500 | 16 | `cross_session_memory` target="project" | ⚠️ Commander 可写；子 agent 只读 |
 
 ```ts
-export function saveEntries(filePath: string, entries: MemoryEntry[]): void {
-  const text = entries.map(e => e.text).join(ENTRY_SEPARATOR) + '\n';
-  writeTextAtomicSync(filePath, text);  // tmp + rename（详见 3.2.1）
+export type MemoryScope = 'memory' | 'user' | { agent: string } | { project: string };
+```
+
+**作用域门控** — `memoryScopeForSession()`（详见 [3.4.3](#343-内存作用域门控)）：
+
+- `gconv` → 指挥官 agent（`'commander'` 或 agentId），可写所有四个作用域。
+- `gmember` / `gworker` / `cli` → worker agent 的 agentId，可写 agent + user + shared，project 只读。
+- 其它（`agent-edit` / `skill-edit` / `extract-img` / `anon` / `reflect` / `memory-extract`）→ **null**，runner 既不注入 memory 块也不暴露 `cross_session_memory` 工具。
+
+**Project 只读的实现**（`memory-tool.ts`）：
+
+```ts
+const PROJECT_READONLY_NOTE = `
+NOTE — project memory is READ-ONLY for you: it is already present in your system context
+when non-empty. Do not list it merely to reload context. You may use "list" when an exact
+current entry is required, but only the commander (the project's main conversation) can
+add/replace/remove project entries. When you learn a project-specific fact or decision
+worth keeping, surface it in your result so the commander can record it — do not try to
+write the "project" target yourself.`;
+```
+
+工具执行时的检查：
+
+```ts
+if (projectReadOnly && target === 'project' && action !== 'list') {
+  return { content: JSON.stringify({
+    ok: false,
+    error: 'project memory is read-only for you; only the commander can add/replace/remove project entries'
+  }), isError: true };
+}
+```
+
+#### 5.3.4 `cross_session_memory` 工具：模型如何读写 Memory
+
+这是模型与 Memory 系统的**唯一交互方式**。工具注册在 `TOOL_CATALOG` 中，属于 `meta` 组：
+
+```
+{ name: 'cross_session_memory', group: 'meta',
+  summary: 'Read/write user profile, shared facts, and agent memory that persist across sessions.' }
+```
+
+**工具接口**（`src/core-agent/src/tools/memory-tool.ts`）：
+
+```ts
+// MemoryToolHandler — core-agent 定义的抽象接口，不依赖 features 层
+export interface MemoryToolHandler {
+  add(tier: MemoryTier, content: string): {
+    ok: boolean; error?: string; entries: string[];
+    usage: { current: number; limit: number };
+  };
+  replace(tier: MemoryTier, oldText: string, content: string): { ... };
+  remove(tier: MemoryTier, oldText: string): { ... };
+  list(tier: MemoryTier): { ... };
 }
 
-export function appendEntry(userId: string, target: MemoryScope, text: string): MemoryOpResult {
-  const file = fileForTarget(userId, target);
-  const limit = limitForTarget(target);     // 字符预算
-  const entryLimit = entryLimitForTarget(target);  // 条目上限
-  const entries = loadEntries(file);
-  entries.push({ text: text.trim() });
+export function createCrossSessionMemoryTool(
+  handler: MemoryToolHandler,
+  opts?: { includeProjectTier?: boolean; projectTierReadOnly?: boolean }
+): AgentTool {
+  const tiers = opts.includeProjectTier
+    ? ['agent', 'project', 'shared', 'user']
+    : ['agent', 'shared', 'user'];
 
-  // 超出 → 从前面（最旧）驱逐，保留最新的
-  while (entries.length > entryLimit || entriesTotalChars(entries) > limit) {
+  return {
+    name: 'cross_session_memory',
+    description: `Manage durable cross-session memory.
+      Targets: agent (default), shared, user${opts.includeProjectTier ? ', project' : ''}.
+      Actions: add, replace (by old_text substring), remove (by old_text substring), list.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', enum: ['add', 'replace', 'remove', 'list'] },
+        target: { type: 'string', enum: tiers },
+        content: { type: 'string', description: 'Required for add and replace' },
+        old_text: { type: 'string', description: 'Substring to match (required for replace and remove)' },
+      },
+      required: ['action'],
+    },
+    async execute(input, _ctx) {
+      // 参数校验 → 委托 handler.add/replace/remove/list → 返回 JSON
+      const action = input.action as string;
+      const target = (input.target as MemoryTier) || 'agent';
+      // ... switch(action) { case 'add': handler.add(target, content) ... }
+      return { content: JSON.stringify(result), isError: !result.ok };
+    },
+  };
+}
+```
+
+**Handler 实现侧的四个操作**（`features/memory.ts`）：
+
+```ts
+// add — 追加条目，超限从前面驱逐
+export function addEntry(userId: string, target: MemoryScope, content: string): MemoryOpResult {
+  const trimmed = content.trim();
+  if (!trimmed) return buildResult(..., false, 'empty content');
+
+  // 注入扫描
+  const threat = scanForInjection(trimmed);
+  if (threat) return buildResult(..., false, `blocked: suspicious content (${threat})`);
+
+  const entries = loadEntries(filePath);
+  entries.push({ text: trimmed });
+
+  // 超出限制 → 从前面驱逐（LIFO）
+  while (entries.length > entryLimit || totalChars(entries) > charLimit) {
     entries.shift();
   }
-
-  saveEntries(file, entries);
+  saveEntries(filePath, entries, charLimit, entryLimit);
   notifyMemoryDirty(target);
-  return { ok: true, entries: entries.map(e => e.text), usage: { current: ..., limit } };
+  return buildResult(..., true);
+}
+
+// replace — 按 old_text 子串匹配替换
+export function replaceEntry(userId, target, oldText, content): MemoryOpResult {
+  const entries = loadEntries(filePath);
+  const idx = entries.findIndex(e => e.text.includes(oldText));
+  if (idx === -1) return buildResult(..., false, 'old_text not found');
+  entries[idx] = { text: trimmed };
+  saveEntries(filePath, entries, limit, entryLimit);
+  return buildResult(..., true);
+}
+
+// remove — 按 old_text 子串匹配删除
+export function removeEntry(userId, target, oldText): MemoryOpResult {
+  const entries = loadEntries(filePath);
+  const idx = entries.findIndex(e => e.text.includes(oldText));
+  if (idx === -1) return buildResult(..., false, 'old_text not found');
+  entries.splice(idx, 1);
+  saveEntries(filePath, entries, limit, entryLimit);
+  return buildResult(..., true);
+}
+
+// list — 只读列出所有条目
+export function listEntries(userId, target): MemoryOpResult {
+  return buildResult(userId, target, true);
+}
+```
+
+#### 5.3.5 原子保存 + 去重 + 字符/条目双上限
+
+```ts
+export function saveEntries(filePath: string, entries: MemoryEntry[], charLimit: number, entryLimit: number): void {
+  // 1. 去重 — 从后往前遍历，保留最新出现的
+  const seen = new Set<string>();
+  const deduped: MemoryEntry[] = [];
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const text = String(entries[i]?.text || '').trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    deduped.unshift({ text });
+  }
+
+  // 2. 条目上限驱逐 — 从前面（最旧）删除
+  let kept = deduped.slice(-Math.floor(entryLimit));
+
+  // 3. 字符上限驱逐 — 从前面删除直到满足字符预算
+  let text = kept.map(e => e.text).join(ENTRY_SEPARATOR);
+  while (text.length > charLimit && kept.length > 1) {
+    kept.shift();
+    text = kept.map(e => e.text).join(ENTRY_SEPARATOR);
+  }
+
+  // 4. 单条目仍超长 → 截断
+  if (text.length > charLimit && kept.length === 1) {
+    kept = [{ text: kept[0].text.slice(0, charLimit).trim() }];
+  }
+
+  // 5. 原子写
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  writeTextAtomicSync(filePath, text);  // tmp + rename
 }
 ```
 
 **驱逐策略：** 从前面驱逐（最旧），保留最新——同 Java `LinkedHashMap` accessOrder 行为。重复文本保留**最新出现**的那条。
 
-#### 5.3.4 注入模式扫描（防御）
+#### 5.3.6 注入模式扫描（三层防御）
 
 ```ts
 const INJECTION_PATTERNS: Array<{ re: RegExp; label: string }> = [
+  // prompt-injection
   { re: /ignore\s+(all\s+)?previous\s+instructions/i, label: 'prompt-injection' },
   { re: /you\s+are\s+now\s+/i, label: 'prompt-injection' },
   { re: /^system\s*:/im, label: 'prompt-injection' },
   { re: /disregard\s+(all\s+)?(prior|above|previous)/i, label: 'prompt-injection' },
+  // exfiltration
   { re: /(curl|wget)\s+.*\b(api[_-]?key|bearer|token|secret)\b/i, label: 'exfiltration' },
   { re: /\.netrc/i, label: 'exfiltration' },
+  // invisible-unicode
   { re: /[​-‏- ⁠﻿]/, label: 'invisible-unicode' },
 ];
 
@@ -6468,52 +7134,164 @@ export function scanForInjection(content: string): string | null {
 }
 ```
 
-**三层防护：**
+**三层防护解读：**
 
 1. **prompt-injection** — "忽略之前的指令"/"你是…"/"disregard all" — 阻止 memory 条目冒充系统提示。
 2. **exfiltration** — `curl … api_key` / `.netrc` — 阻止 memory 条目携带凭证泄漏指令。
-3. **invisible-unicode** — `​-‏` / `- ` / `⁠` / `﻿` — 阻止用零宽字符绕过文字审查。
+3. **invisible-unicode** — 零宽字符 / 双向文本控制符 — 阻止用不可见字符绕过文字审查。
 
-写入方在 `appendEntry` 之前先 `scanForInjection(newText)`，命中则拒绝写入并返回 error。
+写入方在 `addEntry`/`replaceEntry` 之前先 `scanForInjection(newText)`，命中则拒绝写入并返回 error。
 
-#### 5.3.5 启动期注入：`<memory>` 块
+#### 5.3.7 启动期注入：System Prompt 中的 Memory 块
+
+每次 system prompt 构建时，runner 调用 `formatForSystemPrompt()` 读取磁盘上的 MEMORY.md 文件，渲染为模型可解析的块：
 
 ```ts
-// features/memory.ts::buildMemoryBlock(userId, agentId, projectId?)
-// 返回字符串：
-//
-// <memory scope="shared">
-//   § 用户偏好 Markdown 输出
-//   § 代码风格：4 空格缩进，不要 semicolon
-// </memory>
-//
-// <memory scope="user">
-//   § 用户姓名: 张三
-//   § 操作系统: macOS
-// </memory>
-//
-// <memory scope="agent" id="5dd962efb425">
-//   § 该 agent 上次反思：用户对长回答耐心
-// </memory>
+export function formatForSystemPrompt(userId: string, agentId?: string, projectId?: string): string {
+  const userEntries = loadEntries(userProfileFile(userId));
+  const sharedEntries = loadEntries(userMemoryFile(userId));
+  const projectEntries = projectId ? loadEntries(projectMemoryFile(userId, projectId)) : [];
+  const agentEntries = agentId ? loadAgentEntries(userId, agentId) : [];
+
+  if (所有条目都为空) return '';  // 新用户零 token 开销
+
+  const parts = ['## Persistent memory', 'Persistent across sessions...'];
+
+  if (userEntries.length > 0) {
+    parts.push('### User profile (role, preferences, communication style, tech stack)');
+    parts.push(userEntries.map(e => e.text).join(ENTRY_SEPARATOR));
+  }
+  if (sharedEntries.length > 0) {
+    parts.push('### Shared project notes (durable facts, decisions, conventions)');
+    parts.push(sharedEntries.map(e => e.text).join(ENTRY_SEPARATOR));
+  }
+  if (projectEntries.length > 0) {
+    parts.push("### This project's durable notes — this project only");
+    parts.push(projectEntries.map(e => e.text).join(ENTRY_SEPARATOR));
+  }
+  if (agentEntries.length > 0) {
+    parts.push('### Your own notes (this agent only)');
+    parts.push(agentEntries.map(e => e.text).join(ENTRY_SEPARATOR));
+  }
+  return parts.join('\n\n');
+}
 ```
 
-**为什么用 XML 标签**：方便模型按作用域精确读取（`<memory scope="agent">`），方便 UI 折叠渲染，方便 prompt-cache 按作用域分块。
+**关键设计决策：**
 
-#### 5.3.6 仿写要点
+- **空 memory 返回 `''`** — 新用户零 prompt token 开销，不注入 "（无条目）" 占位符。
+- **每个回合重新读磁盘** — 模型在当前对话中写入的 memory，下一轮立即可见。缓存仅在罕见写入回合重新预填充。
+- **前置声明 "已加载"** — 告诉模型 "The entries are already loaded here, so do not call `cross_session_memory` list merely to refresh them"，防止模型浪费一次工具调用。
 
-1. **§ 分隔的短事实流** — 不要用 YAML frontmatter 或 JSON；memory 是短事实流，不是文档。
-2. **字符 + 条目双上限** — 字符预算防上下文膨胀，条目上限防历史噪音。
-3. **LIFO 驱逐** — 新条目在尾部，超限时从头驱逐；重复文本保留最新。
-4. **原子保存** — `writeTextAtomicSync`（同 3.2.1 的 tmp+rename）。
-5. **三层注入扫描** — 写前 `scanForInjection`；prompt-injection / exfiltration / invisible-unicode。
-6. **作用域由 runner 绑定** — agent_id 由 runner 注入，project_id 由 conversation 注入；模型不能写其它作用域。
-7. **XML 块注入** — `<memory scope="shared|user|agent|project">` 而非裸 markdown；方便模型和 UI 解析。
+#### 5.3.8 完整数据流：写入 → 存储 → 下一轮可见
 
-**代码量：** `features/memory.ts` ~600 行 + KB 向量库（已在 3.2.2）。
+```
+Turn N:
+  1. System prompt 构建 → formatForSystemPrompt() 读 MEMORY.md → 注入 memory 块
+  2. 模型看到 "## Persistent memory" + 既有条目
+  3. 用户说 "记住：我喜欢简洁的回答"
+  4. 模型调 cross_session_memory({action: "add", target: "user", content: "用户喜欢简洁的回答"})
+  5. 工具执行 → addEntry() → scanForInjection() OK → loadEntries() → push → saveEntries()
+     → writeTextAtomicSync(MEMORY.md) → notifyMemoryDirty()
+  6. 模型继续当前轮的其他工作
+
+Turn N+1:
+  1. System prompt 重新构建 → formatForSystemPrompt() 重新读 MEMORY.md
+  2. 模型看到:
+     ## Persistent memory
+     ### User profile
+     § 用户喜欢简洁的回答    ← 上轮写入的，本轮可见
+```
+
+#### 5.3.9 导入解析：自由文本 → Memory 条目
+
+`parseImportText()` 支持用户从外部粘贴自由文本，自动拆分为候选条目并分类：
+
+```ts
+export function parseImportText(text: string): ParsedImportEntry[] {
+  // 1. 按空行分割为 block，block 内按行分割
+  // 2. 去除列表标记（"- "、"* "、"1. "、"•"）
+  // 3. 去重
+  // 4. 每个条目跑 classifyImportEntry() → 判断 target（user vs shared）和 kind
+  // 5. 每个条目跑 scanForInjection()
+  // 返回 ParsedImportEntry[]，用户在 UI 审核后逐条确认合并
+}
+```
+
+分类启发式（`classifyImportEntry`）：
+- "I am"/"my name is"/"I work as" → `user` / identity
+- "I like"/"I prefer"/"I tend to" → `user` / preference
+- "we decided"/"we chose"/"shipped"/"milestone" → `shared` / decision or milestone
+- 默认 → `user` / preference（错误归档偏好比漏掉用户信息更安全）
+
+#### 5.3.10 Runner 接线：工具如何注入
+
+**这是 5.3 最关键的缺失环节。** 前面的小节给了 `createCrossSessionMemoryTool(handler)` 和 `features/memory.ts` 的 API，但**从来没有说明 handler 怎么构造、工具实例怎么进入 runner**。以下是完整接线代码（`src/main/model/core-agent/runner.ts:483-507`）：
+
+```ts
+// ── 完整接线：handler 构造 + toScope 映射 + 工具注入 ──
+if (uid && memoryAgentScope) {
+  // memoryAgentScope 来自 memoryScopeForSession(sessionKind, agentId)：
+  //   gconv → 'commander' 或 agentId
+  //   gmember/gworker/cli → agentId
+  //   其它 → null（整个 memory 系统和工具都不注入）
+  const scopeId = memoryAgentScope;
+  const projectScopeId = params.projectId || '';
+
+  // toScope：把工具的 tier 参数映射为 MemoryScope
+  const toScope = (tier: 'agent' | 'project' | 'shared' | 'user'): MemoryScope =>
+    tier === 'agent' ? { agent: scopeId }
+    : tier === 'project' ? { project: projectScopeId }
+    : tier === 'shared' ? 'memory' : 'user';
+
+  // handler 把 features/memory.ts 的 API 桥接到 MemoryToolHandler 接口
+  const memoryHandler: MemoryToolHandler = {
+    add: (tier, content) => addEntry(uid, toScope(tier), content),
+    replace: (tier, oldText, content) => replaceEntry(uid, toScope(tier), oldText, content),
+    remove: (tier, oldText) => removeEntry(uid, toScope(tier), oldText),
+    list: (tier) => listEntries(uid, toScope(tier)),
+  };
+
+  // 动态 import core-agent 的工厂函数
+  const { createCrossSessionMemoryTool } = await import('../../../core-agent/src/tools/memory-tool');
+
+  // 项目 memory：commander 读写，子 agent 只读（仅 list）
+  injectedTools.push(createCrossSessionMemoryTool(memoryHandler, {
+    includeProjectTier: !!projectScopeId,
+    projectTierReadOnly: !!projectScopeId && !isCommander,
+  }));
+}
+```
+
+**接线要点拆解：**
+
+1. **`memoryAgentScope` 门控** — 由 `memoryScopeForSession()` 返回：commander 和 worker agent 会话获得 agentId，编辑/反思/提取等会话返回 `null`。为 `null` 时整个 if 块跳过——既没有 memory 块的 system prompt 注入，也没有 `cross_session_memory` 工具。
+2. **`toScope` 映射** — 把工具 schema 中的字符串 tier（`"agent"` / `"project"` / `"shared"` / `"user"`）映射为 `MemoryScope` 类型。`agent` tier → `{ agent: scopeId }`（模型只能写自己的 agent 作用域）；`shared` tier → `'memory'`（全局共享文件）。
+3. **handler 桥接** — `addEntry(uid, toScope(tier), content)` 等四个函数来自 `features/memory.ts`，`uid` 在闭包中注入（模型不可见），`tier` 通过 `toScope` 映射为具体的文件路径。
+4. **projectTierReadOnly** — project 会话中 `isCommander` 为 true → commander 可读写 project memory；子 agent 的 `isCommander` 为 false → project tier 只读（工具执行时拦截非 list 操作）。
+5. **动态 import** — `createCrossSessionMemoryTool` 从 core-agent 动态加载，因为 core-agent 不直接依赖 main 层的 features/memory.ts。
+6. **`TOOL_CATALOG` 只管渲染** — `tool-catalog.ts:139` 的 `{ name: 'cross_session_memory', group: 'meta', summary: '...' }` 是元数据行，仅用于渲染 `## Available tools` 块和可见性门控（`isToolVisibleToAgent`）；工具实例本身通过 `injectedTools.push(...)` 注入 runner。
+
+#### 5.3.11 仿写要点
+
+1. **必须注册 `cross_session_memory` 工具** — 模型通过这个工具读写 memory；仅靠 system prompt 注入是不够的，因为模型需要**写入**能力。完整接线见 5.3.10。
+2. **工具与存储解耦** — `MemoryToolHandler` 是 core-agent 定义的接口，`features/memory.ts` 是实现；core-agent 不直接 import 业务层。
+3. **`§` 分隔的短事实流** — 不要用 YAML frontmatter 或 JSON；memory 是短事实流，不是文档。
+4. **字符 + 条目双上限** — 字符预算防上下文膨胀，条目上限防历史噪音。
+5. **LIFO 驱逐** — 新条目在尾部，超限时从头驱逐；重复文本保留最新。
+6. **原子保存** — `writeTextAtomicSync`（同 3.2.1 的 tmp+rename）。
+7. **三层注入扫描** — 写前 `scanForInjection`；prompt-injection / exfiltration / invisible-unicode。
+8. **作用域由 runner 绑定** — agent_id 由 `toScope` 在 handler 闭包中注入，project_id 同理；模型只能通过 tier 字符串选择作用域，无法越权。
+9. **空 memory 零 token** — `formatForSystemPrompt` 在无条目时返回 `''`，不给新用户增加 prompt 负担。
+10. **Project 读写分离** — commander 可写，子 agent 只读；工具 schema 按 `includeProjectTier` 和 `projectTierReadOnly` 动态生成。
+
+**代码量：** `features/memory.ts` ~600 行 + `core-agent/src/tools/memory-tool.ts` ~170 行
 
 ---
 
 ### 5.4 Skill 系统
+
+> **动手仿写请以 [`仿写Skill系统指南.md`](./仿写Skill系统指南.md) 为准。** 本节是第五阶段速查；完整闭环（Loader / Registry / 门控 / run-skill / CRUD / 运行时）在 Skill 仿写指南的 S1–S3。
 
 **对应源码：** `src/core-agent/src/skills/`、`src/main/features/skills.ts`（~1500 行）
 
@@ -6593,7 +7371,8 @@ export function invalidateSkills(): void {
 // ## Available skills
 //
 // - **code-review** — Multi-dimensional code review for pull requests
-//   When to invoke: User asks to "review" code or PR; you should call `view_skill("code-review")` to load the full instructions, then run the steps.
+//   When to invoke: User asks to "review" code or PR; you should call
+//   `view_skill("code-review")` to load the full instructions, then run the steps.
 //
 // - **data-analysis** — ...
 ```
@@ -6644,156 +7423,258 @@ const SKILL_TREE_IGNORE: ReadonlySet<string> = new Set([
 6. **触发是 hint 不是 gate** — `triggers` 关键词命中是"应当 invoke"的提示，模型可绕过；不是强制条件。
 7. **view_skill 是按需加载** — 完整 SKILL.md 正文太大，注入 system prompt 不现实；模型先调 `view_skill(id)` 才拿到。
 
-**代码量：** `skills.ts` ~1500 行 + `core-agent/src/skills/` ~400 行。
+**代码量：** `skills.ts` ~1500 行 + `core-agent/src/skills/` ~400 行
+
+---
+
 
 ---
 
 ### 5.5 执行计划管理
 
-> 💡 执行计划的类型定义、状态机、`updateExecutionPlan()` 算法已在 **2.2.1.3 执行计划系统** 中详细介绍。本节聚焦**工程实现细节**：runner 如何驱动、`replace_objective` 安全性、审计追踪。
+> 💡 执行计划的类型定义、状态机已在 **2.2.1.3 执行计划系统** 中详细介绍。本节聚焦**工程实现细节**：工具的真实 action 模型、controller 接线、Runner 的 reconciliation 提示机制。
 
-**对应源码：** `src/core-agent/src/agent/runner.ts`、`src/core-agent/src/tools/execution-plan.ts`
+**对应源码：** `src/core-agent/src/tools/execution-plan.ts`（工具）、`src/core-agent/src/agent/session.ts`（`updateExecutionPlan` + `ensureExecutionPlanAnchor` + `executionPlanContextText`）、`src/core-agent/src/agent/runner.ts`（controller 接线：第 645-648 行）
 
-#### 5.5.1 工具：`manage_execution_plan`
+#### 5.5.1 真实架构：Runner 不"自动 replace"，而是注入 reconciliation 提示
 
-```ts
-// core-agent/src/tools/execution-plan.ts
-type Action =
-  | { op: 'create', objective, steps }
-  | { op: 'update_step', step_id, status, explanation? }
-  | { op: 'replace_objective', new_objective }
-  | { op: 'add_steps', steps }
-  | { op: 'query' };
+**关键纠正：** Runner 并不直接调用 `replace_objective`。真实机制是两层配合：
 
-export function createExecutionPlanTool(): AgentTool {
-  return {
-    name: 'manage_execution_plan',
-    description: 'Manage the durable current-task objective and milestone statuses for long/tool-heavy work; session-local and independent of context summaries.',
-    inputSchema: { /* 上面 Action 的 JSON schema */ },
-    executionMode: 'parallel',
-    async execute(input, ctx) { /* 见下 */ },
-  };
-}
+```
+┌─ Runner 层 ───────────────────────────────────────────────────────┐
+│                                                                    │
+│  1. session.ensureExecutionPlanAnchor()                            │
+│     → 从当前用户消息确定性捕获 objective（`objectiveUserMessageDigest`）│
+│                                                                    │
+│  2. session.getMessagesForModel()                                  │
+│     → executionPlanContextText() 比较 latestUserDigest vs           │
+│       plan.updatedUserMessageDigest                                │
+│     → 不相等时注入 reconciliation 提示到消息列表:                   │
+│       "Reconciliation required: a newer user instruction exists.   │
+│        The latest user message overrides this plan;                │
+│        update or clear it before continuing substantive work."     │
+│                                                                    │
+│  3. 模型看到 reconciliation 提示 → 调 manage_execution_plan         │
+│     ({action: "update", replace_objective: true, plan: [...]})     │
+│                                                                    │
+│  4. session.updateExecutionPlan(update) 执行实际替换                │
+│     → 校验 replace_objective 只能基于更新的用户指令                  │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-#### 5.5.2 双路径更新：runner 自动 vs 模型工具
+**为什么用提示而不是 Runner 自动 replace：**
+- 模型拥有完整的上下文，知道哪些步骤已完成、哪些正在做——Runner 没有这个信息。
+- 自动替换会丢失已完成的步骤状态和审计轨迹。
+- 提示让模型自己决定是 update（保留步骤状态）还是 clear（全量重新规划）。
+
+#### 5.5.2 工具：`manage_execution_plan`
+
+> **⚠️ 与之前描述的重要差异：** 实际 tools 只有两个 action（`update` | `clear`），`replace_objective` 是 `update` action 的一个 boolean 标志，不是独立的 action。
+
+**Controller 接口与 Runner 接线**（`runner.ts:645-648`）：
 
 ```ts
-// runner.ts::onAssistantMessage() 之后：
-if (session.hasExecutionPlan()) {
-  const latestUserMsg = session.getLatestUserMessage();
-  const fingerprint = computeMessageFingerprint(latestUserMsg);
-  if (session.getPlanObjectiveFingerprint() !== fingerprint) {
-    // 用户发了新指令 → 自动 replace_objective
-    session.replaceExecutionPlanObjective(extractObjectiveFromMessage(latestUserMsg));
-    session.recordPlanAudit({ kind: 'auto_replace', old: ..., new: ..., fingerprint });
-  }
-}
+// execution-plan.ts
+export type ExecutionPlanController = {
+  update(update: ExecutionPlanUpdate): ExecutionPlanState;
+  clear(): void;
+};
 
-// 模型也可以显式调 manage_execution_plan 工具：
-// - create：开始一个多步骤任务
-// - update_step：标记步骤 in_progress / completed / failed
-// - replace_objective：明确改目标（带审计）
-// - add_steps：追加未预见的子任务
+// runner.ts — 工具实例通过 controller 接到 session 状态上
+const allTools = [
+  ...getBuiltinTools(),
+  createExecutionPlanTool({
+    update: (update) => this.session.updateExecutionPlan(update),
+    clear: () => this.session.clearExecutionPlan(),
+  }),
+  ...(opts.tools ?? []),
+];
 ```
 
-**目标锁定到轮次：** `ExecutionPlan.objectiveTurnId = activeTurn.id`——计划绑定到提出它的轮次。`updateExecutionPlan()` 比较 `latestUserMessageFingerprint` vs `plan.objectiveFingerprint`，不相等 = 用户换话题，自动 replace。
-
-#### 5.5.3 `replace_objective` 的双路径机制
+**工具的完整 inputSchema**（`execution-plan.ts`）：
 
 ```ts
-// session.ts::replaceExecutionPlanObjective(newObjective: string): void
-function replaceExecutionPlanObjective(newObjective: string): void {
-  const old = this.state.executionPlan.objective;
-  this.state.executionPlan.objective = newObjective;
-  this.state.executionPlan.objectiveFingerprint = computeMessageFingerprint(currentUserMessage);
-  this.state.executionPlan.version += 1;
-  this.state.executionPlanAudit.push({
-    kind: 'replace_objective',
-    old,
-    new: newObjective,
-    turnId: this.state.activeTurn.id,
-    at: Date.now(),
+export function createExecutionPlanTool(controller: ExecutionPlanController): AgentTool {
+  return defineTool({
+    name: "manage_execution_plan",
+    description:
+      "Maintain durable milestones for a long current task. Use early and after material progress; "
+      + "skip trivial tasks. The objective comes from user text. Under the same user instruction, "
+      + "copy every existing step exactly, update statuses, and append new work; "
+      + "do not delete or rename steps. Explicit plans persist after completion. "
+      + "Clear or replace only after a newer real user instruction changes or cancels the goal.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["update", "clear"],
+          description: "Update statuses/the complete step list, or clear a plan only after "
+            + "a newer user instruction cancels or supersedes it.",
+        },
+        explanation: {
+          type: "string",
+          description: "Optional concise reason for this revision.",
+          maxLength: 500,
+        },
+        replace_objective: {
+          type: "boolean",
+          description: "Re-anchor to the latest user text only on the first plan update after "
+            + "the user revised/replaced the goal. Omit it on later status-only updates.",
+        },
+        plan: {
+          type: "array",
+          description: "Complete ordered list. Under the same user instruction, copy every existing "
+            + "step text exactly, update statuses, and append new work. Each item requires a plain "
+            + "step string and allowed status.",
+          maxItems: 12,
+          items: {
+            type: "object",
+            properties: {
+              step: {
+                type: "string",
+                description: "One concrete milestone as a plain string, never an object.",
+                maxLength: 180,
+              },
+              status: {
+                type: "string",
+                enum: ["pending", "in_progress", "completed", "blocked"],
+              },
+            },
+            required: ["step", "status"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["action"],
+      additionalProperties: false,
+    },
+    async execute(input) {
+      // action="clear" → controller.clear()
+      // action="update" → controller.update({ steps, explanation?, replaceObjective? })
+      // replace_objective 校验：不能在没有新用户指令时改写成功标准
+      // 若 replace_objective 被拒绝（session 检测到 digest 未变），
+      //   会去掉 replaceObjective 标志重试一次（仅更新状态）
+    },
   });
 }
 ```
 
-**两条 replace 路径：**
-
-1. **自动（runner）** — 检测到用户换话题时调。
-2. **显式（模型工具）** — 模型在用户澄清后调 `replace_objective`。
-
-**两条路径都走同一函数**——保证审计追踪一致。
-
-#### 5.5.4 步骤状态机
+#### 5.5.3 步骤状态机（正确版本）
 
 ```ts
-type ExecutionPlanStepStatus = 'pending' | 'in_progress' | 'completed' | 'failed' | 'skipped';
+// session.ts
+export const EXECUTION_PLAN_MAX_STEPS = 12;
+export const EXECUTION_PLAN_MAX_STEP_CHARS = 180;
+export const EXECUTION_PLAN_MAX_EXPLANATION_CHARS = 500;
 
-type ExecutionPlanStep = {
-  id: number;
-  label: string;                              // 最大 180 字符
+export type ExecutionPlanStepStatus = "pending" | "in_progress" | "completed" | "blocked";
+
+export type ExecutionPlanStepInput = {
+  step: string;                              // 步骤描述文本（不是 label 字段）
   status: ExecutionPlanStepStatus;
-  explanation?: string;                       // 最大 500 字符
-  dependsOn?: number[];                       // 依赖步骤 ID 列表
+};
+
+export type ExecutionPlanStep = ExecutionPlanStepInput & {
+  id: number;                                // 宿主分配的持久 id，模型输入中不需要
+  completionEvidence?: {                     // 自动附加的完成证据
+    verification: "observed" | "unverified";
+    workEntryIds: number[];
+  };
 };
 ```
 
 **状态转换规则：**
 
 - `pending` → `in_progress`：模型声明开始执行。
-- `in_progress` → `completed` / `failed` / `skipped`：执行结果。
-- `completed` 不可回到 `pending`（只能 `skipped` 后另开新步骤）。
-- `dependsOn` 是软约束——不强制拓扑排序，只是 UI 提示"先做这个再做那个"。
+- `in_progress` → `completed` / `blocked`：执行结果；`blocked` 表示因外部原因暂时阻塞。
+- `completed` 不可回退：步骤完成后的 status 变更会被 `reconcileExecutionPlanSteps()` 拒绝。
+- **没有 `failed`/`skipped`**：失败用 `blocked` + explanation 描述；跳过用 `completed` + 简短说明。
+- **没有 `dependsOn` 字段**：依赖关系是模型在 prompt 中自行推理的语义，不是类型系统中的硬约束。
+- **不可删除或重命名**：同一条用户指令下，步骤的 step 文本必须原样保留；修改 step 文本会被 reconciliation 拒绝。
 
-#### 5.5.5 计划验证
+#### 5.5.4 `updateExecutionPlan` 核心逻辑
 
 ```ts
-function validateExecutionPlan(plan: ExecutionPlanState): { ok: boolean; errors: string[] } {
-  const errors: string[] = [];
-  for (const step of plan.steps) {
-    if (step.label.length > 180) errors.push(`step ${step.id} label exceeds 180 chars`);
-    if (step.explanation && step.explanation.length > 500) errors.push(`step ${step.id} explanation exceeds 500 chars`);
-    if (step.dependsOn) {
-      for (const dep of step.dependsOn) {
-        if (!plan.steps.some(s => s.id === dep)) errors.push(`step ${step.id} depends on missing step ${dep}`);
-      }
-    }
+// session.ts::updateExecutionPlan(update)
+updateExecutionPlan(update: ExecutionPlanUpdate): ExecutionPlanState {
+  const previous = state.executionPlan;
+  const latestUser = this.latestUserTextInActiveTurn();
+  const priorUserDigest = previous?.updatedUserMessageDigest
+    ?? previous?.objectiveUserMessageDigest;
+  const hasNewUserInstruction = !!previous
+    && (!priorUserDigest || latestUser.digest !== priorUserDigest);
+
+  // ── replace_objective 安全校验 ──
+  if (previous && update.replaceObjective && !hasNewObjectiveInstruction) {
+    throw new Error(
+      "manage_execution_plan replace_objective requires a newer real user instruction; "
+      + "it cannot be used to rewrite the current task's success criteria"
+    );
   }
-  return { ok: errors.length === 0, errors };
+
+  // ── 目标锚定 ──
+  if (!previous || update.replaceObjective) {
+    // 重新锚定到最新用户文本
+    objective = captureExecutionObjective(latestUser.text);
+    objectiveTurnId = active.id;
+  } else if (hasNewUserInstruction) {
+    // 用户中途 steer → 追加指令为权威约束，保留既定目标
+    objective = [previous.objective, "[Newer user instruction — authoritative]", latestUser.text].join("\n\n");
+  }
+
+  // ── 步骤 reconciliation ──
+  const reconciled = reconcileExecutionPlanSteps(previous, stepInputs, hasNewUserInstruction);
+  // 拒绝：删除已有步骤、重命名、回退 completed 状态
+
+  // ── 写审计 → 持久化到 .context.json 侧车 ──
+  state.executionPlan = plan;
+  appendExecutionPlanAudit(state.executionPlanAudit, plan, "update");
 }
 ```
 
-**校验时机：** 每次 `update_step` / `add_steps` / `replace_objective` 之后；不阻塞持久化，只记 audit。
+#### 5.5.5 `.context.json` 侧车
 
-#### 5.5.6 步骤删除：CLI 路径不可用
+执行计划存在 `{sessionFile}.context.json` 侧车文件中，而非 JSONL 消息流。
+
+**原因：** 执行计划是**会话级结构化状态**，不是消息。放入 JSONL 会导致每次加载会话都在对话历史中看到历史计划的残留。
+
+**读写方式**（`persistent-session.ts`）：
 
 ```ts
-// ⚠️ 注意：manage_execution_plan 工具**不**提供 delete_step 操作。
-// 删除步骤需用 replace_objective 创建新 plan，或 add_steps 追加。
-// 原因：保持审计完整；删除会让审计链断裂。
+// 构造时确定路径
+this.contextFile = `${sessionFile}.context.json`;
+
+// 加载：readFileSync + JSON.parse + 容错清理（归一化旧版格式）
+// 保存：tmp + renameSync 原子替换（同 storage.ts 的 writeTextAtomicSync 模式）
 ```
 
-#### 5.5.7 仿写要点
+#### 5.5.6 仿写要点
 
-1. **目标锁定到轮次** — `objectiveTurnId` + `objectiveFingerprint`；用户换话题自动 replace。
-2. **双路径 replace** — runner 自动 vs 模型显式，**同一函数**保证审计一致。
-3. **步骤不可删除** — 只能 replace / add；保证审计链不断裂。
-4. **`dependsOn` 是软约束** — 不强制拓扑排序；UI 提示用。
-5. **校验不阻塞持久化** — 校验失败仅记 audit，不阻塞 update；让模型能修复。
-6. **会话局部** — ExecutionPlan 存在 `.context.json` 侧车，不入 JSONL；session 范围，不跨设备。
+1. **工具只有 update 和 clear 两个 action** — 不存在 `create`/`update_step`/`add_steps`/`query` 这些独立 op；`replace_objective` 是 update 的可选 boolean 标志。
+2. **步骤状态是四种而非五种** — `pending | in_progress | completed | blocked`，没有 `failed`/`skipped`。
+3. **没有 `dependsOn` 字段** — 步骤间依赖是模型在 prompt 中自行管理的语义，不是类型约束。
+4. **Runner 不自动 replace** — 它注入 reconciliation 提示到消息列表，让模型决定如何响应（update/clear/ignore）。
+5. **`replace_objective` 有安全校验** — 只能在检测到用户发出新指令（digest 变化）时使用；否则 throw error。工具 execute() 中还有一个 fallback：如果 replace_objective 被拒绝，会自动去掉该标志重试一次（纯状态更新）。
+6. **步骤不可删除或重命名** — `reconcileExecutionPlanSteps()` 会拒绝删除已有步骤、修改 step 文本、或回退 completed 状态。只能更新 status 和追加新步骤。
+7. **Controller 接线** — `createExecutionPlanTool({ update, clear })` 接收 controller，controller 的 `update` 和 `clear` 分别桥接到 `session.updateExecutionPlan()` 和 `session.clearExecutionPlan()`。
+8. **侧车存储** — 执行计划存在 `.context.json` 侧车，不入 JSONL；session 加载时从侧车恢复。
 
-**代码量：** `execution-plan.ts` ~200 行（不含 runner 中的驱动逻辑 ~50 行）。
+**代码量：** `execution-plan.ts` ~150 行 + `session.ts` 中 `updateExecutionPlan` ~100 行 + reconciliation ~50 行 + `executionPlanContextText` prompt 注入 ~40 行。
 
 ---
-
 ### 5.6 多 Provider 轮转
 
 **对应源码：** `src/main/model/core-agent/rotating-provider.ts`（~500 行）、`auth-error.ts`、`profile-cooldown.ts`
 
 > **核心矛盾：** AgentRunner 在首次提供商调用前就把用户消息追加到 `PersistentSession`。在 AgentRunner 层重试要么**双重提交用户消息**，要么需要会话回滚逻辑。所以轮换必须在 AgentRunner **之下**，用户消息只添加一次，轮换对会话状态不可见。
 
-#### 5.6.1 何时仍可安全轮换
+#### 5.6.1 轮转也是自动的，不注册工具
+
+与压缩、循环检测一样，Provider 轮转是**纯基础设施层行为**——发生在 `rotating-provider.ts` 的 `streamWithRotation()` 中，对模型完全透明。模型不知道自己用的是 primary 还是 fallback provider。
+
+#### 5.6.2 何时仍可安全轮换
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -6815,7 +7696,7 @@ function validateExecutionPlan(plan: ExecutionPlanState): { ok: boolean; errors:
 
 **"内容事件"是调用方可能已渲染给用户的任何东西**——text_* / thinking_* / tool_use_* / message_end。无先前文本的 `message_end` 也视为"已产出输出"——一旦开始产出任何东西就宁可不轮换，因为模型可能在报错前已跑完整轮。
 
-#### 5.6.2 前导事件过滤
+#### 5.6.3 前导事件过滤
 
 ```ts
 /** 纯前导事件 — 收到它们不会让我们提交到此候选，
@@ -6858,7 +7739,7 @@ async function* streamWithRotation(params): AsyncIterable<StreamEvent> {
 }
 ```
 
-#### 5.6.3 跨提供商边界
+#### 5.6.4 跨提供商边界
 
 ```ts
 function paramsFor(cand: RotatingCandidate, params: CompletionParams): CompletionParams {
@@ -6880,13 +7761,13 @@ export interface RotatingCandidate {
 
 **为什么需要 `modelId` 覆盖：** 调用方（AgentRunner）只设置 `params.model = primary.modelId`。轮换到 fallback 时，要用 `paramsFor(cand, params) = { ...params, model: cand.modelId }` 替换，否则 Anthropic SDK 收到 `gpt-5.4` 字符串会报错。
 
-#### 5.6.4 冷却与 onSuccess
+#### 5.6.5 冷却与 onSuccess
 
 ```ts
 export function markCooldown(profileId: string, kind: FailureKind, reason: string): void {
-  // 写 <uid>/local/config/profile-cooldown.json
-  // 格式: { profile_id → { kind, reason, cooldown_until: epoch_ms } }
-  // 默认 5 分钟（按 kind 调整：auth 5m / quota 1h / rate_limit 30s）
+  // 写内存 Map（profileId → { cooledUntil, kind, reason }）
+  // 默认 10 分钟冷却（DEFAULT_COOLDOWN_MS = 10 * 60 * 1000）
+  // durationMs 参数可选，传了覆盖默认值；但实际调用点不传，统一走 10 分钟
 }
 
 export function onSuccess(profileId: string): void {
@@ -6895,9 +7776,9 @@ export function onSuccess(profileId: string): void {
 }
 ```
 
-**冷却语义：** 凭据/账户失败 → markCooldown；网络失败 → 不冷却（每个新请求仍从配置条目列表开始）。**成功产出首事件** → `onSuccess(profileId)` 清除先前冷却。
+**冷却语义：** 凭据/账户失败 → `markCooldown`，统一默认 10 分钟（非按 kind 分级）；网络失败 → 不冷却（`kind === 'network'` 直接 return，每个新请求仍从配置条目列表开始）。**成功产出首事件** → `onSuccess(profileId)` 清除先前冷却。
 
-#### 5.6.5 网络重试退避
+#### 5.6.6 网络重试退避
 
 ```ts
 const NETWORK_RETRY_ATTEMPTS = 3;
@@ -6909,7 +7790,7 @@ const networkRetryDelayMs = (attempt: number) =>
 // attempt 1 → 500ms, 2 → 1000ms, 3 → 2000ms（封顶）
 ```
 
-#### 5.6.6 非密钥失败跳过轮换
+#### 5.6.7 非密钥失败跳过轮换
 
 ```ts
 // auth-error.ts::classifyKeyFailure(err)
@@ -6926,7 +7807,7 @@ function classifyKeyFailure(err: unknown): { kind: FailureKind; reason: string }
 
 **为什么：** 问题不是密钥形态时换密钥无意义。401/403/quota_exceeded/rate_limit → 轮换；其它 → 不轮换。
 
-#### 5.6.7 仿写要点
+#### 5.6.8 仿写要点
 
 1. **轮换层在 AgentRunner 之下** — 不要在 AgentRunner 重试；用户消息只追加一次，轮换对会话状态不可见。
 2. **首事件门控** — `PREAMBLE_TYPES` 过滤 `start` / `content_block_start`；首个内容事件 = commit 点。
@@ -6936,10 +7817,9 @@ function classifyKeyFailure(err: unknown): { kind: FailureKind; reason: string }
 6. **onSuccess 清冷却** — 产出首事件时清除先前失败冷却，避免冷启动后误判。
 7. **归档标签改写** — `onCandidateChosen` 回调让 dev archive 改写 storage row 的 model/provider/profile 标签，反映**实际**产出可见结果的候选，而非 primary 标签。
 
-**代码量：** `rotating-provider.ts` ~500 行 + `auth-error.ts` ~150 行 + `profile-cooldown.ts` ~100 行。
+**代码量：** `rotating-provider.ts` ~500 行 + `auth-error.ts` ~150 行 + `profile-cooldown.ts` ~100 行
 
 ---
-
 ## MVP 可运行示例
 
 做完第一、二阶段，你的入口文件大概是这样的：
@@ -7026,7 +7906,8 @@ ANTHROPIC_API_KEY=sk-ant-... tsx src/main.ts "列出当前目录的文件"
 | 第二阶段 | Day 3-7   | Provider 接口 + 实现 + Session（含持久化）+ Runner（含压缩/重试/watchdog/循环检测）→**🎉 MVP 能跑！** |
 | 第三阶段 | Day 8-9   | 路径沙箱、存储、锁、SessionStore 缓存层 → 有持久化能力的 Agent                                              |
 | 第四阶段 | Day 10-11 | 工具目录、文件工具、Bash 工具、结果管理 → 完整的工具系统                                                    |
-| 第五阶段 | Week 3+   | 按需添加：上下文压缩（原理见 2.2.5）、循环检测（原理见 2.2.8）、Memory、Skill                                |
+| **Skill** | Day 10-16（可与第四阶段并行） | 见 [`仿写Skill系统指南.md`](./仿写Skill系统指南.md)：S1 闭环 → S2 产品层 → S3 全量 →**🎉 Skill 可用** |
+| 第五阶段 | Week 3+   | 按需添加：上下文压缩（原理见 2.2.5）、循环检测（原理见 2.2.8）、Memory；Skill 细节以独立指南为准                                |
 
 ---
 
@@ -7046,6 +7927,8 @@ ANTHROPIC_API_KEY=sk-ant-... tsx src/main.ts "列出当前目录的文件"
 | **孤儿 tool_use 修复** | `persistent-session.ts`            | 加载时检测并修复中断导致的 tool_use/tool_result 不匹配              |
 | **原子写入**           | `storage.ts` → `fs.rename`      | 先写临时文件再 rename，防写一半崩溃                                 |
 | **收口点**             | `paths.ts` → `isPathAllowed`    | 路径和存储只有一个入口，安全审计集中                                |
+| **Skill 菜单而非 Tool** | `SkillLoader` + Registry        | 注入 Available 菜单；正文 `read_file`；脚本统一 `run-skill`（详见 Skill 仿写指南） |
+| **发现/执行优先级不对称** | Registry vs `run-skill.cjs`   | 发现 marketplace 先；执行 custom 先                                 |
 
 ---
 
@@ -7077,7 +7960,7 @@ ANTHROPIC_API_KEY=sk-ant-... tsx src/main.ts "列出当前目录的文件"
 | Bash/Local 工具 | `src/main/model/core-agent/local-tools.ts`       |
 | 工具结果管理    | `src/main/util/tool-result-cap.ts`               |
 | Memory 系统     | `src/core-agent/src/memory/`                     |
-| Skill 系统      | `src/core-agent/src/skills/`                     |
+| Skill 系统      | `src/core-agent/src/skills/` + `skill-registry.ts` / `features/skills.ts` / `bin/run-skill.cjs`；仿写见 [`仿写Skill系统指南.md`](./仿写Skill系统指南.md) |
 | 执行计划        | `src/core-agent/src/tools/execution-plan.ts`     |
 | Provider 轮转   | `src/main/model/core-agent/rotating-provider.ts` |
 

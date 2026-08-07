@@ -9,7 +9,7 @@ import type { Session } from "../agent/session.js";
 import type { Message, MessageContent } from "../shared/types.js";
 
 export interface SessionHistoryOptions {
-  /** 最多展示的轮数（更早的省略并提示）。默认 6。 */
+  /** 最多展示的轮数（更早的省略并提示）。默认 0 = 不限制。 */
   maxTurns?: number;
   /** 单条消息正文最大字符数（超过截断）。默认 200。 */
   maxTextLength?: number;
@@ -42,7 +42,7 @@ export function renderSessionHistory(
   session: Session,
   opts: SessionHistoryOptions = {},
 ): string {
-  const { maxTurns = 6, maxTextLength = 200 } = opts;
+  const { maxTurns = 0, maxTextLength = 200 } = opts;
 
   // 提取对话轮次：user 文本开新轮，assistant 文本挂在当前轮
   const turns: { user: string; assistant: string }[] = [];
@@ -59,10 +59,10 @@ export function renderSessionHistory(
   if (turns.length === 0) return "";
 
   const total = turns.length;
-  const shown = turns.slice(-maxTurns);
+  const shown = maxTurns > 0 ? turns.slice(-maxTurns) : turns;
   const lines: string[] = [];
   lines.push("──────────────── 历史会话 ────────────────");
-  if (total > maxTurns) {
+  if (maxTurns > 0 && total > maxTurns) {
     lines.push(`（共 ${total} 轮，显示最近 ${maxTurns} 轮，更早的已省略）`);
   }
 
