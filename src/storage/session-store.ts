@@ -17,10 +17,20 @@ import { assertPathSegment } from "./paths.js";
 // ============================================================
 
 const RECOVERABLE_KINDS = ["gconv", "cli"] as const;
-const EPHEMERAL_KINDS = ["anon", "extract"] as const;
-const KNOWN_KINDS_RE = /^(gconv|cli|anon|extract)(?:-|$)/;
+/**
+ * Session kind 语义：
+ * | kind    | 谁创建           | 生命周期   |
+ * |---------|-----------------|-----------|
+ * | gconv   | 对话主会话        | 手动删除   |
+ * | cli     | 命令行一次性会话   | 手动删除   |
+ * | anon    | 匿名临时          | 7 天 GC   |
+ * | extract | 提取任务          | 7 天 GC   |
+ * | gworker | 匿名 worker 回合  | 7 天 GC   |
+ */
+const EPHEMERAL_KINDS = ["anon", "extract", "gworker"] as const;
+const KNOWN_KINDS_RE = /^(gconv|gworker|cli|anon|extract)(?:-|$)/;
 
-export type SessionKind = "gconv" | "cli" | "anon" | "extract";
+export type SessionKind = "gconv" | "cli" | "anon" | "extract" | "gworker";
 
 /**
  * 校验并解析 session kind。
@@ -37,7 +47,7 @@ export function sessionKindOf(sessionId: string): SessionKind {
   if (!KNOWN_KINDS_RE.test(safe)) {
     throw new Error(
       `invalid session id "${sessionId}" — must start with a known kind ` +
-      `(gconv | cli | anon | extract)`,
+      `(gconv | gworker | cli | anon | extract)`,
     );
   }
   return safe.split("-")[0] as SessionKind;
@@ -125,7 +135,7 @@ export class SessionStore {
    */
   create(kind: SessionKind = "gconv"): PersistentSession {
     // 运行时校验 kind，防止外部输入直接拼进 sessionId（进而进 path.join）
-    if (!["gconv", "cli", "anon", "extract"].includes(kind)) {
+    if (!["gconv", "cli", "anon", "extract", "gworker"].includes(kind)) {
       throw new Error(`invalid session kind: "${String(kind)}"`);
     }
     const tail = randomUUID().replace(/-/g, "").slice(0, 12);
