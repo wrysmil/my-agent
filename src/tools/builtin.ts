@@ -11,6 +11,7 @@ import * as childProcess from "node:child_process";
 import { defineTool, type AgentTool, type ToolContext } from "./base.js";
 import { guardPath } from "../storage/path-sandbox.js";
 import { userSkillsDir, userMarketplaceSkillsDir } from "../storage/paths.js";
+import { isBashAllowed } from "./bash-permissions.js";
 
 // ============================================================
 // 文件读取
@@ -70,7 +71,7 @@ export const writeFileTool = defineTool({
     required: ["filePath", "content"],
   },
   execute: async (input, ctx) => {
-    const resolved = resolvePath(input.filePath as string, ctx);
+    const resolved = resolvePath(input.filePath as string, ctx, { isWrite: true });
     const content = input.content as string;
     try {
       const dir = path.dirname(resolved);
@@ -106,7 +107,7 @@ export const editFileTool = defineTool({
     required: ["filePath", "oldString", "newString"],
   },
   execute: async (input, ctx) => {
-    const resolved = resolvePath(input.filePath as string, ctx);
+    const resolved = resolvePath(input.filePath as string, ctx, { isWrite: true });
     const oldStr = input.oldString as string;
     const newStr = input.newString as string;
     const replaceAll = (input.replaceAll as boolean) ?? false;
@@ -136,6 +137,103 @@ export const editFileTool = defineTool({
       };
     } catch (err) {
       return { content: `编辑文件失败: ${String(err)}`, isError: true };
+    }
+  },
+});
+
+// ============================================================
+// 文件删除
+// ============================================================
+
+export const deleteFileTool = defineTool({
+  name: "delete_file",
+  description:
+    "删除文件（仅限工作区/允许根内）。⚠️ 不可恢复，请谨慎使用。",
+  inputSchema: {
+    type: "object",
+    properties: {
+      filePath: { type: "string", description: "要删除的文件路径" },
+    },
+    required: ["filePath"],
+  },
+  execute: async (input, ctx) => {
+    const resolved = resolvePath(input.filePath as string, ctx, { isWrite: true });
+    try {
+      if (!fs.existsSync(resolved)) {
+        return { content: `❌ 文件不存在: ${input.filePath}`, isError: true };
+      }
+      const stat = fs.statSync(resolved);
+      if (stat.isDirectory()) {
+        return { content: `❌ 目标是目录而非文件，请使用 bash rm -rf: ${input.filePath}`, isError: true };
+      }
+      fs.unlinkSync(resolved);
+      return { content: `🗑️ 已删除 ${path.basename(resolved)} (${formatSize(stat.size)})` };
+    } catch (err) {
+      return { content: `删除文件失败: ${String(err)}`, isError: true };
+    }
+  },
+});
+
+// ============================================================
+// 文件信息
+// ============================================================
+
+export const statFileTool = defineTool({
+  name: "stat_file",
+  description:
+    "获取文件元信息：大小、行数、字符数。不读取完整文件内容。超过 64KB 的文件仅报告字节数。",
+  inputSchema: {
+    type: "object",
+    properties: {
+      filePath: { type: "string", description: "文件路径" },
+    },
+    required: ["filePath"],
+  },
+  execute: async (input, ctx) => {
+    const resolved = resolvePath(input.filePath as string, ctx);
+    try {
+      const stat = fs.statSync(resolved);
+      if (stat.isDirectory()) {
+        return { content: `📁 ${path.basename(resolved)} — 目录`, isError: true };
+      }
+
+      const ext = path.extname(resolved).toLowerCase();
+      const isText = !isBinaryExtension(ext);
+
+      let lines: string | undefined;
+      let chars: string | undefined;
+
+      if (isText) {
+        // 大文件防护：只读前 64KB 统计行数/字符数
+        const readSize = Math.min(stat.size, 64 * 1024);
+        const buf = Buffer.alloc(readSize);
+        const fd = fs.openSync(resolved, "r");
+        try {
+          fs.readSync(fd, buf, 0, readSize, 0);
+        } finally {
+          fs.closeSync(fd);
+        }
+        const text = buf.toString("utf-8");
+        lines = String(text.split("\n").length);
+        chars = String(text.length);
+        if (stat.size > 64 * 1024) {
+          lines += "+";
+          chars += "+";
+        }
+      }
+
+      const parts = [
+        `📄 ${path.basename(resolved)}`,
+        `   大小: ${formatSize(stat.size)}`,
+      ];
+      if (lines !== undefined) parts.push(`   行数: ${lines}`);
+      if (chars !== undefined) parts.push(`   字符: ${chars}`);
+      if (!isText) parts.push(`   类型: 二进制`);
+      parts.push(`   修改: ${new Date(stat.mtimeMs).toISOString()}`);
+
+      return { content: parts.join("\n") };
+    } catch (err) {
+      return { content: `获取文件信息失败: ${String(err)}`, isError: true };
     }
   },
 });
@@ -390,6 +488,12 @@ export const bashTool = defineTool({
       ? resolvePath(input.workingDir as string, ctx)
       : (ctx.workingDir ?? process.cwd());
 
+    // Bash 权限检查（每次 execute 重读 TOOL_EXEC_MODE，即时生效）
+    const permCheck = isBashAllowed(cwd, ctx.workingDir);
+    if (!permCheck.allowed) {
+      return { content: permCheck.reason!, isError: true };
+    }
+
     return new Promise((resolve) => {
       const child = childProcess.exec(
         command,
@@ -502,9 +606,11 @@ export const BUILTIN_TOOLS: AgentTool[] = [
   readFileTool,
   writeFileTool,
   editFileTool,
+  deleteFileTool,
   listFilesTool,
   searchFilesTool,
   grepFilesTool,
+  statFileTool,
   bashTool,
   webFetchTool,
 ];
@@ -513,7 +619,11 @@ export const BUILTIN_TOOLS: AgentTool[] = [
 // 辅助函数
 // ============================================================
 
-function resolvePath(filePath: string, ctx: ToolContext): string {
+function resolvePath(
+  filePath: string,
+  ctx: ToolContext,
+  opts?: { isWrite?: boolean; extraRoots?: string[]; readOnlyExtraRoots?: string[] },
+): string {
   if (!path.isAbsolute(filePath)) {
     filePath = path.resolve(ctx.workingDir ?? process.cwd(), filePath);
   }
@@ -528,18 +638,32 @@ function resolvePath(filePath: string, ctx: ToolContext): string {
     }
   }
 
-  // 沙箱门控：读写路径统一以工作目录为允许根，不区分 isWrite。
-  // S1.6：追加 data 根下的 skill 目录，使 LLM 可读 custom / marketplace skill。
-  const roots = [
+  // 构建允许根列表
+  const roots: string[] = [
     ctx.workingDir ?? process.cwd(),
     userSkillsDir(),
     userMarketplaceSkillsDir(),
   ];
+
+  // 额外根（调用方指定）
+  if (opts?.extraRoots) {
+    roots.push(...opts.extraRoots);
+  }
+
+  // 只读额外根（读工具可用，写工具排除）
+  if (opts?.readOnlyExtraRoots && !opts?.isWrite) {
+    roots.push(...opts.readOnlyExtraRoots);
+  }
+
+  // 沙箱门控
   const err = guardPath(abs, { allowedRoots: roots });
   if (err) throw new Error(err);
 
   return abs;
 }
+
+// 标记为模块内可引用（供外部 import）
+export { resolvePath };
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -565,6 +689,7 @@ function escapeRegex(str: string): string {
 }
 
 function isBinaryExtension(name: string): boolean {
+  const ext = path.extname(name).toLowerCase();
   const binExts = new Set([
     ".png", ".jpg", ".jpeg", ".gif", ".webp", ".ico", ".bmp",
     ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
@@ -573,7 +698,6 @@ function isBinaryExtension(name: string): boolean {
     ".exe", ".dll", ".so", ".dylib", ".wasm",
     ".woff", ".woff2", ".ttf", ".eot",
   ]);
-  const ext = path.extname(name).toLowerCase();
   return binExts.has(ext);
 }
 

@@ -26,6 +26,14 @@ import {
   buildDefaultSystemPrompt as buildFallbackPrompt,
 } from "../prompts/system-prompt-builder.js";
 import { buildRuntimeDatetimeBlock } from "../prompts/runtime-context.js";
+import { isToolVisibleToAgent } from "../tools/catalog.js";
+import {
+  capToolResult,
+  TOOL_RESULT_INLINE_LEDGER_STATE_KEY,
+  type ToolResultInlineLedger,
+} from "../tools/tool-result-cap.js";
+import { toolResultsDir } from "../storage/paths.js";
+import { Mutex } from "async-mutex";
 
 // ============================================================
 // 重试常量 — 控制 runner 遇到可重试错误时的退避策略
@@ -1157,8 +1165,11 @@ export class AgentRunner {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       let activeProviderStartedAt: number | undefined;
       try {
-        // 2a. 准备工具定义
-        const toolDefs = [...this.tools.values()].map(toToolDefinition);
+        // 2a. 准备工具定义（可见性过滤：按 agentId 门控）
+        const agentId = params.agentId || "commander";
+        const toolDefs = [...this.tools.values()]
+          .filter((t) => isToolVisibleToAgent(t.name, agentId))
+          .map(toToolDefinition);
 
         // 2b. 上下文压缩检查
         const compactionStart = Date.now();
@@ -1595,6 +1606,14 @@ export class AgentRunner {
     const terminalSkipMessage =
       "A prior terminal tool ended this turn before this tool could run.";
 
+    // 工具结果溢出：本轮 inline token 账本 + 并行原子锁
+    const inlineLedger: ToolResultInlineLedger = {
+      initialTokens: MAX_INLINE_TOOL_RESULT_TOKENS_PER_ROUND,
+      remainingTokens: MAX_INLINE_TOOL_RESULT_TOKENS_PER_ROUND,
+    };
+    const ledgerMutex = new Mutex();
+    const tResultsDir = toolResultsDir();
+
     for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
       const batch = batches[batchIndex];
 
@@ -1631,18 +1650,29 @@ export class AgentRunner {
             readFileState: input.readFileState,
             runScopedLedger: input.runScopedLedger,
             toolResultReadKeys: input.toolResultReadKeys,
+            [TOOL_RESULT_INLINE_LEDGER_STATE_KEY]: inlineLedger,
+            toolResultsDir: tResultsDir,
           },
           toolIdleTimeoutMs: this.config.agent.toolIdleTimeoutMs,
         });
         input.timings.toolMs += Math.max(0, Date.now() - toolStart);
 
-        // 持久化结果
+        // capToolResult：溢出检查（顺序分支，单线程无需锁）
+        const capped = capToolResult(call.name, outcome.result, {
+          workingDir: params.workingDir,
+          state: {
+            [TOOL_RESULT_INLINE_LEDGER_STATE_KEY]: inlineLedger,
+            toolResultsDir: tResultsDir,
+          },
+        }, { toolResultsDir: tResultsDir });
+
+        // 持久化结果（使用 capToolResult 处理后的内容）
         await this.session.addToolResult(
-          call.id, outcome.result.content, outcome.result.isError,
+          call.id, capped.content, capped.isError,
         );
         recordToolObservation(
           input.recentToolObservations,
-          call.name, outcome.result.content, !!outcome.result.isError,
+          call.name, capped.content, !!capped.isError,
         );
 
         // 错误计数
@@ -1650,7 +1680,7 @@ export class AgentRunner {
           if (outcome.err) {
             if (isRetryableError(outcome.err)) input.transientToolErrorsRef.value++;
             else input.permanentToolErrorsRef.value++;
-          } else if (outcome.result.isError && !outcome.recoverable) {
+          } else if (capped.isError && !outcome.recoverable) {
             input.permanentToolErrorsRef.value++;
           }
         }
@@ -1658,16 +1688,16 @@ export class AgentRunner {
         yield {
           type: "tool_end",
           name: call.name, id: call.id,
-          result: outcome.result.content,
-          persistedOutput: outcome.result.persistedOutput,
-          isError: outcome.result.isError,
+          result: capped.content,
+          persistedOutput: capped.persistedOutput,
+          isError: capped.isError,
         };
 
         if (outcome.aborted) {
           throw new Error("Run aborted");
         }
 
-        if (!outcome.aborted && !outcome.stalled && !outcome.err && outcome.result.endTurn) {
+        if (!outcome.aborted && !outcome.stalled && !outcome.err && capped.endTurn) {
           endTurnRequested = true;
           terminalBatchIndex = batchIndex;
           break;
@@ -1692,7 +1722,11 @@ export class AgentRunner {
                 outcome: {
                   result: { content: msg, isError: true } as ToolResult,
                   err: new Error(msg),
+                  aborted: false,
+                  stalled: false,
+                  recoverable: false,
                 },
+                capped: { content: msg, isError: true } as ToolResult,
               };
             }
             const outcome = await runToolWithWatchdog({
@@ -1706,29 +1740,46 @@ export class AgentRunner {
                 readFileState: input.readFileState,
                 runScopedLedger: input.runScopedLedger,
                 toolResultReadKeys: input.toolResultReadKeys,
+                [TOOL_RESULT_INLINE_LEDGER_STATE_KEY]: inlineLedger,
+                toolResultsDir: tResultsDir,
               },
               toolIdleTimeoutMs: this.config.agent.toolIdleTimeoutMs,
             });
-            return { call, outcome };
+
+            // capToolResult：并行分支需 mutex 锁保护账本原子扣减
+            let capped: ToolResult;
+            await ledgerMutex.runExclusive(() => {
+              capped = capToolResult(call.name, outcome.result, {
+                workingDir: params.workingDir,
+                state: {
+                  [TOOL_RESULT_INLINE_LEDGER_STATE_KEY]: inlineLedger,
+                  toolResultsDir: tResultsDir,
+                },
+              }, { toolResultsDir: tResultsDir });
+            });
+
+            return { call, outcome, capped: capped! };
           }),
         );
         input.timings.toolMs += Math.max(0, Date.now() - parallelStart);
 
         // 按声明顺序处理结果
-        for (const { call, outcome } of outcomes) {
+        for (const { call, outcome, capped } of outcomes) {
+          // 对 unknown tool（无 capped），直接取 outcome.result
+          const result = capped ?? outcome.result;
           await this.session.addToolResult(
-            call.id, outcome.result.content, outcome.result.isError,
+            call.id, result.content, result.isError,
           );
           recordToolObservation(
             input.recentToolObservations,
-            call.name, outcome.result.content, !!outcome.result.isError,
+            call.name, result.content, !!result.isError,
           );
 
           if (!outcome.aborted && !outcome.stalled) {
             if (outcome.err) {
               if (isRetryableError(outcome.err)) input.transientToolErrorsRef.value++;
               else input.permanentToolErrorsRef.value++;
-            } else if (outcome.result.isError && !outcome.recoverable) {
+            } else if (result.isError && !outcome.recoverable) {
               input.permanentToolErrorsRef.value++;
             }
           }
@@ -1736,14 +1787,14 @@ export class AgentRunner {
           yield {
             type: "tool_end",
             name: call.name, id: call.id,
-            result: outcome.result.content,
-            persistedOutput: outcome.result.persistedOutput,
-            isError: outcome.result.isError,
+            result: result.content,
+            persistedOutput: result.persistedOutput,
+            isError: result.isError,
           };
 
           if (outcome.aborted) throw new Error("Run aborted");
 
-          if (!outcome.aborted && !outcome.stalled && !outcome.err && outcome.result.endTurn) {
+          if (!outcome.aborted && !outcome.stalled && !outcome.err && result.endTurn) {
             endTurnRequested = true;
           }
         }

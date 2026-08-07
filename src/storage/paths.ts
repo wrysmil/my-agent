@@ -48,6 +48,13 @@ export function userSystemSkillsDir(): string {
   return path.join(dataRoot(), "system", "skills");
 }
 
+// ---- 工具结果 ----
+
+/** 工具结果溢出持久化目录 */
+export function toolResultsDir(): string {
+  return path.join(dataRoot(), "tool-results");
+}
+
 // ---- 文件路径 ----
 
 export function sessionFile(sessionId: string): string {
@@ -80,6 +87,7 @@ export function ensureDataLayout(): void {
     tmpDir(),
     userSkillsDir(),
     userMarketplaceSkillsDir(),
+    toolResultsDir(),
   ]) {
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });

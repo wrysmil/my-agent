@@ -143,6 +143,14 @@ export type AgentRunParams = {
    */
   turnEphemeral?: string;
 
+  /**
+   * 当前 Agent 标识。
+   *
+   * 用于工具目录的可见性门控（isToolVisibleToAgent）。
+   * 不传默认视为 `"commander"`（主 Agent）。
+   */
+  agentId?: string;
+
   // ---- 模型 & Provider 覆盖 ----
 
   /**

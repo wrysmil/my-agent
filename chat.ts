@@ -30,7 +30,11 @@ import { buildDispatchTools } from "./src/orchestration/tools.js";
 import { PersistentSession } from "./src/agent/persistent-session.js";
 import { SessionStore } from "./src/storage/session-store.js";
 import { ProvidersStore, type ProviderConfigEntry } from "./src/storage/providers-store.js";
-import { userSkillsDir, userMarketplaceSkillsDir } from "./src/storage/paths.js";
+import { userSkillsDir, userMarketplaceSkillsDir, toolResultsDir, ensureDataLayout } from "./src/storage/paths.js";
+import { sweepToolResults } from "./src/tools/tool-result-cap.js";
+import { TOOL_RESULT_TOOLS } from "./src/tools/tool-result-tools.js";
+import { getToolsSystemPromptBlock, registerCatalogEntry, getCatalogEntry } from "./src/tools/catalog.js";
+import { getLocalExecMode, describeMode } from "./src/tools/bash-permissions.js";
 import { SkillLoader } from "./src/skills/loader.js";
 import { buildAvailableSkillsBlock } from "./src/skills/index.js";
 import type { SkillSpec, SkillContent } from "./src/skills/types.js";
@@ -46,6 +50,16 @@ import { runAgentMenu } from "./src/cli/agent-menu.js";
 import * as fs from "node:fs";
 import { confirm, prompt, colorize, menuColor } from "./src/cli/io.js";
 import { renderSessionHistory } from "./src/cli/session-history.js";
+
+// ============================================================================
+// 辅助函数
+// ============================================================================
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 // ============================================================================
 // CLI 解析（导出供测试）
@@ -166,7 +180,20 @@ function buildSkillContext(): string {
   });
 }
 
-const allTools: AgentTool[] = [...BUILTIN_TOOLS, calculator, getTime];
+const allTools: AgentTool[] = [...BUILTIN_TOOLS, ...TOOL_RESULT_TOOLS, calculator, getTime];
+
+// 注册非 builtin 工具到目录
+registerCatalogEntry({
+  name: "calculator",
+  summary: "Evaluate mathematical expressions.",
+  group: "meta",
+});
+registerCatalogEntry({
+  name: "get_current_time",
+  summary: "Get the current date and time for a timezone.",
+  group: "meta",
+});
+
 const skillContext = buildSkillContext();
 
 // ============================================================================
@@ -204,6 +231,13 @@ async function main() {
     cli: { consoleLog: console.log, consoleError: console.error, exit: process.exit },
     projectConfig: config,
   });
+
+  // 启动时清理过期工具结果
+  ensureDataLayout();
+  const sweepResult = sweepToolResults(toolResultsDir());
+  if (sweepResult.deleted > 0) {
+    console.log(`🧹 已清理 ${sweepResult.deleted} 个过期工具结果 (释放 ${formatBytes(sweepResult.freedBytes)})`);
+  }
 
   // --list 优先（不进入菜单）
   if (parsedArgs.flagList) {
@@ -350,9 +384,11 @@ async function runChat(opts: {
   let session: PersistentSession = opts.session ?? sessionStore.create();
 
   const registry = buildProviderRegistry(opts.store);
+  const toolsBlock = getToolsSystemPromptBlock(allTools.map((t) => t.name));
   const { systemPrompt } = buildSystemPrompt({
     skillsIndex: skillContext || undefined,
     extraSystemPrompt: opts.config.agent.systemPrompt,
+    toolsBlock,
   });
 
   let runner: AgentRunner = new AgentRunner({
@@ -405,9 +441,30 @@ async function runChat(opts: {
   } else {
     console.log(`🆕 新建会话: ${session.sessionId}`);
   }
+
+  // 按 group 统计工具
+  const toolGroups = { fs: 0, shell: 0, web: 0, meta: 0 };
+  for (const t of allTools) {
+    // 统计时包含调度工具
+    const name = t.name;
+    if (["run_worker", "dispatch_to", "hand_off_to"].includes(name)) {
+      toolGroups.meta++;
+    } else if (["read_file", "write_file", "edit_file", "delete_file", "list_files", "search_files", "grep_files", "stat_file", "tool_result_search", "tool_result_read_chunk"].includes(name)) {
+      toolGroups.fs++;
+    } else if (name === "bash") {
+      toolGroups.shell++;
+    } else if (name === "web_fetch") {
+      toolGroups.web++;
+    } else {
+      toolGroups.meta++;
+    }
+  }
+  const bashMode = getLocalExecMode();
+
   console.log("🤖 Agent 对话模式");
   console.log(`   Session: ${session.sessionId}`);
-  console.log(`   工具: ${[...allTools.map((t) => t.name), "run_worker", "dispatch_to", "hand_off_to"].join(", ")}`);
+  console.log(`   工具: fs:${toolGroups.fs} shell:${toolGroups.shell} web:${toolGroups.web} meta:${toolGroups.meta}`);
+  console.log(`   Bash:  ${describeMode(bashMode)}`);
   console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
   if (agentIds.length > 0) {
     console.log(`   子Agent: ${agentIds.map((a) => `\`${a}\``).join(", ")}`);
@@ -423,26 +480,55 @@ async function runChat(opts: {
     });
 
   function showHelp() {
+    const mode = getLocalExecMode();
     console.log(`
 ┌─────────────────────────────────────────────┐
 │  /quit, /exit    退出                        │
 │  /clear          清空上下文（新建 session）     │
 │  /save           显示当前 session ID          │
-│  /tools          列出所有工具                  │
+│  /tools          列出所有工具（按分组）         │
 │  /skills         列出所有 Skill               │
 │  /skill <id>     查看 Skill 详细内容           │
+│  /mode [mode]    查看/切换 Bash 执行模式        │
+│                   模式: disabled|workspace_only|unrestricted
+│                   当前: ${describeMode(mode)}
+│  /gc             手动清理过期工具结果           │
 │  /help           显示此帮助                    │
 └─────────────────────────────────────────────┘
 `);
   }
 
   function showTools() {
-    console.log("\n📦 可用工具:\n");
-    for (const tool of allTools) {
-      console.log(`  🔧 ${tool.name}`);
-      console.log(`     ${tool.description.slice(0, 80)}`);
+    console.log("\n📦 可用工具（按分组）:\n");
+
+    const groups = [
+      { group: "fs", title: "📁 Files / workspace" },
+      { group: "shell", title: "💻 Shell" },
+      { group: "web", title: "🌐 Web" },
+      { group: "meta", title: "🔀 Task / cross-session state" },
+    ] as const;
+
+    for (const { group, title } of groups) {
+      console.log(`  ${title}`);
+      for (const tool of allTools) {
+        const entry = getCatalogEntry(tool.name);
+        if (entry?.group === group || (!entry && group === "meta")) {
+          const destructive = entry?.destructive ? " ⚠️" : "";
+          const permission = entry?.permission === "localExec" ? " 🔒" : "";
+          console.log(`    🔧 ${tool.name}${destructive}${permission}`);
+          const desc = (entry?.summary || tool.description).slice(0, 70);
+          console.log(`       ${desc}`);
+        }
+      }
+      console.log("");
     }
-    console.log();
+
+    // 调度工具（动态注入）
+    console.log("  🔀 Task / cross-session state (动态注入)");
+    console.log("    🔧 run_worker — Spawn ephemeral worker for bounded sub-task.");
+    console.log("    🔧 dispatch_to — Send task to named agent (visible reply).");
+    console.log("    🔧 hand_off_to — Hand off control to named agent; turn ends.");
+    console.log("");
   }
 
   function showSkills() {
@@ -516,6 +602,34 @@ async function runChat(opts: {
               showSkill(rest[0]);
             }
             continue;
+          case "/mode": {
+            const validModes = ["disabled", "workspace_only", "unrestricted"];
+            if (rest.length === 0) {
+              // 查看当前模式
+              const mode = getLocalExecMode();
+              console.log(`\n🔧 当前 Bash 执行模式: ${describeMode(mode)}`);
+              console.log(`   切换: /mode <${validModes.join("|")}>`);
+              console.log(`   设置环境变量 TOOL_EXEC_MODE 也可更改\n`);
+            } else {
+              const target = rest[0].toLowerCase();
+              if (validModes.includes(target)) {
+                process.env.TOOL_EXEC_MODE = target;
+                console.log(`\n✅ Bash 执行模式已切换为: ${describeMode(target as "disabled" | "workspace_only" | "unrestricted")}\n`);
+              } else {
+                console.log(`\n❌ 无效模式: ${target}。可选: ${validModes.join(", ")}\n`);
+              }
+            }
+            continue;
+          }
+          case "/gc": {
+            const result = sweepToolResults(toolResultsDir());
+            if (result.deleted === 0) {
+              console.log("\n🧹 没有需要清理的过期工具结果\n");
+            } else {
+              console.log(`\n🧹 已清理 ${result.deleted} 个过期工具结果 (释放 ${formatBytes(result.freedBytes)})\n`);
+            }
+            continue;
+          }
           default:
             console.log(`未知命令: ${cmd}，输入 /help 查看帮助\n`);
             continue;

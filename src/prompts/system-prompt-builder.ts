@@ -100,6 +100,13 @@ export type SystemPromptBuildParams = {
     /** Shell 类型提示，如 `"zsh"`、`"bash"` */
     shell?: string;
   };
+
+  /**
+   * 工具列表块。
+   * 由 ToolCatalog.getToolsSystemPromptBlock() 渲染。
+   * 传入后插入到 stability prefix 末尾（必要时可被 provider 缓存）。
+   */
+  toolsBlock?: string;
 };
 
 /**
@@ -286,6 +293,11 @@ export function buildSystemPrompt(
   // 额外的系统指令（来自配置）
   if (params.extraSystemPrompt) {
     stableParts.push(params.extraSystemPrompt);
+  }
+
+  // 工具列表块（来自 ToolCatalog）
+  if (params.toolsBlock) {
+    stableParts.push(params.toolsBlock);
   }
 
   const fullPrompt = stableParts.join("\n\n");
