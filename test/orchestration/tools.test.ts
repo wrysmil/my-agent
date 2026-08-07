@@ -164,6 +164,21 @@ describe("tools", () => {
       expect(runner.getSession()).toBeDefined();
       expect(runner.getProviders()).toBeDefined();
     });
+
+    it("onWorkerEvent 回调被透传且 builder 接受该参数", () => {
+      const { runner, config } = createRunnerWithMock();
+      let called = false;
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-test",
+        onWorkerEvent: () => { called = true; },
+      });
+      // builder 不抛错 → onWorkerEvent 参数签名正确
+      expect(tools.length).toBe(3);
+      // 回调在此阶段未被调用（需实际 dispatch 触发）
+      expect(called).toBe(false);
+    });
   });
 
   // ============================================================

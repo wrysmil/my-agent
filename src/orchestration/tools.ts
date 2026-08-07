@@ -4,6 +4,7 @@ import { genWorkerId } from "./actor.js";
 import type { AgentRunner } from "../agent/runner.js";
 import type { CoreAgentConfig } from "../config/schema.js";
 import type { AgentSpec } from "./agent-spec.js";
+import type { WorkerProgressEvent } from "./dispatch.js";
 
 // ============================================================
 // 内部：执行一次子调度（run_worker / dispatch_to / hand_off_to 共用）
@@ -15,6 +16,7 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
   cid: string;
   workingDir?: string;
   signal?: AbortSignal;
+  onWorkerEvent?: (ev: WorkerProgressEvent) => void;
 }): Promise<{ actor: Actor; result: string; agentSpec?: AgentSpec }> {
   const task = String(input.task || "").trim();
 
@@ -41,6 +43,7 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
       config: opts.config,
       workingDir: opts.workingDir,
       agentSpec: spec,
+      onWorkerEvent: opts.onWorkerEvent,
     });
     return { actor, result, agentSpec: spec };
   }
@@ -56,6 +59,7 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
     getRunner: opts.getRunner,
     config: opts.config,
     workingDir: opts.workingDir,
+    onWorkerEvent: opts.onWorkerEvent,
   });
   return { actor, result };
 }
@@ -78,6 +82,8 @@ export function buildDispatchTools(opts: {
   cid: string;
   workingDir?: string;
   signal?: AbortSignal;
+  /** 可选流式回调：设置后 worker 的实时输出会推送给宿主 UI */
+  onWorkerEvent?: (ev: WorkerProgressEvent) => void;
 }): AgentTool[] {
 
   // 三个工具共享的参数 schema（task + to）
@@ -123,6 +129,7 @@ export function buildDispatchTools(opts: {
           ...opts,
           signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
+          onWorkerEvent: opts.onWorkerEvent,
         });
         return { content: result };
       } catch (err) {
@@ -168,6 +175,7 @@ export function buildDispatchTools(opts: {
           ...opts,
           signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
+          onWorkerEvent: opts.onWorkerEvent,
         });
 
         // 可见消息：用 [agent] 标记区分，指挥官继续
@@ -217,6 +225,7 @@ export function buildDispatchTools(opts: {
           ...opts,
           signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
+          onWorkerEvent: opts.onWorkerEvent,
         });
 
         // 交出控制权：结果直接输出，endTurn 终止回合

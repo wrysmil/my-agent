@@ -362,11 +362,31 @@ async function runChat(opts: {
     session,
   });
 
-  // 注入调度工具（run_worker），使主 Agent 可调用子 Agent
+  // 注入调度工具（run_worker / dispatch_to / hand_off_to），使主 Agent 可调用子 Agent
+  // onWorkerEvent 回调将 worker 的实时输出（text_delta / tool_start / tool_end）
+  // 推送到终端，用青色（36）区分，让用户可以看到子 Agent 的执行过程。
   const dispatchTools = buildDispatchTools({
     getRunner: () => runner,
     config: opts.config,
     cid: session.sessionId,
+    onWorkerEvent: (ev) => {
+      const name = ev.actor.name || ev.actor.id;
+      switch (ev.type) {
+        case "text_delta":
+          // 使用 stderr 确保即时可见（不受 stdout 缓冲影响）
+          process.stderr.write(ev.text);
+          break;
+        case "tool_start":
+          process.stderr.write(`\n  [${name}] 🔧 ${ev.name}(${JSON.stringify(ev.input)})\n`);
+          break;
+        case "tool_end": {
+          const icon = ev.isError ? "❌" : "✅";
+          const preview = ev.result.slice(0, 200);
+          process.stderr.write(`  [${name}] ${icon} ${preview}\n`);
+          break;
+        }
+      }
+    },
   });
   for (const dt of dispatchTools) {
     runner.addTool(dt);
@@ -387,11 +407,11 @@ async function runChat(opts: {
   }
   console.log("🤖 Agent 对话模式");
   console.log(`   Session: ${session.sessionId}`);
-  console.log(`   工具: ${[...allTools.map((t) => t.name), "run_worker"].join(", ")}`);
+  console.log(`   工具: ${[...allTools.map((t) => t.name), "run_worker", "dispatch_to", "hand_off_to"].join(", ")}`);
   console.log(`   Skill: ${skillSpecs.map((s) => s.name).join(", ") || "无"}`);
   if (agentIds.length > 0) {
     console.log(`   子Agent: ${agentIds.map((a) => `\`${a}\``).join(", ")}`);
-    console.log(`   用法: 在对话中说「用 coder 帮我写...」或 LLM 自动调用 run_worker`);
+    console.log(`   用法: 在对话中说「用 coder 帮我写...」或 LLM 自动调用 run_worker / dispatch_to`);
   }
   console.log("   输入消息后回车，/help 查看命令\n");
 

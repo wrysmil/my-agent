@@ -9,6 +9,8 @@ import { Semaphore } from "async-mutex";
 // 是模块私有且 src/ 已锁定（禁止修改导出）。因此这里通过 vi.mock 替换
 // AgentRunner 模块，用真实的 runNestedDispatch 驱动整个回传协议：
 // 任务信封、<worker-result> / <worker-error> / aborted 分类均可经黑盒断言。
+//
+// S3：新增 runStream mock + onWorkerEvent 流式回调路径测试。
 // ============================================================
 
 const state = vi.hoisted(() => ({
@@ -27,6 +29,13 @@ const state = vi.hoisted(() => ({
     text: string;
     meta: { error?: { kind: string; message: string } };
   },
+  /** 预设 mock runStream() 的流式事件（用于测试 onWorkerEvent 路径） */
+  streamEvents: [] as Array<
+    | { type: "text_delta"; text: string }
+    | { type: "tool_start"; name: string; input: Record<string, unknown> }
+    | { type: "tool_end"; name: string; result: string; isError?: boolean }
+    | { type: "done"; result: { text: string; meta: { error?: { kind: string; message: string } } } }
+  >,
 }));
 
 vi.mock("../../src/agent/runner.js", () => {
@@ -52,11 +61,23 @@ vi.mock("../../src/agent/runner.js", () => {
       state.runCalls.push(params);
       return state.resultToReturn;
     }
+    async *runStream(_params: {
+      message: string;
+      systemPrompt?: string;
+      signal?: AbortSignal;
+      workingDir?: string;
+      requestMetadata?: Record<string, unknown>;
+    }) {
+      for (const ev of state.streamEvents) {
+        yield ev;
+      }
+    }
   }
   return { AgentRunner: FakeAgentRunner };
 });
 
 import { runNestedDispatch, dispatchSlots } from "../../src/orchestration/dispatch.js";
+import type { WorkerProgressEvent } from "../../src/orchestration/dispatch.js";
 import { createConfig } from "../../src/config/loader.js";
 import type { Actor } from "../../src/orchestration/actor.js";
 
@@ -69,6 +90,7 @@ function runDispatch(opts: {
   actor?: Actor;
   parentSignal?: AbortSignal;
   attachments?: string[];
+  onWorkerEvent?: (ev: WorkerProgressEvent) => void;
 } = {}): Promise<string> {
   const fakeParent = { getProviders: () => ({}) };
   return runNestedDispatch({
@@ -79,6 +101,7 @@ function runDispatch(opts: {
     attachments: opts.attachments,
     config: createConfig(),
     getRunner: () => fakeParent as any,
+    onWorkerEvent: opts.onWorkerEvent,
   });
 }
 
@@ -87,6 +110,7 @@ describe("dispatch", () => {
     state.runCalls.length = 0;
     state.instances.length = 0;
     state.resultToReturn = { text: "", meta: {} };
+    state.streamEvents.length = 0;
   });
 
   describe("dispatchSlots", () => {
@@ -202,6 +226,106 @@ describe("dispatch", () => {
       });
 
       expect(state.instances[0].opts.providers).toBe(registry);
+    });
+  });
+
+  // ============================================================
+  // S3：onWorkerEvent 流式回调路径
+  // ============================================================
+
+  describe("runNestedDispatch — onWorkerEvent 流式回调", () => {
+    it("设置 onWorkerEvent 后走 runStream 路径（非 run），转发 text_delta", async () => {
+      state.streamEvents = [
+        { type: "text_delta", text: "Hello" },
+        { type: "text_delta", text: " from worker" },
+        {
+          type: "done",
+          result: { text: "Hello from worker", meta: {} },
+        },
+      ];
+
+      const events: WorkerProgressEvent[] = [];
+      const out = await runDispatch({
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+
+      // 结果仍通过信封返回
+      expect(out).toContain("<worker-result");
+      expect(out).toContain("Hello from worker");
+
+      // 回调收到了 text_delta 事件（1 个 preamble + 2 个内容）
+      const texts = events.filter((e) => e.type === "text_delta");
+      expect(texts.length).toBe(3);
+      expect(texts[0].text).toContain("工作中"); // preamble
+      expect(texts[1]).toMatchObject({ type: "text_delta", text: "Hello" });
+      expect(texts[2]).toMatchObject({ type: "text_delta", text: " from worker" });
+    });
+
+    it("转发 tool_start / tool_end 事件给宿主", async () => {
+      state.streamEvents = [
+        { type: "tool_start", name: "read_file", input: { path: "/tmp/x.txt" } },
+        { type: "tool_end", name: "read_file", result: "file contents...", isError: false },
+        {
+          type: "done",
+          result: { text: "done", meta: {} },
+        },
+      ];
+
+      const events: WorkerProgressEvent[] = [];
+      await runDispatch({ onWorkerEvent: (ev) => events.push(ev) });
+
+      const starts = events.filter((e) => e.type === "tool_start");
+      const ends = events.filter((e) => e.type === "tool_end");
+
+      expect(starts.length).toBe(1);
+      expect(starts[0]).toMatchObject({
+        type: "tool_start",
+        name: "read_file",
+        input: { path: "/tmp/x.txt" },
+        actor: { name: "Worker" },
+      });
+
+      expect(ends.length).toBe(1);
+      expect(ends[0]).toMatchObject({
+        type: "tool_end",
+        name: "read_file",
+        result: "file contents...",
+        isError: false,
+      });
+    });
+
+    it("流式路径中 meta.error 仍产出 <worker-error> 信封", async () => {
+      state.streamEvents = [
+        { type: "text_delta", text: "partial..." },
+        {
+          type: "done",
+          result: {
+            text: "partial...",
+            meta: { error: { kind: "provider_error", message: "connection lost" } },
+          },
+        },
+      ];
+
+      const events: WorkerProgressEvent[] = [];
+      const out = await runDispatch({ onWorkerEvent: (ev) => events.push(ev) });
+
+      expect(out).toMatch(/^<worker-error from="Worker">/);
+      expect(out).toContain("connection lost");
+
+      // text_delta 仍然被转发了（1 preamble + 1 stream）
+      expect(events.filter((e) => e.type === "text_delta").length).toBe(2);
+    });
+
+    it("不设置 onWorkerEvent 时走传统阻塞路径（向后兼容）", async () => {
+      state.resultToReturn = { text: "blocking result", meta: {} };
+      // streamEvents 非空，但因为没有 onWorkerEvent，应该走 run() 而非 runStream()
+      state.streamEvents = [{ type: "text_delta", text: "should not appear" }, { type: "done", result: { text: "stream result", meta: {} } }];
+
+      const out = await runDispatch(); // 没有 onWorkerEvent
+
+      // 走的是 run() → 使用 resultToReturn
+      expect(out).toContain("blocking result");
+      expect(state.runCalls.length).toBe(1); // run() 被调用
     });
   });
 });

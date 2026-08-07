@@ -10,8 +10,17 @@ import { withoutDispatchTools } from "./tools.js";
 import { BUILTIN_TOOLS } from "../tools/builtin.js";
 import { Session } from "../agent/session.js";
 import { AgentRunner } from "../agent/runner.js";
-import type { AgentRunResult } from "../agent/types.js";
+import type { AgentRunResult, AgentRunMeta } from "../agent/types.js";
 import type { CoreAgentConfig } from "../config/schema.js";
+
+// ============================================================
+// WorkerProgressEvent — worker/agent 流式事件（透传给宿主 UI）
+// ============================================================
+
+export type WorkerProgressEvent =
+  | { type: "text_delta"; actor: Actor; text: string }
+  | { type: "tool_start"; actor: Actor; name: string; input: Record<string, unknown> }
+  | { type: "tool_end"; actor: Actor; name: string; result: string; isError: boolean };
 
 // ============================================================
 // dispatchSlots — 嵌套调度并发上限
@@ -48,6 +57,8 @@ export async function runNestedDispatch(opts: {
   workingDir?: string;
   attachments?: string[];
   agentSpec?: AgentSpec; // S2：命名 agent 规格
+  /** 可选流式回调：设置后 worker 的 text_delta/tool_start/tool_end 会实时推送给宿主 UI */
+  onWorkerEvent?: (ev: WorkerProgressEvent) => void;
 }): Promise<string> {
   // 1. abort 级联
   const ac = new AbortController();
@@ -89,8 +100,63 @@ export async function runNestedDispatch(opts: {
       session: workerSession,
     });
 
-    // 8. 执行子回合
+    // 8. 执行子回合 — 双路径：
+    //    - onWorkerEvent 存在 → 流式（runStream），实时转发事件给宿主 UI
+    //    - onWorkerEvent 缺失 → 阻塞（run），仅返回最终结果（向后兼容）
     try {
+      if (opts.onWorkerEvent) {
+        // ---- 流式路径：转发 worker 事件给宿主 ----
+        opts.onWorkerEvent({ type: "text_delta", actor: opts.actor, text: `\n🐝 子Agent [${opts.actor.name}] 工作中...\n` });
+        let lastText = "";
+        let lastMeta: AgentRunMeta | undefined;
+
+        for await (const ev of workerRunner.runStream({
+          message: messageText,
+          systemPrompt,
+          signal: ac.signal,
+          workingDir: opts.workingDir,
+          requestMetadata: sessionId ? { sessionId } : undefined,
+        })) {
+          switch (ev.type) {
+            case "text_delta":
+              lastText += ev.text;
+              opts.onWorkerEvent({ type: "text_delta", actor: opts.actor, text: ev.text });
+              break;
+            case "tool_start":
+              opts.onWorkerEvent({
+                type: "tool_start", actor: opts.actor,
+                name: ev.name, input: (ev as any).input ?? {},
+              });
+              break;
+            case "tool_end":
+              opts.onWorkerEvent({
+                type: "tool_end", actor: opts.actor,
+                name: (ev as any).name ?? "",
+                result: String((ev as any).result ?? ""),
+                isError: !!(ev as any).isError,
+              });
+              break;
+            case "tool_delta":
+              // tool_delta 不单独转发，由 tool_start/tool_end 成对处理
+              break;
+            case "done":
+              lastMeta = ev.result.meta;
+              break;
+          }
+        }
+
+        // 流式路径的结果分类（从累积的 text 和 meta 构建）
+        const actorName = escapeXml(opts.actor.name || opts.actor.id);
+        if (ac.signal.aborted) {
+          return buildWorkerErrorPayload(actorName, lastText || "Worker aborted.", true);
+        }
+        if (lastMeta?.error) {
+          return buildWorkerErrorPayload(actorName, lastMeta.error.message);
+        }
+        return buildWorkerResultPayload(actorName, lastText);
+      }
+
+      // ---- 阻塞路径：传统方式（向后兼容） ----
       const result: AgentRunResult = await workerRunner.run({
         message: messageText,
         systemPrompt,
