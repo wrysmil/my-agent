@@ -99,16 +99,16 @@ describe("renderSessionHistory", () => {
     expect(out).not.toContain("问题2");
   });
 
-  it("多行消息逐行渲染且每行独立前缀", async () => {
+  it("多行消息首行标注角色，后续行缩进", async () => {
     const session = new Session();
     await appendTurn(session, "第一行\n第二行", "回复 A\n回复 B");
 
     const out = renderSessionHistory(session);
     const lines = out.split("\n");
     expect(lines).toContain("👤 第一行");
-    expect(lines).toContain("👤 第二行");
+    expect(lines).toContain("   第二行");
     expect(lines).toContain("🤖 回复 A");
-    expect(lines).toContain("🤖 回复 B");
+    expect(lines).toContain("   回复 B");
   });
 });
 

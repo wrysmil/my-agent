@@ -67,14 +67,19 @@ export function renderSessionHistory(
   }
 
   for (const t of shown) {
+    // 每条消息只在首行标注角色，后续行缩进对齐
     if (t.user) {
-      for (const line of t.user.split("\n")) {
-        lines.push(`👤 ${truncate(line, maxTextLength)}`);
+      const userLines = t.user.split("\n");
+      lines.push(`👤 ${truncate(userLines[0], maxTextLength)}`);
+      for (let i = 1; i < userLines.length; i++) {
+        lines.push(`   ${truncate(userLines[i], maxTextLength)}`);
       }
     }
     if (t.assistant) {
-      for (const line of t.assistant.split("\n")) {
-        lines.push(`🤖 ${truncate(line, maxTextLength)}`);
+      const assistantLines = t.assistant.split("\n");
+      lines.push(`🤖 ${truncate(assistantLines[0], maxTextLength)}`);
+      for (let i = 1; i < assistantLines.length; i++) {
+        lines.push(`   ${truncate(assistantLines[i], maxTextLength)}`);
       }
     }
     lines.push("");
