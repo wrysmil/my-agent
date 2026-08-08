@@ -555,8 +555,8 @@ describe("POST /api/sessions/:cid/compact/cancel", () => {
 // ============================================================
 
 describe("SESSION_ALREADY_EXISTS 错误码注册", () => {
-  it("http-helpers ERROR_STATUS_MAP 中存在该码 → 409", async () => {
-    const { ERROR_STATUS_MAP } = await import("../http-helpers.js");
+  it("errors.ts ERROR_STATUS_MAP 中存在该码 → 409", async () => {
+    const { ERROR_STATUS_MAP } = await import("../errors.js");
     expect(ERROR_STATUS_MAP["SESSION_ALREADY_EXISTS"]).toBe(409);
   });
 });

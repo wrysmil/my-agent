@@ -15,6 +15,8 @@
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import { ERROR_STATUS_MAP as _ERROR_STATUS_MAP } from "./errors.js";
+
 // ============================================================
 // 常量
 // ============================================================
@@ -22,21 +24,8 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 /** 请求体最大字节数：1 MiB（contract § 3.5）。 */
 export const MAX_PAYLOAD_BYTES = 1_048_576;
 
-/** 错误码 → HTTP 状态码（本地最小子集；WU-02e 会迁到 errors.ts 并补全）。 */
-export const ERROR_STATUS_MAP: Record<string, number> = {
-  INVALID_JSON: 400,
-  NOT_FOUND: 404,
-  SESSION_NOT_FOUND: 404,
-  SESSION_CORRUPT_FILE: 500,
-  SESSION_ALREADY_EXISTS: 409,
-  VALIDATION_FAILED: 422,
-  STREAM_NOT_FOUND: 404,
-  STREAM_ALREADY_RUNNING: 409,
-  INTERNAL: 500,
-  NOT_IMPLEMENTED: 501,
-  METHOD_NOT_ALLOWED: 405,
-  PAYLOAD_TOO_LARGE: 413,
-};
+/** 错误码 → HTTP 状态码（从 errors.ts 统一源 re-export）。 */
+export { _ERROR_STATUS_MAP as ERROR_STATUS_MAP };
 
 // ============================================================
 // 请求体读取

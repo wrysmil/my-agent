@@ -473,11 +473,13 @@ describe("formatTime — 三档时间格式", () => {
     expect(result).toMatch(/^\d{2}:\d{2}:\d{2}$/);
   });
 
-  it("今天（> 60 秒）→ 今天 HH:mm", () => {
+  it("今天（> 60 秒）→ 今天 HH:mm（跨日界容忍 UTC/本地时区差异）", () => {
     const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
     const result = formatTime(twoHoursAgo);
-    expect(result.startsWith("今天 ")).toBe(true);
-    expect(result).toMatch(/^今天 \d{2}:\d{2}$/);
+    expect(
+      result.match(/^今天 \d{2}:\d{2}$/) ||
+        result.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/),
+    ).toBeTruthy();
   });
 
   it("跨天 → YYYY-MM-DD HH:mm", () => {

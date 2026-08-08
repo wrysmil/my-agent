@@ -33,6 +33,7 @@ describe("ApiErrorCode 枚举", () => {
   const EXPECTED_CODES: ReadonlyArray<[ApiErrorCodeValue, number]> = [
     // 通用
     [ApiErrorCode.INVALID_JSON, 400],
+    [ApiErrorCode.VALIDATION_FAILED, 422],
     [ApiErrorCode.NOT_FOUND, 404],
     [ApiErrorCode.METHOD_NOT_ALLOWED, 405],
     [ApiErrorCode.PAYLOAD_TOO_LARGE, 413],
@@ -45,28 +46,32 @@ describe("ApiErrorCode 枚举", () => {
     [ApiErrorCode.PROVIDER_INVALID_TYPE, 422],
     [ApiErrorCode.PROVIDER_API_KEY_EMPTY, 422],
     [ApiErrorCode.PROVIDER_ACTIVE_NOT_DELETABLE, 409],
+    [ApiErrorCode.PROVIDER_ALREADY_EXISTS, 409],
     [ApiErrorCode.MODEL_NOT_FOUND, 404],
     // Session 域
     [ApiErrorCode.SESSION_NOT_FOUND, 404],
+    [ApiErrorCode.SESSION_ALREADY_EXISTS, 409],
     [ApiErrorCode.SESSION_CORRUPT_FILE, 500],
     // Chat 域
     [ApiErrorCode.CHAT_SESSION_BUSY, 429],
     [ApiErrorCode.CHAT_ABORTED, 200],
     [ApiErrorCode.CHAT_RUNNER_ERROR, 500],
     [ApiErrorCode.CHAT_INVALID_EVENT, 500],
+    [ApiErrorCode.STREAM_ALREADY_RUNNING, 409],
+    [ApiErrorCode.STREAM_NOT_FOUND, 404],
     // Agent / Skill 域
     [ApiErrorCode.AGENT_NOT_FOUND, 404],
     [ApiErrorCode.AGENT_SPEC_INVALID_JSON, 500],
     [ApiErrorCode.SKILL_NOT_FOUND, 404],
   ];
 
-  it("导出 22 个 code（与 contract § 3 严格一致）", () => {
-    // 6 通用 + 7 Provider + 2 Session + 4 Chat + 3 Agent/Skill = 22
+  it("导出 27 个 code（与 contract § 3 严格一致）", () => {
+    // 7 通用 + 8 Provider + 3 Session + 6 Chat + 3 Agent/Skill = 27
     const codes = Object.values(ApiErrorCode);
-    expect(codes.length).toBe(22);
+    expect(codes.length).toBe(27);
   });
 
-  it("22 个 code 全部在 ERROR_STATUS_MAP 内有映射", () => {
+  it("27 个 code 全部在 ERROR_STATUS_MAP 内有映射", () => {
     const codes = Object.values(ApiErrorCode);
     for (const code of codes) {
       expect(ERROR_STATUS_MAP[code]).toBeTypeOf("number");
@@ -86,8 +91,8 @@ describe("ApiErrorCode 枚举", () => {
 // ============================================================
 
 describe("ERROR_STATUS_MAP", () => {
-  it("恰好 22 行（与 ApiErrorCode 数量一致）", () => {
-    expect(Object.keys(ERROR_STATUS_MAP).length).toBe(22);
+  it("恰好 27 行（与 ApiErrorCode 数量一致）", () => {
+    expect(Object.keys(ERROR_STATUS_MAP).length).toBe(27);
   });
 
   it("每个 status 都是合法 HTTP code（100-599）", () => {

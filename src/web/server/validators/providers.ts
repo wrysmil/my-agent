@@ -13,39 +13,8 @@
 import type { IncomingMessage } from "node:http";
 import { z } from "zod";
 
-// ============================================================
-// ApiError（本地 stub；WU-02e 落地后迁移到 errors.ts）
-// ============================================================
-
-/**
- * 业务错误基类 —— GROUP-2 handler `throw new ApiError(...)`，
- * 由路由层 `sendError()` 统一转 JSON 响应。
- *
- * 字段语义：
- * - `code`   ApiErrorCode 字符串（如 `PROVIDER_NOT_FOUND`）
- * - `status` HTTP 状态码（如 404）
- * - `message` 给前端的可读消息
- * - `details` 可选；Zod 校验失败时附 `details.issues` 数组
- *
- * WU-02e 落地后此类型会被同名类型替换；handler 调用方式不变。
- */
-export class ApiError extends Error {
-  public readonly code: string;
-  public readonly status: number;
-  public readonly details?: unknown;
-  constructor(
-    code: string,
-    status: number,
-    message: string,
-    details?: unknown,
-  ) {
-    super(message);
-    this.name = "ApiError";
-    this.code = code;
-    this.status = status;
-    this.details = details;
-  }
-}
+import { ApiError, ApiErrorCode } from "../errors.js";
+import type { ApiErrorCodeValue } from "../errors.js";
 
 // ============================================================
 // Zod schemas（4 个）
@@ -141,8 +110,7 @@ export async function parseJsonBody<T>(
   const raw = await readBody(req);
   if (raw.length === 0) {
     throw new ApiError(
-      "VALIDATION_FAILED",
-      422,
+      ApiErrorCode.VALIDATION_FAILED,
       "Request body is empty",
       { issues: [{ path: [], message: "body must be a JSON object" }] },
     );
@@ -154,8 +122,7 @@ export async function parseJsonBody<T>(
     !JSON_CONTENT_TYPES.some((allowed) => ct.startsWith(allowed))
   ) {
     throw new ApiError(
-      "INVALID_REQUEST",
-      400,
+      ApiErrorCode.INVALID_JSON,
       `Unsupported Content-Type: ${ct}`,
       { issues: [{ path: ["content-type"], message: "expected application/json" }] },
     );
@@ -166,8 +133,7 @@ export async function parseJsonBody<T>(
     parsed = JSON.parse(raw);
   } catch (err) {
     throw new ApiError(
-      "VALIDATION_FAILED",
-      422,
+      ApiErrorCode.VALIDATION_FAILED,
       "Request body is not valid JSON",
       {
         issues: [
@@ -184,8 +150,7 @@ export async function parseJsonBody<T>(
   const result = schema.safeParse(parsed);
   if (!result.success) {
     throw new ApiError(
-      "VALIDATION_FAILED",
-      422,
+      ApiErrorCode.VALIDATION_FAILED,
       "Request body failed schema validation",
       { issues: result.error.issues },
     );
@@ -209,8 +174,7 @@ async function readBody(req: IncomingMessage): Promise<string> {
       if (total > MAX_BODY_BYTES) {
         reject(
           new ApiError(
-            "PAYLOAD_TOO_LARGE",
-            413,
+            ApiErrorCode.PAYLOAD_TOO_LARGE,
             `Request body exceeds ${MAX_BODY_BYTES} bytes`,
           ),
         );
@@ -247,8 +211,7 @@ export function validateProviderId(id: string): string {
     /%00/i.test(id)
   ) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       `Provider id is invalid or escapes sandbox: ${JSON.stringify(id)}`,
     );
   }
@@ -256,11 +219,13 @@ export function validateProviderId(id: string): string {
   const parsed = ProviderIdParamSchema.safeParse(id);
   if (!parsed.success) {
     throw new ApiError(
-      "VALIDATION_FAILED",
-      422,
+      ApiErrorCode.VALIDATION_FAILED,
       "Provider id failed schema validation",
       { issues: parsed.error.issues },
     );
   }
   return parsed.data;
 }
+
+// Re-export ApiError + ApiErrorCode from errors.ts for backward compat
+export { ApiError, ApiErrorCode };

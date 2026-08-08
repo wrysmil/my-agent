@@ -41,6 +41,7 @@ import type { Handler, Route } from "../router.js";
 
 import {
   ApiError,
+  ApiErrorCode,
   ProviderUpsertSchema,
   SetActiveModelSchema,
   SetActiveSchema,
@@ -229,8 +230,7 @@ async function getActiveProvider(ctx: HandlerCtx): Promise<void> {
   const active = ctx.store.getActiveProvider();
   if (!active) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       "No active provider configured",
     );
   }
@@ -250,8 +250,7 @@ async function createProvider(ctx: HandlerCtx): Promise<void> {
   const cfg = ctx.store.getConfig();
   if (cfg.providers[body.id]) {
     throw new ApiError(
-      "PROVIDER_ALREADY_EXISTS",
-      409,
+      ApiErrorCode.PROVIDER_ALREADY_EXISTS,
       `Provider "${body.id}" already exists`,
     );
   }
@@ -275,8 +274,7 @@ async function setActiveProvider(ctx: HandlerCtx): Promise<void> {
   const target = cfg.providers[body.id];
   if (!target) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       `Provider "${body.id}" not found`,
     );
   }
@@ -308,8 +306,7 @@ async function setActiveModel(ctx: HandlerCtx): Promise<void> {
   const active = ctx.store.getActiveProvider();
   if (!active) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       "No active provider to update model on",
     );
   }
@@ -336,8 +333,7 @@ async function toggleProviderEnabled(ctx: HandlerCtx): Promise<void> {
   const cur = cfg.providers[id];
   if (!cur) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       `Provider "${id}" not found`,
     );
   }
@@ -378,8 +374,7 @@ async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
   const body = await parseJsonBody(ctx.req, ProviderUpsertSchema);
   if (body.id !== id) {
     throw new ApiError(
-      "VALIDATION_FAILED",
-      422,
+      ApiErrorCode.VALIDATION_FAILED,
       `Body id "${body.id}" does not match URL :id "${id}"`,
       {
         issues: [
@@ -394,8 +389,7 @@ async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
   const cfg = ctx.store.getConfig();
   if (cfg.providers[id]) {
     throw new ApiError(
-      "PROVIDER_ALREADY_EXISTS",
-      409,
+      ApiErrorCode.PROVIDER_ALREADY_EXISTS,
       `Provider "${id}" already exists`,
     );
   }
@@ -417,8 +411,7 @@ async function deleteProvider(ctx: HandlerCtx): Promise<void> {
   const cfg = ctx.store.getConfig();
   if (!cfg.providers[id]) {
     throw new ApiError(
-      "PROVIDER_NOT_FOUND",
-      404,
+      ApiErrorCode.PROVIDER_NOT_FOUND,
       `Provider "${id}" not found`,
     );
   }
