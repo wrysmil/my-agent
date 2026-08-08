@@ -19,13 +19,15 @@ status: completed
 
 | 指标 | 数值 |
 |------|------|
-| 总 commits | 19 |
-| Leader 直做 commits | 2 (M1.1 scaffold + CSP test fix) |
+| 总 commits | 21 |
+| Leader 直做 commits | 3 (M1.1 scaffold + CSP test fix + 优化收尾) |
 | 子 Agent 并行 commits | 17 |
+| 优化 commits | 1 (perf: lazy-load Markdown + AppShell layout + @import fix) |
 | 最大并行 Agent 数 | 5 |
-| 总测试数 | 47 (web/tests/) |
-| 构建产物 JS | 615KB raw / 191KB gzip |
-| 构建产物 CSS | 0.72KB raw / 0.35KB gzip |
+| 总测试数 | 47 (web/tests/), 18 文件 |
+| 构建产物 JS (首屏) | 472KB raw / 148KB gzip (react-vendor 4KB + main 144KB) ✅ |
+| 构建产物 JS (懒加载) | Markdown 162KB raw / 50KB gzip |
+| 构建产物 CSS | 17KB raw / 4KB gzip |
 
 ## 提交记录
 
@@ -103,8 +105,8 @@ web/
 | A5 | 主题/语言切换 | ✅ Zustand + localStorage |
 | A6 | 快捷键 7/7 | ⚠️ keymap hook 待集成 |
 | A7 | axe 0 critical | ✅ config 就绪 |
-| A8 | Bundle JS ≤ 180KB | ⚠️ 191KB gzip |
-| A9 | Bundle CSS ≤ 20KB | ✅ 0.35KB |
+| A8 | Bundle JS ≤ 180KB | ✅ 148KB gzip (首屏) |
+| A9 | Bundle CSS ≤ 20KB | ✅ 4KB gzip |
 | A10 | LCP ≤ 1.2s | ⚠️ 待 prod 测量 |
 | A11 | 旧 web/ 已删除 | ✅ 64 files |
 | A12 | 19 wire-route 契约一致 | ✅ |
@@ -112,11 +114,24 @@ web/
 | A14 | 后端最小改动 | ✅ 仅 2 文件 |
 | A15 | 覆盖率门槛 | ⚠️ 待 coverage |
 
+## 优化阶段 (2026-08-08)
+
+| Commit | 描述 |
+|--------|------|
+| `0fa79e9` | perf: lazy-load Markdown + AppShell layout + fix @import order |
+
+三项优化：
+1. **Bundle 分包** — `MessageBubble.tsx` 使用 `React.lazy` + `Suspense` 懒加载 `react-markdown`
+   - 首屏 JS: 191KB → 148KB gzip（−43KB，−22%）
+   - react-vendor 4KB + main 144KB 首屏加载；Markdown 50KB 按需加载
+2. **AppShell 布局集成** — `routes.tsx` 所有路由包裹在 `AppShell` layout 下
+3. **CSS @import 顺序** — `globals.css` 中 `@import "tailwindcss"` 移至 `@font-face` 之前消除 PostCSS 警告
+
 ## 已知未完成项
 
-1. Bundle 预算：JS gzip 191KB 略超 180KB，需 lazy import（react-markdown）
+1. ~~Bundle 预算：JS gzip 191KB 略超 180KB~~ → ✅ 已优化至 148KB
 2. 快捷键集成：keymap hook 已定义未全局注册
 3. E2E Playwright wire-routes：待实际运行
 4. 覆盖率报告：需 vitest --coverage
 5. M2.3 字体：占位文件需替换为真实 woff2
-6. M3.2 AppShell 未接入路由 layout（需在 routes.tsx 中包裹）
+6. ~~M3.2 AppShell 未接入路由 layout~~ → ✅ 已集成
