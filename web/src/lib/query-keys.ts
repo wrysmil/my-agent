@@ -22,4 +22,8 @@ export const queryKeys = {
     all: ['agents'] as const,
     detail: (id: string) => ['agents', id] as const,
   },
+  tools: {
+    all: ['tools'] as const,
+    detail: (name: string) => ['tools', name] as const,
+  },
 };
