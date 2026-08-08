@@ -1,0 +1,295 @@
+/* ============================================================================
+ * my-agent Web 前端 — Design System (F0)
+ * ----------------------------------------------------------------------------
+ * 源规范:  .ai-runtime-artifacts/specs/2026-08-07-web-frontend-spec.md § 4.4
+ * 实施计划: .ai-runtime-artifacts/plans/2026-08-07-web-frontend-plan.md § 6.2
+ *
+ * 本文件包含:
+ *   1. Google Fonts @import (IBM Plex Sans + JetBrains Mono)
+ *   2. :root — 非主题相关 token (typography / spacing / radius / motion / sidebar)
+ *   3. 主题三态 CSS 选择器（v3.3 关键修复 — 三块选择器 token 完全对齐）:
+ *        a. :root[data-theme="dark"]
+ *        b. :root[data-theme="light"]
+ *        c. :root[data-theme="system"][data-system-theme="dark"]
+ *        d. :root[data-theme="system"][data-system-theme="light"]
+ *   4. 6 色数字彩菜单 token (dark 用 -400 / light 用 -600)
+ *   5. Base reset + body 字体
+ *   6. prefers-reduced-motion 全站降级到 0ms
+ *
+ * v3.3 修复 (来自 v3.2 Reviewer Critical):
+ *   - :root[data-theme="system"][data-system-theme="dark|light"] 双属性选择器落实
+ *   - :root[data-theme="dark"] 与 :root[data-theme="system"][data-system-theme="dark"]
+ *     两块 token 必须保持完全一致（dark token 集中 / light token 集中），避免漂移
+ *   - 不再使用 :root:not([data-theme])[data-system-theme="..."] 退化路径
+ * ========================================================================== */
+
+/* ---------------------------------------------------------------------------
+ * 1. Google Fonts — IBM Plex Sans + JetBrains Mono
+ *    preconnect 由 web/index.html (F1) 提供；本文件仅 @import
+ * ------------------------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ---------------------------------------------------------------------------
+ * 2. 主题无关 token（typography / spacing / radius / motion / sidebar）
+ *    这些 token 不随主题切换，仅由主题块覆盖颜色 token
+ * ------------------------------------------------------------------------- */
+:root {
+  /* Typography — spec § 4.4.2 */
+  --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+  --font-digit: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+  --font-size-body: 14px;
+  --font-size-body-strong: 14px;
+  --font-size-heading-sm: 16px;
+  --font-size-heading-md: 20px;
+  --font-size-heading-lg: 24px;
+  --font-size-mono: 13px;
+  --font-size-mono-strong: 13px;
+  --font-size-digit: 28px;
+
+  --line-height-body: 1.5;
+  --line-height-heading-sm: 1.4;
+  --line-height-heading-md: 1.3;
+  --line-height-heading-lg: 1.25;
+  --line-height-mono: 1.55;
+  --line-height-digit: 1.2;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Spacing scale — spec § 4.4.3 (0.25rem 倍数) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Border radius — spec § 4.4.4 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  /* Motion — spec § 4.4.5（prefers-reduced-motion 块内全归零） */
+  --motion-duration-fast: 150ms;
+  --motion-duration-card: 200ms;
+  --motion-duration-view: 200ms;
+  --motion-duration-modal: 220ms;
+  --motion-duration-toast: 200ms;
+  --motion-duration-cursor: 1100ms;
+
+  --motion-ease-out: ease-out;
+  --motion-ease-in-out: ease-in-out;
+  --motion-ease-modal: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-cursor: steps(1);
+
+  /* 布局 */
+  --sidebar-width: 260px;
+  --content-max-width: 1400px;
+  --header-height: 3.5rem;       /* 56px */
+  --content-padding: var(--space-6);
+
+  /* z-index */
+  --z-header: 50;
+  --z-sidebar: 40;
+  --z-modal: 100;
+  --z-toast: 200;
+}
+
+/* ---------------------------------------------------------------------------
+ * 3. 主题三态 CSS 选择器（v3.3 关键修复）
+ *    三块选择器 token 完整列对齐（14 个 color token），避免遗漏
+ * ------------------------------------------------------------------------- */
+
+/* 3a. user 显式选 dark → 必命中 */
+:root[data-theme="dark"] {
+  --bg-base: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #334155;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --border-default: #334155;
+  --border-subtle: #1E293B;
+  --accent-primary: #22C55E;
+  --accent-primary-hover: #16A34A;
+  --accent-run: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --focus-ring: #38BDF8;
+}
+
+/* 3b. user 显式选 light → 必命中 */
+:root[data-theme="light"] {
+  --bg-base: #FFFFFF;
+  --bg-surface: #F8FAFC;
+  --bg-elevated: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --border-default: #E2E8F0;
+  --border-subtle: #F1F5F9;
+  --accent-primary: #16A34A;
+  --accent-primary-hover: #15803D;
+  --accent-run: #059669;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --focus-ring: #0284C7;
+}
+
+/* 3c. system 模式 + OS=dark → 命中 dark token（与 3a 完全一致） */
+:root[data-theme="system"][data-system-theme="dark"] {
+  --bg-base: #0F172A;
+  --bg-surface: #1E293B;
+  --bg-elevated: #334155;
+  --text-primary: #F8FAFC;
+  --text-secondary: #CBD5E1;
+  --text-muted: #64748B;
+  --border-default: #334155;
+  --border-subtle: #1E293B;
+  --accent-primary: #22C55E;
+  --accent-primary-hover: #16A34A;
+  --accent-run: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --focus-ring: #38BDF8;
+}
+
+/* 3d. system 模式 + OS=light → 命中 light token（与 3b 完全一致） */
+:root[data-theme="system"][data-system-theme="light"] {
+  --bg-base: #FFFFFF;
+  --bg-surface: #F8FAFC;
+  --bg-elevated: #FFFFFF;
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+  --border-default: #E2E8F0;
+  --border-subtle: #F1F5F9;
+  --accent-primary: #16A34A;
+  --accent-primary-hover: #15803D;
+  --accent-run: #059669;
+  --danger: #DC2626;
+  --warning: #D97706;
+  --focus-ring: #0284C7;
+}
+
+/* ---------------------------------------------------------------------------
+ * 4. 6 色数字彩菜单 token
+ *    Dark 用 -400 级（高亮饱和 / 对比 ≥ 7:1）
+ *    Light 用 -600 级（保证 ≥ 4.5:1 对比）
+ *    与 src/cli/io.ts menuColor(i) 1:1 对应
+ * ------------------------------------------------------------------------- */
+
+/* Dark: -400 级（默认 dark 主题下使用） */
+:root[data-theme="dark"],
+:root[data-theme="system"][data-system-theme="dark"] {
+  --menu-color-1: #22D3EE;  /* ① 青色 cyan-400 */
+  --menu-color-2: #4ADE80;  /* ② 绿色 green-400 */
+  --menu-color-3: #FACC15;  /* ③ 黄色 yellow-400 */
+  --menu-color-4: #60A5FA;  /* ④ 蓝色 blue-400 */
+  --menu-color-5: #C084FC;  /* ⑤ 紫色 purple-400 */
+  --menu-color-6: #F87171;  /* ⑥ 红色 red-400 */
+}
+
+/* Light: -600 级（保证 4.5:1 对比 — WCAG AA） */
+:root[data-theme="light"],
+:root[data-theme="system"][data-system-theme="light"] {
+  --menu-color-1: #0891B2;  /* ① 青色 cyan-600 */
+  --menu-color-2: #16A34A;  /* ② 绿色 green-600 */
+  --menu-color-3: #CA8A04;  /* ③ 黄色 yellow-600 */
+  --menu-color-4: #2563EB;  /* ④ 蓝色 blue-600 */
+  --menu-color-5: #9333EA;  /* ⑤ 紫色 purple-600 */
+  --menu-color-6: #DC2626;  /* ⑥ 红色 red-600 */
+}
+
+/* ---------------------------------------------------------------------------
+ * 5. Base reset + body
+ * ------------------------------------------------------------------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  min-height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color var(--motion-duration-card) var(--motion-ease-out),
+              color var(--motion-duration-card) var(--motion-ease-out);
+}
+
+/* 字体角色类（供组件复用） */
+.font-mono       { font-family: var(--font-mono); }
+.font-digit      { font-family: var(--font-digit); font-weight: var(--font-weight-bold); }
+.text-primary    { color: var(--text-primary); }
+.text-secondary  { color: var(--text-secondary); }
+.text-muted      { color: var(--text-muted); }
+.text-accent     { color: var(--accent-primary); }
+.text-danger     { color: var(--danger); }
+.text-warning    { color: var(--warning); }
+
+/* focus-visible 全站统一（accessibility-checklist § Essential Checks） */
+:focus {
+  outline: none;
+}
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* 6 色数字彩菜单快捷类（MenuCard 使用） */
+.menu-color-1 { color: var(--menu-color-1); }
+.menu-color-2 { color: var(--menu-color-2); }
+.menu-color-3 { color: var(--menu-color-3); }
+.menu-color-4 { color: var(--menu-color-4); }
+.menu-color-5 { color: var(--menu-color-5); }
+.menu-color-6 { color: var(--menu-color-6); }
+
+.bg-surface    { background-color: var(--bg-surface); }
+.bg-elevated   { background-color: var(--bg-elevated); }
+.border-default { border: 1px solid var(--border-default); }
+
+/* ---------------------------------------------------------------------------
+ * 6. prefers-reduced-motion 全站降级（spec § 4.4.5 + accessibility-checklist）
+ *    一律归零，避免前庭功能障碍用户不适
+ * ------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-duration-fast: 0ms;
+    --motion-duration-card: 0ms;
+    --motion-duration-view: 0ms;
+    --motion-duration-modal: 0ms;
+    --motion-duration-toast: 0ms;
+    --motion-duration-cursor: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}
