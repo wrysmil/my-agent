@@ -221,7 +221,7 @@ describe("CSP 头字符串", () => {
     expect(CSP_HEADER).toContain(
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     );
-    expect(CSP_HEADER).toContain("font-src https://fonts.gstatic.com data:");
+    expect(CSP_HEADER).toContain("font-src 'self' data:");
     expect(CSP_HEADER).toContain("img-src 'self' data:");
     expect(CSP_HEADER).toContain("connect-src 'self'");
     expect(CSP_HEADER).toContain("frame-ancestors 'none'");
