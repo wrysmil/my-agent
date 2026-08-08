@@ -86,7 +86,7 @@ export function installShutdownHandlers(
     // 5s 强退定时器（独立于 .close() 完成）
     const forceTimer = setTimeout(() => {
       log.warn(
-        `[web] graceful shutdown exceeded ${forceExitMs}ms — forcing exit`,
+        `⚠️ 优雅关闭超时 (${forceExitMs}ms)，强制退出`,
       );
       onExit(1);
     }, forceExitMs);
@@ -104,7 +104,7 @@ export function installShutdownHandlers(
       onExit(0);
     } catch (err) {
       clearTimeout(forceTimer);
-      log.error("[web] shutdown failed", { error: err instanceof Error ? err.message : String(err) });
+      log.error("❌ 关闭服务器失败", { error: err instanceof Error ? err.message : String(err) });
       onExit(1);
     }
   };

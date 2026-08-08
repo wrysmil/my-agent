@@ -177,24 +177,25 @@ async function postMessageStream(
     return;
   }
 
-  // 3) 并发保护：同 cid 上已有流 → 409 STREAM_ALREADY_RUNNING
+  // 3) 并发保护：同 cid 上已有流 → 自动 abort 旧流，让新流继续
   const liveIds = hub.listForCid(sessionId);
   if (liveIds.length > 0) {
-    sendJsonError(
-      res,
-      409,
-      "STREAM_ALREADY_RUNNING",
-      `Session "${sessionId}" already has ${liveIds.length} in-flight stream(s)`,
-      { details: { streamIds: liveIds } },
-    );
-    return;
+    logger?.warn("检测到重复请求，自动取消上一个对话流", {
+      sessionId,
+      previousStreamIds: liveIds,
+    });
+    for (const id of liveIds) {
+      hub.abort(id);
+    }
   }
 
   // 4) 注册 hub 流（生成 streamId + AbortController）
   const { streamId, controller } = hub.register(sessionId);
 
-  // SSE stream 开始日志
-  logger?.info("SSE stream start", { sessionId, streamId });
+  // SSE stream 开始日志（用户输入截取前80字避免日志膨胀）
+  const sseStartTime = Date.now();
+  const userInputPreview = body.text.length > 80 ? body.text.slice(0, 80) + "..." : body.text;
+  logger?.info(`💬 对话开始 [${sessionId}] 用户: "${userInputPreview}"`, { sessionId, streamId, model: body.model });
 
   // 5) 读取 Last-Event-ID（spec § 6.1：客户端重连去重）
   const lastEventId = parseLastEventId(req.headers["last-event-id"]);
@@ -316,7 +317,8 @@ async function postMessageStream(
       }
     }
   } finally {
-    logger?.info("SSE stream end", { sessionId, streamId });
+    const sseDuration = Date.now() - sseStartTime;
+    logger?.info(`💬 对话结束 [${sessionId}] 耗时:${sseDuration}ms`, { sessionId, streamId, durationMs: sseDuration });
     hub.close(streamId);
     try {
       res.end();

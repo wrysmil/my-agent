@@ -201,7 +201,7 @@ function sendError(
     });
     return;
   }
-  log.error("[providers] unexpected error", { error: String(err) });
+  log.error("供应商操作异常", { error: String(err) });
   sendJson(res, 500, {
     ok: false,
     error: {
@@ -265,7 +265,7 @@ async function createProvider(ctx: HandlerCtx): Promise<void> {
     );
   }
   await upsertAndSave(ctx.store, body);
-  ctx.log.info(`[providers] created ${body.id}`);
+  ctx.log.info(`供应商已创建: ${body.id}`);
   sendJson(ctx.res, 201, { ok: true, data: stripEnvKey(body) });
 }
 
@@ -290,7 +290,7 @@ async function setActiveProvider(ctx: HandlerCtx): Promise<void> {
   }
   ctx.store.setActiveProvider(body.id);
   await ctx.store.save();
-  ctx.log.info(`[providers] active → ${body.id}`);
+  ctx.log.info(`已切换活跃供应商: ${body.id}`);
   const active = ctx.store.getActiveProvider();
   if (!active) {
     // 极端 case：用户切到一个 disabled 且无其它 enabled → store fallback 到空

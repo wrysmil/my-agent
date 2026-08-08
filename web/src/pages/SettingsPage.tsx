@@ -107,6 +107,23 @@ export function SettingsPage() {
     staleTime: 30_000,
   });
 
+  // Fetch available models from API
+  const { data: modelsData } = useQuery({
+    queryKey: ['settings-models'],
+    queryFn: () => apiGet<{ models: Array<{ id: string; model: string; provider: string }> }>('/api/models').catch(() => ({ models: [] })),
+    staleTime: 60_000,
+  });
+  const apiModels = (modelsData?.models ?? []).map((m) => ({
+    value: m.id,
+    label: `${m.model} (${m.provider})`,
+  }));
+  // 兜底：如果 API 返回空，至少保留当前值可选
+  const modelOptions = apiModels.length > 0
+    ? apiModels
+    : (config?.agent?.defaultModel
+        ? [{ value: config.agent.defaultModel, label: config.agent.defaultModel }]
+        : []);
+
   // Update config mutation
   const updateConfig = useMutation({
     mutationFn: (partial: Record<string, unknown>) => apiPut('/api/config', partial),
@@ -145,10 +162,7 @@ export function SettingsPage() {
           <SelectRow
             label="默认模型"
             value={config.agent.defaultModel || ''}
-            options={[
-              { value: 'deepseek-chat', label: 'DeepSeek Chat' },
-              { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
-            ]}
+            options={modelOptions}
             onChange={(v) => updateConfig.mutate({ agent: { defaultModel: v } })}
           />
           <SelectRow

@@ -1030,7 +1030,7 @@ export class AgentRunner {
     const maxRetries = agentConfig.maxRetries;
     const maxToolLoops = agentConfig.maxToolLoops;
 
-    this.logger.info("runStream start", {
+    this.logger.info(`🤖 开始执行 [模型:${model}] 消息长度:${params.message.length}字 工具:${this.tools.size}个`, {
       model,
       provider: providerId,
       maxRetries,
@@ -1415,7 +1415,7 @@ export class AgentRunner {
         const llmDuration = Math.max(0, Date.now() - (activeProviderStartedAt ?? Date.now()));
         activeProviderStartedAt = undefined;
 
-        this.logger.info("LLM call completed", {
+        this.logger.info(`✅ 模型响应完成 [tokens:${streamUsage.totalTokens} 耗时:${llmDuration}ms 原因:${streamStopReason}]`, {
           model: streamModel,
           tokens: streamUsage.totalTokens,
           inputTokens: streamUsage.inputTokens,
@@ -1536,6 +1536,7 @@ export class AgentRunner {
         }
 
         if (err instanceof AuthError) {
+          this.logger.error(`❌ 认证失败: ${err.message}`);
           yield {
             type: "done",
             result: this.errorResult(startTime, modelId, provider.id, {
@@ -1546,6 +1547,7 @@ export class AgentRunner {
         }
 
         if (err instanceof ContextOverflowError) {
+          this.logger.error(`❌ 上下文溢出: ${err.message}`);
           yield {
             type: "done",
             result: this.errorResult(startTime, modelId, provider.id, {
@@ -1557,6 +1559,7 @@ export class AgentRunner {
 
         if (isRetryableError(err) && attempt < maxRetries) {
           const delay = retryDelayMs(err, attempt);
+          this.logger.warn(`🔄 重试第 ${attempt + 1}/${maxRetries} 次 (等待${delay}ms): ${formatError(err)}`);
           yield {
             type: "retry",
             attempt: attempt + 1,
@@ -1569,6 +1572,7 @@ export class AgentRunner {
         }
 
         // 重试耗尽或不可重试
+        this.logger.error(`❌ 模型调用失败 (已重试${attempt}次): ${formatError(err)}`);
         yield {
           type: "done",
           result: this.errorResult(startTime, modelId, provider.id, {
@@ -1797,7 +1801,7 @@ export class AgentRunner {
         yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
         input.toolNamesSet.add(call.name);
 
-        this.logger.info(`tool start: ${call.name}`, {
+        this.logger.debug(`🔧 执行工具: ${call.name}`, {
           tool: call.name,
           id: call.id,
         });
@@ -1860,7 +1864,7 @@ export class AgentRunner {
         for (const call of batch) {
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
           input.toolNamesSet.add(call.name);
-          this.logger.info(`tool start: ${call.name}`, {
+          this.logger.debug(`🔧 执行工具: ${call.name}`, {
             tool: call.name,
             id: call.id,
           });

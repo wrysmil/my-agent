@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatStream, type ChatOptions } from '@/features/chat/useChatStream';
 import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
 import { MessageList } from '@/components/chat/MessageList';
 import { StreamIndicator } from '@/components/chat/StreamIndicator';
 import { apiGet, apiPost } from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
 import { ChevronDown, Brain, Cpu, RefreshCw } from 'lucide-react';
 
 interface ModelInfo {
@@ -35,6 +36,7 @@ export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const [creating, setCreating] = useState(false);
 
   // Model & effort state
@@ -66,6 +68,10 @@ export function ChatPage() {
     apiPost<{ session: { id: string } }>('/api/sessions', { kind: 'gconv' })
       .then((data) => {
         if (!cancelled) {
+          // 刷新侧边栏 session 列表
+          queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+          // 记录活跃 session 到 localStorage，便于恢复
+          try { localStorage.setItem('my-agent.activeSession', data.session.id); } catch {}
           navigate(`/chat/${data.session.id}`, { replace: true });
         }
       })
@@ -79,6 +85,20 @@ export function ChatPage() {
 
   const cid = sessionId || '';
   const { status, messages, send, abort, retry, historyLoaded } = useChatStream(cid);
+
+  // 当进入已有 session 时，更新 localStorage 记录
+  useEffect(() => {
+    if (sessionId) {
+      try { localStorage.setItem('my-agent.activeSession', sessionId); } catch {}
+    }
+  }, [sessionId]);
+
+  // 聊天完成后刷新侧边栏 session 列表（更新名称/消息数）
+  useEffect(() => {
+    if (status === 'done' || status === 'error' || status === 'aborted') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+    }
+  }, [status, queryClient]);
 
   // Set default model once active provider is loaded
   useEffect(() => {

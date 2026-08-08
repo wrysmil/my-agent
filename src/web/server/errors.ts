@@ -369,7 +369,7 @@ export function handleError(
   // logger 注入时记录 warn —— 业务错误可重试，但服务端仍要可观测
   if (ctx.logger) {
     ctx.logger.warn(
-      `[web] ${status} ${body.error.code}: ${body.error.message}`,
+      `⚠️ ${status} ${body.error.code}: ${body.error.message}`,
     );
   }
 

@@ -23,7 +23,15 @@ import { z } from "zod";
  * 数字字段用 `z.coerce.number()` —— 浏览器可能发字符串"50"而非 number。
  */
 export const ListSessionsQuerySchema = z.object({
-  archived: z.coerce.boolean().optional(),
+  archived: z.preprocess(
+    (val) => {
+      if (val === "true" || val === "1") return true;
+      if (val === "false" || val === "0") return false;
+      if (typeof val === "boolean") return val;
+      return undefined;
+    },
+    z.boolean().optional(),
+  ),
   limit: z.coerce.number().int().min(1).max(200).optional(),
   offset: z.coerce.number().int().min(0).optional(),
 });

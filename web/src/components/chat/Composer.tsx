@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { useState, useRef, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Send, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ChatStatus } from '@/features/chat/useChatStream';
@@ -10,13 +10,17 @@ export function Composer({ onSend, onAbort, status, modelSelector }: {
   modelSelector?: ReactNode;
 }) {
   const [text, setText] = useState('');
+  const sendingRef = useRef(false);
   const isStreaming = status === 'streaming' || status === 'submitting' || status === 'reconnecting';
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || isStreaming) return;
+    if (!text.trim() || isStreaming || sendingRef.current) return;
+    sendingRef.current = true;
     onSend(text.trim());
     setText('');
+    // 短暂延迟后解锁，防止极端情况下的重复提交
+    setTimeout(() => { sendingRef.current = false; }, 500);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {

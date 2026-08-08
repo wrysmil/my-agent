@@ -1,5 +1,5 @@
-import "dotenv/config";
 #!/usr/bin/env tsx
+import "dotenv/config";
 /**
  * my-agent Web 前端启动入口（WU-01 / B1）。
  *
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
     const apiKey = entry.apiKey || process.env.DEEPSEEK_API_KEY || "";
     providers.setProvider(id, new DeepSeekProvider({ apiKey, baseUrl: entry.baseUrl }));
   }
-  logger.info(`[providers] registered ${providers.list().length} providers: ${providers.list().join(", ")}`);
+  logger.info(`已注册 ${providers.list().length} 个模型供应商: ${providers.list().join(", ")}`);
 
   // ---- Agent Runner Factory（Chat SSE 流依赖） ----
   const runnerFactory: RunnerFactory = ({ session }: { session: PersistentSession }) => {
@@ -83,6 +83,7 @@ async function main(): Promise<void> {
       providers,
       tools: BUILTIN_TOOLS,
       session,
+      logger: logger.child("agent"),
     });
     return {
       runStream: (params) => runner.runStream(params),
@@ -103,7 +104,7 @@ async function main(): Promise<void> {
   });
 
   const url = `http://localhost:${server.port}`;
-  logger.info(`🌐 my-agent Web 已启动: ${url}`);
+  logger.info(`🌐 服务器已启动 → ${url}`);
 
   // ---- 优雅退出 ----
   installShutdownHandlers({

@@ -19,8 +19,6 @@ vi.mock('lucide-react', () => ({
   Moon: () => <span data-testid="icon-moon">moon</span>,
   Languages: () => <span data-testid="icon-lang">lang</span>,
   Command: () => <span data-testid="icon-cmd">cmd</span>,
-  Plus: () => <span data-testid="icon-plus">plus</span>,
-  Loader2: () => <span data-testid="icon-loader">loader</span>,
 }));
 
 // Mock i18n module

@@ -178,7 +178,7 @@ export async function createServer(
       server.removeListener("error", onError);
       const addr = server.address();
       const actualPort = typeof addr === "object" && addr ? addr.port : port;
-      log.info(`🌐 my-agent Web listening on http://${host}:${actualPort}`);
+      log.info(`🌐 服务器监听 → http://${host}:${actualPort}`);
       resolve({
         port: actualPort,
         raw: server,
@@ -231,8 +231,9 @@ async function handleRequest(
         return req.url ?? "/";
       }
     })();
+    const statusEmoji = res.statusCode >= 400 ? "⚠️" : "→";
     ctx.log.info(
-      `${method} ${pathname} ${res.statusCode} ${durationMs}ms`,
+      `${statusEmoji} ${method} ${pathname} → ${res.statusCode} (${durationMs}ms)`,
     );
     return origEnd(...args);
   } as ServerResponse["end"];
@@ -281,7 +282,7 @@ async function handleRequest(
     handleError(
       new ApiError(
         ApiErrorCode.NOT_FOUND,
-        `Route ${method} ${pathname} not registered`,
+        `API 路由未注册: ${method} ${pathname}`,
       ),
       res,
       { requestId, logger: ctx.log },
@@ -298,7 +299,7 @@ async function handleRequest(
   handleError(
     new ApiError(
       ApiErrorCode.NOT_FOUND,
-      `Not Found: ${method} ${pathname}`,
+      `资源未找到: ${method} ${pathname}`,
     ),
     res,
     { requestId, logger: ctx.log },

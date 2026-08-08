@@ -64,11 +64,22 @@ export function useChatStream(sessionId: string) {
         const loaded: ChatMessage[] = [];
         for (const m of data.messages) {
           const role = m.role === 'user' ? 'user' : 'assistant';
-          let text = m.text || m.content || '';
-          if (!text && m.contentBlocks) {
-            text = m.contentBlocks
+          let text = '';
+          // 后端格式: content 是 content block 数组 [{type:"text", text:"..."}]
+          if (typeof m.text === 'string' && m.text) {
+            text = m.text;
+          } else if (typeof m.content === 'string' && m.content) {
+            text = m.content;
+          } else if (Array.isArray(m.content)) {
+            text = (m.content as Array<{ type: string; text?: string }>)
               .filter((b) => b.type === 'text')
               .map((b) => b.text || '')
+              .join('\n');
+          }
+          if (!text && Array.isArray((m as any).contentBlocks)) {
+            text = (m as any).contentBlocks
+              .filter((b: any) => b.type === 'text')
+              .map((b: any) => b.text || '')
               .join('\n');
           }
           if (text) loaded.push({ role: role as 'user' | 'assistant', text });
@@ -134,19 +145,24 @@ export function useChatStream(sessionId: string) {
         }
         if (!res.body) throw new Error('No response body');
 
-        const reader = res.body.getReader();
         let retries = 0;
 
-        for await (const evt of parseSseStream(reader)) {
+        for await (const evt of parseSseStream(res.body)) {
           try {
             if (evt.event === 'message_start') {
               setStatusSafe('streaming');
               if (submittingTimerRef.current)
                 clearTimeout(submittingTimerRef.current);
-              if (evt.data?.streamId)
-                streamIdRef.current = evt.data.streamId;
-            } else if (evt.event === 'text_delta') {
-              const delta = evt.data?.delta ?? '';
+              const d = evt.data as Record<string, unknown>;
+              const msg = (d?.message as Record<string, unknown>) || d;
+              if (msg?.stream_id)
+                streamIdRef.current = msg.stream_id as string;
+            } else if (evt.event === 'content_block_delta') {
+              // 后端发送 content_block_delta：data.delta 是 {type:"text_delta", text:"..."}
+              const d = evt.data as Record<string, unknown>;
+              const deltaObj = d?.delta as Record<string, unknown> | undefined;
+              const delta = (deltaObj?.text as string) ?? '';
+              if (!delta) continue;
               setMessages((m) => {
                 const last = m[m.length - 1];
                 if (last?.role === 'assistant') {

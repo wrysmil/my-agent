@@ -118,7 +118,7 @@ export function installConfigRoutes(deps: {
       const saveConfig = await getSaveConfig();
       await saveConfig(configPath, validated.data);
 
-      deps.logger?.info("config saved", { configPath });
+      deps.logger?.info(`⚙️ 配置已保存 → ${configPath}`);
       sendJsonOk(res, { ok: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);

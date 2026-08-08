@@ -89,19 +89,19 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
     const providerDeps: RegisterProviderRoutesDeps = { providersStore };
     if (logger) providerDeps.logger = logger;
     const replaced = registerProviderRoutes(ROUTES, providerDeps);
-    if (logger) logger.info(`[wire] providers: ${replaced}/8 handlers wired`);
+    if (logger) logger.debug(`供应商 API 路由已就绪 (${replaced}/8 条)`);
   }
 
   // ── Session 域 (4 REST + 2 compact = 6 条) ──
   if (sessionStore) {
-    installSessionRoutes({ sessionStore, agentRunner: deps.agentRunner });
-    if (logger) logger.info("[wire] sessions: handlers wired");
+    installSessionRoutes({ sessionStore, agentRunner: deps.agentRunner, logger });
+    if (logger) logger.debug("会话管理 API 路由已就绪");
   }
 
   // ── Chat 流 (2 条 SSE) ──
   if (sessionStore && config && providers && runnerFactory) {
     installMessageRoutes({ sessionStore, config, providers, runnerFactory, logger });
-    if (logger) logger.info("[wire] messages: SSE stream + abort wired");
+    if (logger) logger.debug("聊天流式 API 路由已就绪 (SSE + 取消)");
   }
 
   // ── Models 域 (1 条) ──
@@ -121,7 +121,7 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
       res.setHeader("Content-Type", "application/json; charset=utf-8");
       res.end(JSON.stringify({ ok: true, data: { models } }));
     });
-    if (logger) logger.info("[wire] models: 1 handler wired");
+    if (logger) logger.debug("模型列表 API 路由已就绪");
   }
 
   // ── Agent 域 (2 条) ──
@@ -132,7 +132,7 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
     (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
       getAgentHandler(req, res, params),
   );
-  if (logger) logger.info("[wire] agents: 2 handlers wired");
+  if (logger) logger.debug("Agent 管理 API 路由已就绪");
 
   // ── Skill 域 (5 条) ──
   replaceHandler("GET", "/api/skills", listSkillsHandler);
@@ -157,13 +157,13 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
     (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
       deleteSkillHandler(req, res, params),
   );
-  if (logger) logger.info("[wire] skills: 5 handlers wired");
+  if (logger) logger.debug("技能管理 API 路由已就绪 (5 条)");
 
   // ── Config 域 (2 条) ──
   if (config && configPath) {
     const { getConfig, putConfig } = installConfigRoutes({ config, configPath, logger });
     replaceHandler("GET", "/api/config", getConfig);
     replaceHandler("PUT", "/api/config", putConfig);
-    if (logger) logger.info("[wire] config: GET/PUT /api/config wired");
+    if (logger) logger.debug("配置管理 API 路由已就绪 (GET/PUT /api/config)");
   }
 }

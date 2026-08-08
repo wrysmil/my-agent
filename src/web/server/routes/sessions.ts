@@ -45,6 +45,7 @@ import {
   type ListSessionsQuery,
 } from "../validators/sessions.js";
 import { AgentRunner } from "../../../agent/runner.js";
+import type { Logger } from "../../../shared/logger.js";
 
 // ============================================================
 // DTO
@@ -81,15 +82,16 @@ export type SessionMeta = {
 export function installSessionRoutes(deps: {
   sessionStore: SessionStore;
   agentRunner?: AgentRunner;
+  logger?: Logger;
 }): void {
-  const { sessionStore, agentRunner } = deps;
+  const { sessionStore, agentRunner, logger } = deps;
 
   // 路由模式 → handler 映射（手写避免正则匹配）
   replaceHandler(ROUTES, "GET", "/api/sessions", (_req, res) =>
     listSessions(_req, res, sessionStore),
   );
   replaceHandler(ROUTES, "POST", "/api/sessions", (_req, res) =>
-    createSession(_req, res, sessionStore),
+    createSession(_req, res, sessionStore, logger),
   );
   replaceHandlerRegex(
     ROUTES,
@@ -99,7 +101,7 @@ export function installSessionRoutes(deps: {
       getHistory(_req, res, sessionStore, params["id"] ?? ""),
   );
   replaceHandlerRegex(ROUTES, "DELETE", /^\/api\/sessions\/([^/]+)$/, (_req, res, params) =>
-    deleteSession(_req, res, sessionStore, params["id"] ?? ""),
+    deleteSession(_req, res, sessionStore, params["id"] ?? "", logger),
   );
   // WU-06a：3 条 compact 路由 —— preview/cancel 是新注册，compact 是替换占位
   registerRoute(
@@ -279,6 +281,7 @@ async function createSession(
   req: IncomingMessage,
   res: ServerResponse,
   sessionStore: SessionStore,
+  logger?: Logger,
 ): Promise<void> {
   const body = await readBodyJson<unknown>(req).catch((err: unknown) => {
     sendJsonError(
@@ -301,6 +304,7 @@ async function createSession(
   const input: CreateSessionInput = parsed.data;
 
   const session = sessionStore.create(input.kind ?? "gconv");
+  logger?.info(`📝 创建新会话: ${session.sessionId} (类型:${input.kind ?? "gconv"})`);
   res.statusCode = 201;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.end(
@@ -374,6 +378,7 @@ async function deleteSession(
   res: ServerResponse,
   sessionStore: SessionStore,
   id: string,
+  logger?: Logger,
 ): Promise<void> {
   let safeId: string;
   try {
@@ -386,6 +391,9 @@ async function deleteSession(
   }
 
   const existed = sessionStore.delete(safeId);
+  if (existed) {
+    logger?.info(`🗑️ 删除会话: ${safeId}`);
+  }
 
   // spec § 3.4.7：DELETE 幂等 —— 不存在也回 204
   res.statusCode = 204;
