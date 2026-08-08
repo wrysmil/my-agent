@@ -19,7 +19,7 @@ import { installSessionRoutes } from "./routes/sessions.js";
 import { installMessageRoutes } from "./routes/messages.js";
 import type { RunnerFactory } from "./routes/messages.js";
 import { listAgentsHandler, getAgentHandler } from "./routes/agents.js";
-import { listSkillsHandler, getSkillHandler } from "./routes/skills.js";
+import { listSkillsHandler, getSkillHandler, createSkillHandler, updateSkillHandler, deleteSkillHandler } from "./routes/skills.js";
 
 // ── 依赖类型 ──
 import type { ProvidersStore } from "../../storage/providers-store.js";
@@ -101,6 +101,26 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
     if (logger) logger.info("[wire] messages: SSE stream + abort wired");
   }
 
+  // ── Models 域 (1 条) ──
+  if (config) {
+    replaceHandler("GET", "/api/models", (_req, res) => {
+      const catalog = config.models?.catalog ?? {};
+      const models = Object.entries(catalog).map(([id, m]) => ({
+        id,
+        provider: m.provider,
+        model: m.model,
+        contextWindow: m.contextWindow,
+        maxOutputTokens: m.maxOutputTokens,
+        supportsTools: m.supportsTools,
+        supportsStreaming: m.supportsStreaming,
+      }));
+      res.statusCode = 200;
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      res.end(JSON.stringify({ ok: true, data: { models } }));
+    });
+    if (logger) logger.info("[wire] models: 1 handler wired");
+  }
+
   // ── Agent 域 (2 条) ──
   replaceHandler("GET", "/api/agents", listAgentsHandler);
   replaceHandler(
@@ -111,7 +131,7 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
   );
   if (logger) logger.info("[wire] agents: 2 handlers wired");
 
-  // ── Skill 域 (2 条) ──
+  // ── Skill 域 (5 条) ──
   replaceHandler("GET", "/api/skills", listSkillsHandler);
   replaceHandler(
     "GET",
@@ -119,5 +139,20 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
     (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
       getSkillHandler(req, res, params),
   );
-  if (logger) logger.info("[wire] skills: 2 handlers wired");
+  replaceHandler("POST", "/api/skills", (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
+    createSkillHandler(req, res, params),
+  );
+  replaceHandler(
+    "PUT",
+    /^\/api\/skills\/([^/]+)$/,
+    (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
+      updateSkillHandler(req, res, params),
+  );
+  replaceHandler(
+    "DELETE",
+    /^\/api\/skills\/([^/]+)$/,
+    (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
+      deleteSkillHandler(req, res, params),
+  );
+  if (logger) logger.info("[wire] skills: 5 handlers wired");
 }

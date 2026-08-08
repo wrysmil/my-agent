@@ -497,16 +497,16 @@ describe("PUT /api/providers/:id — 按 URL id upsert", () => {
     expect(body.data.id).toBe("anthropic");
   });
 
-  it("⑦-2 已存在 id → 409 PROVIDER_ALREADY_EXISTS", async () => {
+  it("⑦-2 已存在 id → 200 更新成功（upsert 语义）", async () => {
     const { server: s } = await setupServer();
     const base = url(s);
 
-    const { res, body } = await putJson<ApiErr>(
+    const { res, body } = await putJson<{ ok: boolean; data: any }>(
       base,
       "/api/providers/deepseek",
       {
         id: "deepseek",
-        name: "x",
+        name: "DeepSeek Updated",
         type: "deepseek",
         apiKey: "",
         baseUrl: "https://api.deepseek.com/v1",
@@ -515,9 +515,9 @@ describe("PUT /api/providers/:id — 按 URL id upsert", () => {
       },
     );
 
-    expect(res.status).toBe(409);
-    expect(body.ok).toBe(false);
-    expect(body.error.code).toBe("PROVIDER_ALREADY_EXISTS");
+    expect(res.status).toBe(200);
+    expect(body.ok).toBe(true);
+    expect(body.data.name).toBe("DeepSeek Updated");
   });
 
   it("⑦-3 body.id != url.id → 422 VALIDATION_FAILED", async () => {

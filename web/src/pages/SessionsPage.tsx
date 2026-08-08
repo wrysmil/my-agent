@@ -13,7 +13,7 @@ export function SessionsPage() {
   const filtered = useMemo(() => {
     if (!search.trim()) return sessions;
     const q = search.toLowerCase();
-    return sessions.filter((s) => s.title.toLowerCase().includes(q));
+    return sessions.filter((s) => s.name.toLowerCase().includes(q));
   }, [sessions, search]);
 
   return (
@@ -64,7 +64,7 @@ export function SessionsPage() {
         <ul>
           {filtered.map((s) => (
             <li key={s.id}>
-              <Link to={`/chat/${s.id}`}>{s.title}</Link>
+              <Link to={`/chat/${s.id}`}>{s.name}</Link>
             </li>
           ))}
         </ul>

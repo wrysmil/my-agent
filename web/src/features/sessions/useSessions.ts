@@ -4,13 +4,17 @@ import { queryKeys } from '@/lib/query-keys';
 
 export interface SessionItem {
   id: string;
-  title: string;
-  createdAt: string;
+  name: string;
+  messageCount: number;
+  lastTs: number;
   archived: boolean;
 }
 
 export interface SessionsResponse {
   sessions: SessionItem[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export function useSessions(archived = false) {

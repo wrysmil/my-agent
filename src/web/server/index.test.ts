@@ -125,10 +125,9 @@ describe("createServer — 路由占位 (404)", () => {
 // ============================================================
 
 describe("ROUTES 占位表", () => {
-  it("导出 19 条路由（Provider 8 + Session 5 + Chat 2 + Agent/Skill 4；spec § 6.2）", () => {
-    // 任务描述提到的「21 条」是上游文案笔误：contract § 1 / spec § 3.1
-    // 按域统计为 8 + 5 + 2 + 4 = 19。本测试与代码保持一致。
-    expect(ROUTES.length).toBe(19);
+  it("导出 24 条路由（Provider 9 + Session 6 + Chat 2 + Models 1 + Agent 2 + Skill 5）", () => {
+    // Provider 域含 9 条（含 POST test 联通测试路由）；Skills 域含 5 条 CRUD 路由（GET/POST/PUT/DELETE）
+    expect(ROUTES.length).toBe(24);
   });
 
   it("matchRoute 能匹配 + 提取 :id 参数", () => {

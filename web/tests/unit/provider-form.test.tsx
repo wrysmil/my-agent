@@ -11,15 +11,19 @@ function wrapper({ children }: { children: React.ReactNode }) {
 describe('ProviderForm', () => {
   it('disables submit button during submission', async () => {
     vi.spyOn(global, 'fetch').mockImplementationOnce(() =>
-      new Promise(r => setTimeout(() => r(new Response('{}', { status: 200 })), 100))
+      new Promise(r => setTimeout(() => r(new Response(JSON.stringify({ ok: true, data: { id: 'p1' } }), { status: 201 })), 100))
     );
     render(<ProviderForm mode="create" onSuccess={() => {}} />, { wrapper });
     const idInput = screen.getByLabelText('Provider ID');
+    const nameInput = screen.getByLabelText('Display Name');
     const baseUrlInput = screen.getByLabelText('Base URL');
     const apiKeyInput = screen.getByLabelText('API Key');
+    const modelInput = screen.getByLabelText('Default Model');
     fireEvent.change(idInput, { target: { value: 'p1' } });
-    fireEvent.change(baseUrlInput, { target: { value: 'https://api.example.com' } });
+    fireEvent.change(nameInput, { target: { value: 'Test Provider' } });
+    fireEvent.change(baseUrlInput, { target: { value: 'https://api.deepseek.com/v1' } });
     fireEvent.change(apiKeyInput, { target: { value: 'sk-test' } });
+    fireEvent.change(modelInput, { target: { value: 'deepseek-chat' } });
     const btn = screen.getByRole('button', { name: /保存/ });
     fireEvent.click(btn);
     await waitFor(() => {

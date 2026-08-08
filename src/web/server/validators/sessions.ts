@@ -55,6 +55,8 @@ export type CreateSessionInput = z.infer<typeof CreateSessionSchema>;
 export const StreamMessageSchema = z.object({
   text: z.string().min(1).max(32_000),
   systemPrompt: z.string().max(8_000).optional(),
+  model: z.string().min(1).max(256).optional(),
+  thinkingLevel: z.enum(["off", "low", "high"]).optional(),
 });
 
 export type StreamMessageInput = z.infer<typeof StreamMessageSchema>;

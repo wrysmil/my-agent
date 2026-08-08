@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { Copy, Check } from 'lucide-react';
 
-const Markdown = lazy(() => import('./Markdown'));
+const Markdown = lazy(() => import('./Markdown').then(m => ({ default: m.Markdown })));
 
 function MarkdownFallback() {
   return <div className="animate-pulse h-4 w-3/4 bg-surface-hover rounded" />;

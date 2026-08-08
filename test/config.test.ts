@@ -185,9 +185,12 @@ describe("配置加载器", () => {
 
   // ─── loadConfig ───────────────────────────────
   describe("loadConfig — 从文件加载", () => {
-    it("无路径返回默认配置", async () => {
+    it("无路径时自动加载项目根 config.json", async () => {
       const config = await loadConfig();
-      expect(config.agent.defaultModel).toBe("claude-opus-4-8");
+      // 项目根有 config.json → 应加载其内容而非 Zod 默认值
+      expect(config.agent.defaultModel).toBe("deepseek-chat");
+      expect(config.models.catalog["deepseek-chat"]).toBeDefined();
+      expect(config.models.catalog["deepseek-reasoner"]).toBeDefined();
     });
 
     it("不存在的文件返回默认配置", async () => {

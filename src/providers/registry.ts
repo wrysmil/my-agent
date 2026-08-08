@@ -97,6 +97,11 @@ export class ProviderRegistry {
     return [...new Set([...this.providers.keys(), ...this.factories.keys()])];
   }
 
+  /** 直接注入一个已创建的 provider 实例（用于从外部 store 同步）。 */
+  setProvider(id: string, provider: LLMProvider): void {
+    this.providers.set(id, provider);
+  }
+
   private createProvider(
     id: string,
     config: { apiKey?: string; baseUrl?: string },

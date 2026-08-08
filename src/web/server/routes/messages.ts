@@ -237,6 +237,12 @@ async function postMessageStream(
         ...(body.systemPrompt !== undefined
           ? { systemPrompt: body.systemPrompt }
           : {}),
+        ...(body.model !== undefined
+          ? { model: body.model }
+          : {}),
+        ...(body.thinkingLevel !== undefined
+          ? { thinkingLevel: body.thinkingLevel }
+          : {}),
         signal: controller.signal,
       };
 

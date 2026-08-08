@@ -7,11 +7,13 @@ import { queryKeys } from '@/lib/query-keys';
 import { Button } from '@/components/ui/button';
 
 const providerSchema = z.object({
-  id: z.string().min(1, 'Provider ID is required'),
-  type: z.enum(['openai', 'anthropic', 'ollama', 'custom']),
+  id: z.string().min(1, 'Provider ID is required').max(64),
+  name: z.string().min(1, 'Display name is required').max(128),
+  type: z.enum(['deepseek']),
   baseUrl: z.string().min(1, 'Base URL is required').url('Must be a valid URL'),
-  apiKey: z.string().min(1, 'API Key is required'),
-  defaultModel: z.string().optional(),
+  apiKey: z.string(),
+  defaultModel: z.string().min(1, 'Default model is required').max(128),
+  enabled: z.boolean(),
 });
 
 type ProviderFormData = z.infer<typeof providerSchema>;
@@ -41,10 +43,12 @@ export function ProviderForm({
     resolver: zodResolver(providerSchema),
     defaultValues: {
       id: '',
-      type: 'openai',
-      baseUrl: '',
+      name: '',
+      type: 'deepseek',
+      baseUrl: 'https://api.deepseek.com/v1',
       apiKey: '',
-      defaultModel: '',
+      defaultModel: 'deepseek-chat',
+      enabled: true,
       ...defaultValues,
     },
   });
@@ -121,8 +125,9 @@ export function ProviderForm({
         <input
           id="provider-id"
           {...form.register('id')}
-          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
-          disabled={isSubmitting}
+          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm disabled:opacity-50"
+          placeholder="例如：my-deepseek"
+          disabled={isSubmitting || mode === 'edit'}
         />
         {form.formState.errors.id && (
           <p className="text-sm text-danger mt-1">
@@ -131,7 +136,26 @@ export function ProviderForm({
         )}
       </div>
 
-      {/* Type */}
+      {/* Name */}
+      <div>
+        <label htmlFor="provider-name" className="block text-sm font-medium mb-1">
+          Display Name
+        </label>
+        <input
+          id="provider-name"
+          {...form.register('name')}
+          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
+          placeholder="例如：DeepSeek"
+          disabled={isSubmitting}
+        />
+        {form.formState.errors.name && (
+          <p className="text-sm text-danger mt-1">
+            {form.formState.errors.name.message}
+          </p>
+        )}
+      </div>
+
+      {/* Type (当前仅支持 deepseek) */}
       <div>
         <label htmlFor="provider-type" className="block text-sm font-medium mb-1">
           Type
@@ -142,10 +166,7 @@ export function ProviderForm({
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
         >
-          <option value="openai">OpenAI</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="ollama">Ollama</option>
-          <option value="custom">Custom</option>
+          <option value="deepseek">DeepSeek</option>
         </select>
         {form.formState.errors.type && (
           <p className="text-sm text-danger mt-1">
@@ -164,7 +185,7 @@ export function ProviderForm({
           {...form.register('baseUrl')}
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
-          placeholder="https://api.example.com"
+          placeholder="https://api.deepseek.com/v1"
         />
         {form.formState.errors.baseUrl && (
           <p className="text-sm text-danger mt-1">
@@ -184,6 +205,7 @@ export function ProviderForm({
           {...form.register('apiKey')}
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
+          placeholder={mode === 'edit' ? '留空则保持原值' : '留空则使用环境变量 DEEPSEEK_API_KEY'}
         />
         {form.formState.errors.apiKey && (
           <p className="text-sm text-danger mt-1">
@@ -202,10 +224,30 @@ export function ProviderForm({
           {...form.register('defaultModel')}
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
+          placeholder="deepseek-chat"
         />
         {form.formState.errors.defaultModel && (
           <p className="text-sm text-danger mt-1">
             {form.formState.errors.defaultModel.message}
+          </p>
+        )}
+      </div>
+
+      {/* Enabled */}
+      <div className="flex items-center gap-2">
+        <input
+          id="provider-enabled"
+          type="checkbox"
+          {...form.register('enabled')}
+          className="h-4 w-4 rounded border-border"
+          disabled={isSubmitting}
+        />
+        <label htmlFor="provider-enabled" className="text-sm font-medium">
+          Enable this provider
+        </label>
+        {form.formState.errors.enabled && (
+          <p className="text-sm text-danger mt-1">
+            {form.formState.errors.enabled.message}
           </p>
         )}
       </div>

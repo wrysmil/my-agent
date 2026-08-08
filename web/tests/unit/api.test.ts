@@ -2,16 +2,16 @@ import { describe, it, expect, vi } from 'vitest';
 import { apiGet, apiPost } from '../../src/lib/api';
 
 describe('api', () => {
-  it('GET /api/sessions returns sessions', async () => {
+  it('GET /api/sessions returns unwrapped data', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ sessions: [] }), { status: 200 })
+      new Response(JSON.stringify({ ok: true, data: { sessions: [] } }), { status: 200 })
     );
     const res = await apiGet('/api/sessions?limit=10');
     expect(res).toEqual({ sessions: [] });
   });
-  it('throws ApiError on 4xx', async () => {
+  it('throws ApiError on error envelope', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ code: 'SESSION_NOT_FOUND', message: 'x' }), { status: 404 })
+      new Response(JSON.stringify({ ok: false, error: { code: 'SESSION_NOT_FOUND', message: 'x' } }), { status: 404 })
     );
     await expect(apiGet('/api/sessions/abc/history')).rejects.toMatchObject({ code: 'SESSION_NOT_FOUND', status: 404 });
   });

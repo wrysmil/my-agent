@@ -23,9 +23,15 @@ describe('SessionsPage', () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          sessions: [
-            { id: 's1', title: 'Test Session', createdAt: '2026-01-01', archived: false },
-          ],
+          ok: true,
+          data: {
+            sessions: [
+              { id: 's1', name: 'Test Session', messageCount: 5, lastTs: 100, archived: false },
+            ],
+            total: 1,
+            limit: 50,
+            offset: 0,
+          },
         }),
         { status: 200 }
       )
@@ -38,7 +44,13 @@ describe('SessionsPage', () => {
 
   it('shows empty state when no sessions', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ sessions: [] }), { status: 200 })
+      new Response(
+        JSON.stringify({
+          ok: true,
+          data: { sessions: [], total: 0, limit: 50, offset: 0 },
+        }),
+        { status: 200 }
+      )
     );
     render(<SessionsPage />, { wrapper });
     await waitFor(() => {
@@ -51,10 +63,16 @@ describe('SessionsPage', () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          sessions: [
-            { id: 's1', title: 'Alpha Session', createdAt: '2026-01-01', archived: false },
-            { id: 's2', title: 'Beta Chat', createdAt: '2026-01-02', archived: false },
-          ],
+          ok: true,
+          data: {
+            sessions: [
+              { id: 's1', name: 'Alpha Session', messageCount: 1, lastTs: 100, archived: false },
+              { id: 's2', name: 'Beta Chat', messageCount: 2, lastTs: 200, archived: false },
+            ],
+            total: 2,
+            limit: 50,
+            offset: 0,
+          },
         }),
         { status: 200 }
       )
@@ -77,9 +95,15 @@ describe('SessionsPage', () => {
     fetchSpy.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          sessions: [
-            { id: 's1', title: 'Active Session', createdAt: '2026-01-01', archived: false },
-          ],
+          ok: true,
+          data: {
+            sessions: [
+              { id: 's1', name: 'Active Session', messageCount: 3, lastTs: 300, archived: false },
+            ],
+            total: 1,
+            limit: 50,
+            offset: 0,
+          },
         }),
         { status: 200 }
       )
@@ -88,9 +112,15 @@ describe('SessionsPage', () => {
     fetchSpy.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          sessions: [
-            { id: 's2', title: 'Archived Session', createdAt: '2025-12-01', archived: true },
-          ],
+          ok: true,
+          data: {
+            sessions: [
+              { id: 's2', name: 'Archived Session', messageCount: 0, lastTs: 100, archived: true },
+            ],
+            total: 1,
+            limit: 50,
+            offset: 0,
+          },
         }),
         { status: 200 }
       )
@@ -111,7 +141,13 @@ describe('SessionsPage', () => {
 
   it('has data-testid page-sessions', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      new Response(JSON.stringify({ sessions: [] }), { status: 200 })
+      new Response(
+        JSON.stringify({
+          ok: true,
+          data: { sessions: [], total: 0, limit: 50, offset: 0 },
+        }),
+        { status: 200 }
+      )
     );
     render(<SessionsPage />, { wrapper });
     await waitFor(() => {

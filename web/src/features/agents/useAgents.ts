@@ -5,8 +5,11 @@ import { queryKeys } from '@/lib/query-keys';
 export interface Agent {
   id: string;
   name: string;
-  type: string;
-  description?: string;
+  description: string;
+  source: 'builtin' | 'user';
+  scope: 'builtin' | 'user' | 'both';
+  enabled: boolean;
+  tools: string[];
 }
 
 interface AgentsResponse {

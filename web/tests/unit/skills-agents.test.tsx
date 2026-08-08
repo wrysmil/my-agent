@@ -13,7 +13,10 @@ describe('SkillsPage', () => {
   it('renders skills list', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
       new Response(JSON.stringify({
-        skills: [{ name: 'code-review', description: 'Review code' }]
+        ok: true,
+        data: {
+          skills: [{ id: 'code-review', name: 'code-review', description: 'Review code', source: 'builtin', scope: 'builtin' }]
+        }
       }), { status: 200 })
     );
     render(<SkillsPage />, { wrapper });
@@ -27,7 +30,10 @@ describe('AgentsPage', () => {
   it('renders agents list', async () => {
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
       new Response(JSON.stringify({
-        agents: [{ id: 'a1', name: 'coder', type: 'builtin' }]
+        ok: true,
+        data: {
+          agents: [{ id: 'a1', name: 'coder', description: 'Code agent', source: 'builtin', scope: 'builtin', enabled: true, tools: [] }]
+        }
       }), { status: 200 })
     );
     render(<AgentsPage />, { wrapper });

@@ -17,6 +17,7 @@
  * - `CI=1`               跳过自动打开浏览器
  */
 
+import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
 
@@ -29,6 +30,11 @@ import { ProvidersStore } from "../src/storage/providers-store.js";
 import { SessionStore } from "../src/storage/session-store.js";
 import { ProviderRegistry } from "../src/providers/registry.js";
 import { loadConfig } from "../src/config/loader.js";
+import { AgentRunner } from "../src/agent/runner.js";
+import { BUILTIN_TOOLS } from "../src/tools/builtin.js";
+import { DeepSeekProvider } from "../src/providers/deepseek.js";
+import type { PersistentSession } from "../src/agent/persistent-session.js";
+import type { RunnerFactory, RunnerLike } from "../src/web/server/routes/messages.js";
 
 const logger = createLogger("web", "info");
 
@@ -36,14 +42,44 @@ async function main(): Promise<void> {
   // ---- 端口 / 主机 / 静态资源根 ----
   const port = parsePort(process.env.MY_AGENT_WEB_PORT ?? "4321");
   const host = process.env.MY_AGENT_WEB_HOST ?? "127.0.0.1";
+  const defaultWebRoot = path.join(process.cwd(), "web");
+  const distPath = path.join(defaultWebRoot, "dist");
   const webRoot =
-    process.env.MY_AGENT_WEB_ROOT ?? path.join(process.cwd(), "web");
+    process.env.MY_AGENT_WEB_ROOT ??
+    (fs.existsSync(distPath) ? distPath : defaultWebRoot);
 
   // ---- Providers / Session store + Config ----
   const config = await loadConfig();
   const providersStore = await ProvidersStore.load();
   const sessionStore = new SessionStore();
   const providers = new ProviderRegistry(config);
+
+  // 注册 Provider 工厂（必须在使用前注册）
+  providers.registerFactory("deepseek", (opts) => {
+    const apiKey = opts.apiKey || process.env.DEEPSEEK_API_KEY || "";
+    return new DeepSeekProvider({ apiKey, baseUrl: opts.baseUrl });
+  });
+
+  // 将 Web UI 配置的供应商同步到 ProviderRegistry
+  const storeCfg = providersStore.getConfig();
+  for (const [id, entry] of Object.entries(storeCfg.providers)) {
+    const apiKey = entry.apiKey || process.env.DEEPSEEK_API_KEY || "";
+    providers.setProvider(id, new DeepSeekProvider({ apiKey, baseUrl: entry.baseUrl }));
+  }
+  logger.info(`[providers] registered ${providers.list().length} providers: ${providers.list().join(", ")}`);
+
+  // ---- Agent Runner Factory（Chat SSE 流依赖） ----
+  const runnerFactory: RunnerFactory = ({ session }: { session: PersistentSession }) => {
+    const runner = new AgentRunner({
+      config,
+      providers,
+      tools: BUILTIN_TOOLS,
+      session,
+    });
+    return {
+      runStream: (params) => runner.runStream(params),
+    } as RunnerLike;
+  };
 
   // ---- 启动 HTTP server ----
   const server = await createServer({
@@ -52,6 +88,7 @@ async function main(): Promise<void> {
     sessionStore,
     config,
     providers,
+    runnerFactory,
     port,
     host,
     webRoot,

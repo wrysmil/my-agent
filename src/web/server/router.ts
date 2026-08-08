@@ -97,6 +97,12 @@ export const ROUTES: Route[] = [
     routeNotFoundPlaceholder,
     ["id"],
   ],
+  [
+    "POST",
+    /^\/api\/providers\/([^/]+)\/test$/,
+    routeNotFoundPlaceholder,
+    ["id"],
+  ],
   ["PUT", /^\/api\/providers\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
   ["DELETE", /^\/api\/providers\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
 
@@ -132,10 +138,14 @@ export const ROUTES: Route[] = [
   ],
 
   // ---- Agent / Skill 域（WU-02c 落地） ----
+  ["GET", "/api/models", routeNotFoundPlaceholder, []],
   ["GET", "/api/agents", routeNotFoundPlaceholder, []],
   ["GET", /^\/api\/agents\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
   ["GET", "/api/skills", routeNotFoundPlaceholder, []],
   ["GET", /^\/api\/skills\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
+  ["POST", "/api/skills", routeNotFoundPlaceholder, []],
+  ["PUT", /^\/api\/skills\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
+  ["DELETE", /^\/api\/skills\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
 ];
 
 // ============================================================

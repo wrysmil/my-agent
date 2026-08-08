@@ -48,6 +48,7 @@ import {
   parseJsonBody,
   validateProviderId,
 } from "../validators/providers.js";
+import { DeepSeekProvider } from "../../../providers/deepseek.js";
 
 // ============================================================
 // 依赖类型
@@ -112,6 +113,7 @@ const HANDLERS: Record<string, (ctx: HandlerCtx) => Promise<void>> = {
   "PUT /api/providers/active": setActiveProvider,
   "PATCH /api/providers/active/model": setActiveModel,
   "POST /api/providers/:id/toggle": toggleProviderEnabled,
+  "POST /api/providers/:id/test": testProviderConnectivity,
   "PUT /api/providers/:id": upsertProviderById,
   "DELETE /api/providers/:id": deleteProvider,
 };
@@ -122,6 +124,9 @@ function routeKey(method: string, pattern: string | RegExp): string {
   // 反向归一化 regex → 占位符
   if (pattern.source === "^\\/api\\/providers\\/([^/]+)\\/toggle$") {
     return `${method} /api/providers/:id/toggle`;
+  }
+  if (pattern.source === "^\\/api\\/providers\\/([^/]+)\\/test$") {
+    return `${method} /api/providers/:id/test`;
   }
   if (pattern.source === "^\\/api\\/providers\\/([^/]+)$") {
     return `${method} /api/providers/:id`;
@@ -361,13 +366,14 @@ async function toggleProviderEnabled(ctx: HandlerCtx): Promise<void> {
 }
 
 /**
- * PUT /api/providers/:id —— 创建（URL id 优先）。
+ * PUT /api/providers/:id —— 创建或更新（URL id 优先）。
  *
  * - `:id` 路径穿越防御 → 404
  * - body.id 必须与 URL :id 一致（防「body 用 a，URL 用 b」的语义错乱）；
  *   不一致 → 422 VALIDATION_FAILED
- * - 已存在 → 409 PROVIDER_ALREADY_EXISTS（同 POST）
- * - 200 OK + 新 Provider（URL 创建）
+ * - 已存在 → 更新（保留 activeProviderId 不变）
+ * - 不存在 → 创建
+ * - 200 OK + Provider 数据
  */
 async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
   const id = validateProviderId(ctx.params.id ?? "");
@@ -387,15 +393,16 @@ async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
     );
   }
   const cfg = ctx.store.getConfig();
-  if (cfg.providers[id]) {
-    throw new ApiError(
-      ApiErrorCode.PROVIDER_ALREADY_EXISTS,
-      `Provider "${id}" already exists`,
-    );
-  }
-  await upsertAndSave(ctx.store, body);
-  ctx.log.info(`[providers] created by id ${id}`);
-  sendJson(ctx.res, 200, { ok: true, data: stripEnvKey(body) });
+  const existed = cfg.providers[id] != null;
+
+  // 编辑已有 provider 时，空 apiKey 保留原值（用户不想改 key）
+  const merged: ProviderConfigEntry = existed && !body.apiKey
+    ? { ...body, apiKey: cfg.providers[id]!.apiKey }
+    : body;
+
+  await upsertAndSave(ctx.store, merged);
+  ctx.log.info(`[providers] ${existed ? "updated" : "created"} ${id}`);
+  sendJson(ctx.res, 200, { ok: true, data: stripEnvKey(merged) });
 }
 
 /**
@@ -419,6 +426,61 @@ async function deleteProvider(ctx: HandlerCtx): Promise<void> {
   await ctx.store.save();
   ctx.log.info(`[providers] deleted ${id}`);
   sendJson(ctx.res, 200, { ok: true, data: { deleted: id } });
+}
+
+/**
+ * POST /api/providers/:id/test —— 测试 Provider 联通性。
+ *
+ * - 创建临时 DeepSeekProvider 实例，调用 validateAuth()
+ * - apiKey 优先使用 store 中存储的值，为空则 fallback 到 DEEPSEEK_API_KEY 环境变量
+ * - 仅支持 deepseek 类型（当前唯一 provider）
+ * - 200 OK + { tested, reachable }；失败返回 200 + ok:false + error
+ */
+async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
+  const id = validateProviderId(ctx.params.id ?? "");
+  const cfg = ctx.store.getConfig();
+  const entry = cfg.providers[id];
+  if (!entry) {
+    throw new ApiError(
+      ApiErrorCode.PROVIDER_NOT_FOUND,
+      `Provider "${id}" not found`,
+    );
+  }
+
+  // 仅支持 deepseek
+  if (entry.type !== "deepseek") {
+    sendJson(ctx.res, 200, {
+      ok: false,
+      error: {
+        code: "UNSUPPORTED_PROVIDER_TYPE",
+        message: `Provider type "${entry.type}" does not support connectivity test`,
+      },
+    });
+    return;
+  }
+
+  const apiKey = entry.apiKey || process.env.DEEPSEEK_API_KEY || "";
+  const provider = new DeepSeekProvider({ apiKey, baseUrl: entry.baseUrl });
+
+  ctx.log.info(`[providers] testing connectivity for ${id}...`);
+  const reachable = await provider.validateAuth();
+
+  if (!reachable) {
+    sendJson(ctx.res, 200, {
+      ok: false,
+      error: {
+        code: "PROVIDER_AUTH_FAILED",
+        message: "API key validation failed — check your API key and network",
+      },
+    });
+    return;
+  }
+
+  ctx.log.info(`[providers] ${id} connectivity test passed`);
+  sendJson(ctx.res, 200, {
+    ok: true,
+    data: { tested: id, reachable: true },
+  });
 }
 
 // ============================================================

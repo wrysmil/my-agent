@@ -82,6 +82,31 @@ export function _resetBuiltinSkillsDir(): void {
 }
 
 // ============================================================
+// 项目根 skills/ 目录（25 个预置 skill —— 与 CLI 共用）
+// ============================================================
+
+let _projectSkillsDir: string | null | undefined;
+
+/** 返回项目根目录 skills/ 的绝对路径，不存在返回 null */
+function projectSkillsDir(): string | null {
+  if (_projectSkillsDir !== undefined) return _projectSkillsDir;
+  try {
+    const dir = fileURLToPath(
+      new URL("../../../../skills", import.meta.url),
+    );
+    _projectSkillsDir = fs.existsSync(dir) ? dir : null;
+  } catch {
+    _projectSkillsDir = null;
+  }
+  return _projectSkillsDir;
+}
+
+/** 仅测试用 */
+export function _resetProjectSkillsDir(): void {
+  _projectSkillsDir = undefined;
+}
+
+// ============================================================
 // 公共类型 — API 响应 shape
 // ============================================================
 
@@ -130,21 +155,29 @@ interface SkillEntry {
  */
 function discoverSkillsSync(): SkillEntry[] {
   const builtinDir = builtinSkillsDir();
+  const projSkills = projectSkillsDir();
   const userDir = userSkillsDir();
   const marketDir = userMarketplaceSkillsDir();
 
   const entries: SkillEntry[] = [];
 
+  // 1. fixtures/skills/（hello-skill 等测试夹具）
   if (builtinDir) {
     for (const spec of SkillLoader.scan(builtinDir, "system")) {
       entries.push({ spec, source: "builtin" });
     }
   }
-  // marketplace 未来扩展位；当前 fixtures 没有，扫描安全（不存在返回空数组）
+  // 2. 项目根 skills/（25 个预置 skill，与 CLI 共用）
+  if (projSkills) {
+    for (const spec of SkillLoader.scan(projSkills, "system")) {
+      entries.push({ spec, source: "builtin" });
+    }
+  }
+  // 3. marketplace（{dataRoot}/marketplace/skills/）
   for (const spec of SkillLoader.scan(marketDir, "marketplace")) {
     entries.push({ spec, source: "marketplace" });
   }
-  // user 自定义可覆盖 builtin / marketplace 同名条目（保持去重，user 优先）
+  // 4. user 自定义可覆盖前面同名条目（保持去重，user 优先）
   const seen = new Set(entries.map((e) => e.spec.id));
   for (const spec of SkillLoader.scan(userDir, "user")) {
     if (seen.has(spec.id)) {
@@ -296,4 +329,237 @@ export function getSkillHandler(
       err instanceof Error ? err.message : "internal error",
     );
   }
+}
+
+// ============================================================
+// CRUD Handlers（写入 user skills 目录）
+// ============================================================
+
+/**
+ * `POST /api/skills` — 创建新 skill。
+ *
+ * body: { id, name, description_zh?, description_en?, body }
+ * 写入 `{userSkillsDir()}/{id}/SKILL.md`
+ *
+ * - id 已存在 → 409 SKILL_ALREADY_EXISTS
+ * - 201 Created + SkillListItem
+ */
+export async function createSkillHandler(
+  req: IncomingMessage,
+  res: ServerResponse,
+  _params: Record<string, string>,
+): Promise<void> {
+  let body: { id?: string; name?: string; description_zh?: string; description_en?: string; body?: string };
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    sendError(res, 400, "INVALID_JSON", err instanceof Error ? err.message : "Invalid JSON");
+    return;
+  }
+
+  const id = (body.id ?? "").trim();
+  if (!isValidSkillId(id)) {
+    sendError(res, 422, "VALIDATION_FAILED", "Invalid skill id");
+    return;
+  }
+  if (!body.name?.trim()) {
+    sendError(res, 422, "VALIDATION_FAILED", "name is required");
+    return;
+  }
+
+  const userDir = userSkillsDir();
+  const skillDir = path.join(userDir, id);
+
+  if (fs.existsSync(skillDir)) {
+    sendError(res, 409, "SKILL_ALREADY_EXISTS", `Skill "${id}" already exists`);
+    return;
+  }
+
+  try {
+    const frontmatter = buildFrontmatter({
+      id,
+      name: body.name.trim(),
+      description_zh: body.description_zh ?? "",
+      description_en: body.description_en ?? "",
+    });
+    const skillMd = `---\n${frontmatter}---\n\n${body.body ?? ""}`;
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), skillMd, "utf-8");
+
+    // 清除扫描缓存
+    _builtinSkillsDir = undefined;
+    _projectSkillsDir = undefined;
+
+    sendJson(res, 201, {
+      ok: true,
+      data: {
+        id,
+        name: body.name.trim(),
+        description: body.description_zh || body.description_en || "",
+        source: "user",
+        scope: "user",
+      },
+    });
+  } catch (err) {
+    sendError(
+      res,
+      500,
+      "INTERNAL",
+      err instanceof Error ? err.message : "Failed to create skill",
+    );
+  }
+}
+
+/**
+ * `PUT /api/skills/:id` — 更新 skill 正文。
+ *
+ * body: { name?, description_zh?, description_en?, body? }
+ * 只支持更新 user source 的 skill；builtin 不可编辑。
+ * 200 OK + 更新后的 SkillListItem
+ */
+export async function updateSkillHandler(
+  req: IncomingMessage,
+  res: ServerResponse,
+  params: Record<string, string>,
+): Promise<void> {
+  const id = params.id ?? "";
+  if (!isValidSkillId(id)) {
+    sendError(res, 404, "SKILL_NOT_FOUND", `Skill "${id}" not found`);
+    return;
+  }
+
+  const entries = discoverSkillsSync();
+  const entry = entries.find((e) => e.spec.id === id);
+  if (!entry) {
+    sendError(res, 404, "SKILL_NOT_FOUND", `Skill "${id}" not found`);
+    return;
+  }
+  if (entry.source !== "user") {
+    sendError(res, 403, "FORBIDDEN", "Only user-created skills can be edited");
+    return;
+  }
+
+  let body: { name?: string; description_zh?: string; description_en?: string; body?: string };
+  try {
+    body = await readJsonBody(req);
+  } catch (err) {
+    sendError(res, 400, "INVALID_JSON", err instanceof Error ? err.message : "Invalid JSON");
+    return;
+  }
+
+  try {
+    const content = SkillLoader.load(entry.spec);
+    if (!content) {
+      sendError(res, 404, "SKILL_NOT_FOUND", `Skill "${id}" file missing`);
+      return;
+    }
+
+    const frontmatter = buildFrontmatter({
+      id,
+      name: body.name ?? entry.spec.name ?? id,
+      description_zh: body.description_zh ?? entry.spec.description_zh ?? "",
+      description_en: body.description_en ?? entry.spec.description_en ?? "",
+    });
+    const skillMd = `---\n${frontmatter}---\n\n${body.body ?? content.body}`;
+    fs.writeFileSync(entry.spec.skillFile, skillMd, "utf-8");
+
+    // 清除扫描缓存
+    _builtinSkillsDir = undefined;
+    _projectSkillsDir = undefined;
+
+    sendOk(res, {
+      id,
+      name: body.name ?? entry.spec.name ?? id,
+      description: body.description_zh || body.description_en || content.description_zh || content.description_en || "",
+      source: "user",
+      scope: "user",
+    });
+  } catch (err) {
+    sendError(
+      res,
+      500,
+      "INTERNAL",
+      err instanceof Error ? err.message : "Failed to update skill",
+    );
+  }
+}
+
+/**
+ * `DELETE /api/skills/:id` — 删除 skill 目录。
+ *
+ * 只支持删除 user source 的 skill。
+ * 200 OK + { deleted: id }
+ */
+export async function deleteSkillHandler(
+  _req: IncomingMessage,
+  res: ServerResponse,
+  params: Record<string, string>,
+): Promise<void> {
+  const id = params.id ?? "";
+  if (!isValidSkillId(id)) {
+    sendError(res, 404, "SKILL_NOT_FOUND", `Skill "${id}" not found`);
+    return;
+  }
+
+  const entries = discoverSkillsSync();
+  const entry = entries.find((e) => e.spec.id === id);
+  if (!entry) {
+    sendError(res, 404, "SKILL_NOT_FOUND", `Skill "${id}" not found`);
+    return;
+  }
+  if (entry.source !== "user") {
+    sendError(res, 403, "FORBIDDEN", "Only user-created skills can be deleted");
+    return;
+  }
+
+  try {
+    const skillDir = path.dirname(entry.spec.skillFile);
+    fs.rmSync(skillDir, { recursive: true, force: true });
+
+    // 清除扫描缓存
+    _builtinSkillsDir = undefined;
+    _projectSkillsDir = undefined;
+
+    sendOk(res, { deleted: id });
+  } catch (err) {
+    sendError(
+      res,
+      500,
+      "INTERNAL",
+      err instanceof Error ? err.message : "Failed to delete skill",
+    );
+  }
+}
+
+// ============================================================
+// CRUD 工具
+// ============================================================
+
+function readJsonBody(req: IncomingMessage): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(Buffer.concat(chunks).toString("utf-8")));
+      } catch (err) {
+        reject(err);
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function buildFrontmatter(opts: {
+  id: string;
+  name: string;
+  description_zh: string;
+  description_en: string;
+}): string {
+  const lines: string[] = [];
+  lines.push(`id: ${opts.id}`);
+  lines.push(`name: ${opts.name}`);
+  if (opts.description_zh) lines.push(`description_zh: |\n  ${opts.description_zh}`);
+  if (opts.description_en) lines.push(`description_en: |\n  ${opts.description_en}`);
+  return lines.join("\n");
 }

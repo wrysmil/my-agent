@@ -1,12 +1,13 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useState, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Send, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { ChatStatus } from '@/features/chat/useChatStream';
 
-export function Composer({ onSend, onAbort, status }: {
+export function Composer({ onSend, onAbort, status, modelSelector }: {
   onSend: (text: string) => void;
   onAbort: () => void;
   status: ChatStatus;
+  modelSelector?: ReactNode;
 }) {
   const [text, setText] = useState('');
   const isStreaming = status === 'streaming' || status === 'submitting' || status === 'reconnecting';
@@ -47,6 +48,11 @@ export function Composer({ onSend, onAbort, status }: {
           </Button>
         )}
       </div>
+      {modelSelector && (
+        <div className="flex items-center gap-2 mt-2">
+          {modelSelector}
+        </div>
+      )}
     </form>
   );
 }
