@@ -85,10 +85,25 @@ export type StopReason =
 // 流式事件（Provider → Runner 的事件流）
 // ============================================================
 export type StreamEvent =
+  // ---- 文本流 ----
   | { type: "text_delta"; text: string }
+  // ---- 思考流（extended thinking） ----
+  | { type: "thinking_delta"; thinking: string }
+  // ---- 工具调用流（Provider 层） ----
   | { type: "tool_use_start"; id: string; name: string }
   | { type: "tool_use_delta"; id: string; input: string }
   | { type: "tool_use_end"; id: string }
+  // ---- 工具执行事件（Runner 层：AgentRunEvent 直接映射） ----
+  | { type: "tool_start"; name: string; id: string; input: unknown }
+  | { type: "tool_delta"; name?: string; id: string; inputDelta: string; inputBytes?: number }
+  | { type: "tool_progress"; name: string; id: string; phase?: string; message: string; data?: Record<string, unknown> }
+  | { type: "tool_end"; name: string; id: string; result: string; isError?: boolean; durationMs?: number }
+  // ---- 上下文管理 ----
+  | { type: "compaction"; tokensBefore: number; tokensAfter: number; summary?: string; durationMs?: number }
+  | { type: "context_status"; phase: string; message: string; data?: Record<string, unknown> }
+  | { type: "retry"; attempt: number; reason: string; waitMs?: number }
+  | { type: "provider_fallback"; reason: string; providerId: string }
+  // ---- 生命周期 ----
   | { type: "message_start"; usage?: Partial<Usage> }
   | {
       type: "message_end";
@@ -97,4 +112,6 @@ export type StreamEvent =
       content?: MessageContent[];
       model?: string;
     }
+  // ---- 终止 ----
+  | { type: "done"; result?: unknown }
   | { type: "error"; error: Error };

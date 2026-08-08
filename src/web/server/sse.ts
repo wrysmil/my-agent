@@ -109,11 +109,11 @@ export class SseHub {
     return true;
   }
 
-  /** 返回某 cid 上所有在飞流 id（in-flight 并发保护）。 */
+  /** 返回某 cid 上所有在飞流 id（in-flight 并发保护）。已关闭/abort 的流不返回。 */
   listForCid(cid: string): string[] {
     const out: string[] = [];
     for (const [id, entry] of this._map) {
-      if (entry.cid === cid) out.push(id);
+      if (entry.cid === cid && !entry.closed) out.push(id);
     }
     return out;
   }

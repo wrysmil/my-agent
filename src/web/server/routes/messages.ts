@@ -419,8 +419,10 @@ export async function adaptStreamEvent(
   openTextBlocks: Set<number>,
 ): Promise<void> {
   switch (ev.type) {
+    // ==========================================================
+    // 生命周期
+    // ==========================================================
     case "message_start": {
-      // 已在 postMessageStream 写过 message_start，此处不再重复（除非 usage 增量）
       if (ev.usage) {
         writeEvent(res, {
           id: sse.seq,
@@ -431,8 +433,62 @@ export async function adaptStreamEvent(
       return;
     }
 
+    case "message_end": {
+      // 关闭所有打开的 text block
+      for (const idx of openTextBlocks) {
+        writeEvent(res, {
+          id: sse.seq,
+          event: "content_block_stop",
+          data: { type: "content_block_stop", index: idx },
+        });
+      }
+      openTextBlocks.clear();
+
+      writeEvent(res, {
+        id: sse.seq,
+        event: "message_delta",
+        data: {
+          type: "message_delta",
+          stop_reason: ev.stopReason,
+          ...(ev.model !== undefined ? { model: ev.model } : {}),
+        },
+      });
+
+      writeEvent(res, {
+        id: sse.seq,
+        event: "message_stop",
+        data: { type: "message_stop", stop_reason: ev.stopReason },
+      });
+
+      if (ev.usage) {
+        writeEvent(res, {
+          id: sse.seq,
+          event: "usage",
+          data: { type: "usage", usage: normalizeUsage(ev.usage) },
+        });
+      }
+      return;
+    }
+
+    case "error": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "error",
+        data: {
+          ok: false,
+          error: {
+            code: "CHAT_RUNNER_ERROR",
+            message: ev.error instanceof Error ? ev.error.message : String(ev.error),
+          },
+        },
+      });
+      return;
+    }
+
+    // ==========================================================
+    // 文本 + 思考流
+    // ==========================================================
     case "text_delta": {
-      // 首个 text_delta：先开 content_block_start
       let idx: number;
       if (openTextBlocks.size === 0) {
         idx = allocBlockIndex();
@@ -461,6 +517,21 @@ export async function adaptStreamEvent(
       return;
     }
 
+    case "thinking_delta": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "thinking_delta",
+        data: {
+          type: "thinking_delta",
+          thinking: ev.thinking,
+        },
+      });
+      return;
+    }
+
+    // ==========================================================
+    // Provider 层工具调用（tool_use_start / tool_use_delta / tool_use_end）
+    // ==========================================================
     case "tool_use_start": {
       const idx = allocBlockIndex();
       writeEvent(res, {
@@ -478,7 +549,6 @@ export async function adaptStreamEvent(
     }
 
     case "tool_use_delta": {
-      // 单条事件：partial JSON 输入
       writeEvent(res, {
         id: sse.seq,
         event: "tool_use",
@@ -506,64 +576,150 @@ export async function adaptStreamEvent(
       return;
     }
 
-    case "message_end": {
-      // 关闭所有打开的 text block
-      for (const idx of openTextBlocks) {
-        writeEvent(res, {
-          id: sse.seq,
-          event: "content_block_stop",
-          data: { type: "content_block_stop", index: idx },
-        });
-      }
-      openTextBlocks.clear();
-
-      // message_delta（含 stop_reason）
+    // ==========================================================
+    // Runner 层工具执行（tool_delta / tool_start / tool_progress / tool_end）
+    // 这些来自 AgentRunEvent，Runner 直接 yield 给 SSE 适配器
+    // ==========================================================
+    case "tool_delta": {
+      // 工具参数流式增量 —— 发送 tool_use delta 事件
       writeEvent(res, {
         id: sse.seq,
-        event: "message_delta",
+        event: "tool_use",
         data: {
-          type: "message_delta",
-          stop_reason: ev.stopReason,
-          ...(ev.model !== undefined ? { model: ev.model } : {}),
-        },
-      });
-
-      // message_stop（终止）
-      writeEvent(res, {
-        id: sse.seq,
-        event: "message_stop",
-        data: { type: "message_stop", stop_reason: ev.stopReason },
-      });
-
-      // usage（如果有）
-      if (ev.usage) {
-        writeEvent(res, {
-          id: sse.seq,
-          event: "usage",
-          data: { type: "usage", usage: normalizeUsage(ev.usage) },
-        });
-      }
-      return;
-    }
-
-    case "error": {
-      writeEvent(res, {
-        id: sse.seq,
-        event: "error",
-        data: {
-          ok: false,
-          error: {
-            code: "CHAT_RUNNER_ERROR",
-            message: ev.error instanceof Error ? ev.error.message : String(ev.error),
-          },
+          type: "tool_use",
+          id: ev.id,
+          ...(ev.name ? { name: ev.name } : {}),
+          input: ev.inputDelta,
+          partial: true,
         },
       });
       return;
     }
 
-    // @ts-expect-error: done is a valid runtime StreamEvent variant not yet in the union
+    case "tool_start": {
+      // 工具开始执行（参数已完整）
+      const idx = allocBlockIndex();
+      writeEvent(res, {
+        id: sse.seq,
+        event: "tool_use",
+        data: {
+          type: "tool_use",
+          id: ev.id,
+          name: ev.name,
+          input: ev.input,
+          index: idx,
+        },
+      });
+      // 同时发一个 progress 事件告知前端工具执行开始
+      writeEvent(res, {
+        id: sse.seq,
+        event: "tool_progress",
+        data: {
+          type: "tool_progress",
+          tool_id: ev.id,
+          tool_name: ev.name,
+          phase: "start",
+          message: `执行工具: ${ev.name}`,
+        },
+      });
+      return;
+    }
+
+    case "tool_progress": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "tool_progress",
+        data: {
+          type: "tool_progress",
+          tool_id: ev.id,
+          tool_name: ev.name,
+          phase: ev.phase ?? "progress",
+          message: ev.message,
+          ...(ev.data ? { data: ev.data } : {}),
+        },
+      });
+      return;
+    }
+
+    case "tool_end": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "tool_result",
+        data: {
+          type: "tool_result",
+          tool_use_id: ev.id,
+          tool_name: ev.name,
+          content: ev.result,
+          is_error: ev.isError ?? false,
+          ...(ev.durationMs !== undefined ? { duration_ms: ev.durationMs } : {}),
+        },
+      });
+      return;
+    }
+
+    // ==========================================================
+    // 上下文管理 & 重试 & 回退
+    // ==========================================================
+    case "compaction": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "compaction",
+        data: {
+          type: "compaction",
+          tokens_before: ev.tokensBefore,
+          tokens_after: ev.tokensAfter,
+          ...(ev.summary ? { summary: ev.summary } : {}),
+          ...(ev.durationMs !== undefined ? { duration_ms: ev.durationMs } : {}),
+        },
+      });
+      return;
+    }
+
+    case "context_status": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "context_status",
+        data: {
+          type: "context_status",
+          phase: ev.phase,
+          message: ev.message,
+          ...(ev.data ? { data: ev.data } : {}),
+        },
+      });
+      return;
+    }
+
+    case "retry": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "retry",
+        data: {
+          type: "retry",
+          attempt: ev.attempt,
+          reason: ev.reason,
+          ...(ev.waitMs !== undefined ? { wait_ms: ev.waitMs } : {}),
+        },
+      });
+      return;
+    }
+
+    case "provider_fallback": {
+      writeEvent(res, {
+        id: sse.seq,
+        event: "provider_fallback",
+        data: {
+          type: "provider_fallback",
+          reason: ev.reason,
+          provider_id: ev.providerId,
+        },
+      });
+      return;
+    }
+
+    // ==========================================================
+    // 终止
+    // ==========================================================
     case "done": {
-      // runner 直接返回 done（如 auth error、provider not found）
       const doneEv = ev as unknown as {
         type: "done";
         result?: { meta?: { error?: { kind?: string; message: string } } };
@@ -594,8 +750,7 @@ export async function adaptStreamEvent(
     }
 
     default: {
-      // 未知事件：忽略（不写入 → 客户端不会 dispatch）
-      // 但保留一个 ping 兜底，确保连接还活着
+      // 未知事件：发 ping 兜底，保持连接活跃
       writeEvent(res, {
         id: sse.seq,
         event: "ping",

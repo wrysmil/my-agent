@@ -706,11 +706,11 @@ describe("13 event 类型覆盖", () => {
 });
 
 // ============================================================
-// ⑧ 并发 stream 限速：同 cid 第二次 stream → 409 STREAM_ALREADY_RUNNING
+// ⑧ 并发 stream 处理：同 cid 已有流 → 自动 abort 旧流，新流继续
 // ============================================================
 
-describe("并发 stream 限速", () => {
-  it("同 cid 上已有流 → 第二次 stream 返回 409 STREAM_ALREADY_RUNNING", async () => {
+describe("并发 stream 处理", () => {
+  it("同 cid 上已有流 → 自动 abort 旧流，新流正常返回 200", async () => {
     const session = sessionStore.create("gconv");
     installMessageRoutes({
       sessionStore,
@@ -718,11 +718,13 @@ describe("并发 stream 限速", () => {
       config: undefined,
       // @ts-expect-error — test 注入简化
       providers: undefined,
-      runnerFactory: makeMockRunnerFactory([]),
+      runnerFactory: makeMockRunnerFactory([
+        { type: "message_end", stopReason: "end_turn" },
+      ]),
     });
 
     // 手动注册一条在飞流
-    hub.register(session.sessionId);
+    const { streamId: oldStreamId } = hub.register(session.sessionId);
 
     const { req, res } = {
       req: makeMockReq({
@@ -736,11 +738,11 @@ describe("并发 stream 限速", () => {
     const route = findStreamRoute();
     await route!.handler(req, res, { id: session.sessionId });
 
-    expect(res.statusCode).toBe(409);
-    const body = JSON.parse(res.body);
-    expect(body.error.code).toBe("STREAM_ALREADY_RUNNING");
-    expect(body.error.details?.streamIds).toBeDefined();
-    expect(body.error.details.streamIds.length).toBe(1);
+    // 新行为：自动 abort 旧流，新流正常执行 → 200
+    expect(res.statusCode).toBe(200);
+    // 旧流已被 abort（不再出现在该 cid 的在飞流列表中）
+    const remainingLive = hub.listForCid(session.sessionId);
+    expect(remainingLive.includes(oldStreamId)).toBe(false);
   });
 
   it("第一流结束后第二流可成功（释放 in-flight 锁）", async () => {

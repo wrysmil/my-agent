@@ -4,14 +4,20 @@ export interface SseEvent {
   data: Record<string, unknown> | string;
 }
 
-/** 13 known Anthropic SSE event types */
+/** Known SSE event types — includes text, thinking, tool, context & lifecycle events */
 const KNOWN_EVENTS = new Set([
   'message_start',
   'content_block_start',
   'content_block_delta',
   'content_block_stop',
+  'thinking_delta',
   'tool_use',
   'tool_result',
+  'tool_progress',
+  'compaction',
+  'context_status',
+  'retry',
+  'provider_fallback',
   'message_delta',
   'message_stop',
   'error',

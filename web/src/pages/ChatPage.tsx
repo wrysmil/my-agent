@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useChatStream, type ChatOptions } from '@/features/chat/useChatStream';
+import { useChatStream } from '@/features/chat/useChatStream';
+import type { ChatOptions } from '@/features/chat/types';
 import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
 import { MessageList } from '@/components/chat/MessageList';
-import { StreamIndicator } from '@/components/chat/StreamIndicator';
 import { apiGet, apiPost } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { logger } from '@/lib/logger';
@@ -225,7 +225,9 @@ export function ChatPage() {
 
         {/* Status indicator */}
         <div className="flex-1" />
-        {status === 'streaming' && <StreamIndicator />}
+        {status === 'streaming' && (
+          <span className="text-xs text-text-muted/60">回复中...</span>
+        )}
         {status === 'error' && (
           <button
             onClick={retry}
@@ -245,7 +247,7 @@ export function ChatPage() {
         </div>
       )}
 
-      <MessageList messages={messages} />
+      <MessageList messages={messages} status={status} />
       <Composer
         onSend={handleSend}
         onAbort={abort}

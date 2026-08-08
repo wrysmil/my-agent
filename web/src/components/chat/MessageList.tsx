@@ -1,11 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { MessageBubble } from './MessageBubble';
-import type { ChatMessage } from '@/features/chat/useChatStream';
+import type { ChatMessage, ChatStatus } from '@/features/chat/types';
 import { MessageSquare } from 'lucide-react';
 
-export function MessageList({ messages }: { messages: ChatMessage[] }) {
+export function MessageList({
+  messages,
+  status,
+}: {
+  messages: ChatMessage[];
+  status: ChatStatus;
+}) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
+  // 自动滚动到底部
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -30,10 +38,25 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
     );
   }
 
+  const isStreaming = status === 'streaming' || status === 'submitting' || status === 'reconnecting';
+
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2" role="log" aria-live="polite">
-      {messages.map((m, i) => (
-        <MessageBubble key={i} role={m.role} text={m.text} />
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-1"
+      role="log"
+      aria-live="polite"
+    >
+      {messages.map((m) => (
+        <MessageBubble
+          key={m.id}
+          message={m}
+          isStreaming={
+            isStreaming &&
+            m.role === 'assistant' &&
+            m === messages[messages.length - 1]
+          }
+        />
       ))}
       <div ref={bottomRef} />
     </div>

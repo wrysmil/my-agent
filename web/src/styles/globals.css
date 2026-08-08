@@ -50,3 +50,47 @@
   --color-accent: #1c1158;
   --color-accent-fg: #b4a5ff;
 }
+
+/* ============================================================
+   Chat Bubble — Overflow 保护
+   ============================================================ */
+
+/* 防止气泡内容溢出容器 */
+.chat-bubble-content {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  min-width: 0;
+}
+
+/* Markdown 代码块横向滚动 */
+.prose pre {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre;
+}
+
+/* Markdown 内联代码换行 */
+.prose code {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* Markdown 表格横向滚动 */
+.prose table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: nowrap;
+}
+
+/* Markdown 图片自适应 */
+.prose img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Process Tracker 内部滚动 */
+details.stream-process-body {
+  max-height: 300px;
+  overflow-y: auto;
+}

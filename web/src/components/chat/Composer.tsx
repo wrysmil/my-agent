@@ -1,7 +1,7 @@
 import { useState, useRef, type FormEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { Send, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { ChatStatus } from '@/features/chat/useChatStream';
+import type { ChatStatus } from '@/features/chat/types';
 
 export function Composer({ onSend, onAbort, status, modelSelector }: {
   onSend: (text: string) => void;
