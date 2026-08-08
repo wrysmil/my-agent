@@ -253,15 +253,20 @@ async function postMessageStream(
         signal: controller.signal,
       };
 
+      // 是否为客户端重连（带了 Last-Event-ID）
+      const isReconnect = lastEventId >= 0;
+
       for await (const ev of runner.runStream(params)) {
         if (sse.clientGone) break;
         // Last-Event-ID 去重：如果客户端声明已收到 ≥ seq，跳过
-        if (sse.seq <= lastEventId) continue;
+        if (isReconnect && sse.seq <= lastEventId) continue;
 
-        // 候选 seq：先递增；LRU 检查候选 seq（避免与上一轮写入的 seq 冲突）
         sse.seq = sse.seq + 1;
-        if (lastEventLru.has(sse.seq)) continue;
-        lastEventLru.record(sse.seq);
+        // LRU 去重仅在重连场景生效（避免不同 stream 的 seq 在全局 LRU 中碰撞导致事件丢失）
+        if (isReconnect) {
+          if (lastEventLru.has(sse.seq)) continue;
+          lastEventLru.record(sse.seq);
+        }
 
         await adaptStreamEvent(res, ev, sse, () => nextBlockIndex++, openTextBlocks);
 
