@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 @font-face {
   font-family: 'Inter';
   src: url('/fonts/Inter-Regular.woff2') format('woff2');
@@ -15,8 +17,6 @@
   src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
   font-display: swap;
 }
-
-@import "tailwindcss";
 
 @theme {
   --color-bg: #f7f8fa;

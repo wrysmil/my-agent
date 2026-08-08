@@ -2,18 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { routes } from '../../src/routes';
 
 describe('routes', () => {
-  it('declares 9 entries', () => {
-    expect(routes.length).toBe(9);
+  it('declares 1 layout route wrapping 9 children', () => {
+    expect(routes.length).toBe(1);
+    expect(routes[0].children?.length).toBe(9);
   });
-  it('declares path "/" → DashboardPage', () => {
-    const r = routes.find(r => r.path === '/')!;
-    expect(r.handle?.label).toBe('Dashboard');
+  it('declares index route → DashboardPage', () => {
+    const index = routes[0].children?.find(c => c.index === true);
+    expect(index?.handle?.label).toBe('Dashboard');
   });
-  it('includes catch-all * route', () => {
-    expect(routes.some(r => r.path === '*')).toBe(true);
+  it('includes catch-all * route as child', () => {
+    expect(routes[0].children?.some(c => c.path === '*')).toBe(true);
   });
-  it('includes /chat and /chat/:sessionId', () => {
-    expect(routes.some(r => r.path === '/chat')).toBe(true);
-    expect(routes.some(r => r.path === '/chat/:sessionId')).toBe(true);
+  it('includes chat and chat/:sessionId as children', () => {
+    expect(routes[0].children?.some(c => c.path === 'chat')).toBe(true);
+    expect(routes[0].children?.some(c => c.path === 'chat/:sessionId')).toBe(true);
   });
 });

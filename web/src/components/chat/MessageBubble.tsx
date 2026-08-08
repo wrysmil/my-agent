@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { Markdown } from './Markdown';
+
+const Markdown = lazy(() => import('./Markdown'));
+
+function MarkdownFallback() {
+  return <div className="animate-pulse h-4 w-3/4 bg-surface-hover rounded" />;
+}
 
 export function MessageBubble({ role, text }: { role: 'user' | 'assistant'; text: string }) {
   const [copied, setCopied] = useState(false);
@@ -18,7 +23,13 @@ export function MessageBubble({ role, text }: { role: 'user' | 'assistant'; text
           ? 'bg-surface-hover text-text'
           : 'bg-surface border border-border'
       }`}>
-        {role === 'assistant' ? <Markdown text={text} /> : <div className="whitespace-pre-wrap">{text}</div>}
+        {role === 'assistant' ? (
+          <Suspense fallback={<MarkdownFallback />}>
+            <Markdown text={text} />
+          </Suspense>
+        ) : (
+          <div className="whitespace-pre-wrap">{text}</div>
+        )}
       </div>
       <button
         onClick={onCopy}
