@@ -35,3 +35,18 @@
   --radius-md: 10px;
   --radius-lg: 14px;
 }
+
+[data-theme="dark"] {
+  --color-bg: #0d1117;
+  --color-surface: #161b22;
+  --color-surface-hover: #21262d;
+  --color-border: #30363d;
+  --color-text: #e6edf3;
+  --color-text-muted: #8b949e;
+  --color-primary: #7c6ff7;
+  --color-primary-fg: #ffffff;
+  --color-danger: #f85149;
+  --color-danger-bg: #490202;
+  --color-accent: #1c1158;
+  --color-accent-fg: #b4a5ff;
+}
