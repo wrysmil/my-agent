@@ -22,9 +22,12 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 // ============================================================
 
 /**
- * 最小白名单（done criteria + spec § 4.2）。
+ * 白名单（done criteria + spec § 4.2 + React 构建产物扩展）。
  *
- * - `.html` / `.css` / `.js` / `.svg` / `.ico` / `.json`：UI 必需
+ * - `.html` / `.css` / `.js` / `.mjs` / `.svg` / `.ico` / `.json`：UI 必需
+ * - `.woff2` / `.png`：字体与位图资源
+ * - `.webmanifest`：PWA manifest
+ * - `.map`：source map（调试用）
  *
  * 未命中 → `application/octet-stream`（强制下载）；
  * 同时被路径穿越检查通过后**仍**可能被调用，故**双重保险**。
@@ -33,9 +36,14 @@ export const ALLOWED_EXTS: ReadonlySet<string> = new Set([
   ".html",
   ".css",
   ".js",
+  ".mjs",
   ".svg",
   ".ico",
   ".json",
+  ".woff2",
+  ".png",
+  ".webmanifest",
+  ".map",
 ]);
 
 /** mime-type 映射（缺失时回退 `application/octet-stream`）。 */
@@ -43,9 +51,13 @@ const MIME: Record<string, string> = {
   ".html": "text/html",
   ".css": "text/css",
   ".js": "application/javascript",
+  ".mjs": "application/javascript",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".json": "application/json",
+  ".woff2": "font/woff2",
+  ".png": "image/png",
+  ".webmanifest": "application/manifest+json",
 };
 
 /** 需要附 `charset=utf-8` 的文本类型；其它直接用 mime（无 charset）。 */
@@ -53,8 +65,10 @@ const TEXT_EXTS: ReadonlySet<string> = new Set([
   ".html",
   ".css",
   ".js",
+  ".mjs",
   ".svg",
   ".json",
+  ".webmanifest",
 ]);
 
 // ============================================================
@@ -103,7 +117,8 @@ export function resolveStaticPath(
  * 不再重复设置 CSP / nosniff / DENY 等头，但会按需补：
  * - `Content-Type: <mime>; charset=utf-8`（文本类型）
  * - `Content-Type: <mime>`（二进制）
- * - `Cache-Control: no-cache`（开发期避免缓存阻塞热重载）
+ * - `Cache-Control: no-cache`（无 hash 文件，开发期热重载）
+ * - `Cache-Control: public, max-age=31536000, immutable`（含 hash 文件，长期缓存）
  * - `Permissions-Policy`（仅 .html 响应；与 done criteria #4 对齐）
  */
 export function tryServeStatic(
@@ -144,7 +159,18 @@ export function tryServeStatic(
     "Content-Type",
     TEXT_EXTS.has(ext) ? `${mime}; charset=utf-8` : mime,
   );
-  res.setHeader("Cache-Control", "no-cache");
+
+  // Cache-Control: 按文件名是否含 hash 二分
+  // - 含 hash（如 index-a1b2c3d4.js）→ 长期缓存（内容不变）
+  // - 不含 hash（如 index.html）→ no-cache（开发期热重载）
+  const stem = path.basename(resolved, ext);
+  const HASH_RE = /[.-][a-f0-9]{8,}$/;
+  if (HASH_RE.test(stem)) {
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+  } else {
+    res.setHeader("Cache-Control", "no-cache");
+  }
+
   if (ext === ".html") {
     res.setHeader(
       "Permissions-Policy",
