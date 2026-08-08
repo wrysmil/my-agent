@@ -159,7 +159,7 @@ export function ChatPage() {
         </button>
         {showModelMenu && (
           <div
-            className="absolute bottom-full left-0 mb-1 z-50 rounded-md border border-border bg-surface shadow-lg py-1 min-w-[180px]"
+            className="absolute top-full left-0 mt-1 z-50 rounded-md border border-border bg-surface shadow-lg py-1 min-w-[180px] max-h-48 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {availableModels.length === 0 ? (
@@ -196,7 +196,7 @@ export function ChatPage() {
         </button>
         {showEffortMenu && (
           <div
-            className="absolute bottom-full left-0 mb-1 z-50 rounded-md border border-border bg-surface shadow-lg py-1 min-w-[140px]"
+            className="absolute top-full left-0 mt-1 z-50 rounded-md border border-border bg-surface shadow-lg py-1 min-w-[140px] max-h-48 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {EFFORT_LEVELS.map((level) => (
@@ -216,7 +216,7 @@ export function ChatPage() {
   );
 
   return (
-    <div className="flex flex-col h-full" data-testid="page-chat">
+    <div className="flex flex-col h-full min-h-0" data-testid="page-chat">
       {/* Header — simplified: just title + status */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-surface">
         <h2 className="text-sm font-medium text-text-muted shrink-0">

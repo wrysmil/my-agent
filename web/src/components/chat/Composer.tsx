@@ -24,20 +24,26 @@ export function Composer({ onSend, onAbort, status, modelSelector }: {
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    // Enter 发送，Shift+Enter 换行
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="border-t border-border p-4 bg-surface">
+    <form onSubmit={handleSubmit} className="border-t border-border px-4 py-3 bg-surface shrink-0">
+      {modelSelector && (
+        <div className="flex items-center gap-2 mb-2">
+          {modelSelector}
+        </div>
+      )}
       <div className="flex gap-2 items-end">
         <textarea
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="输入消息（⌘+Enter 发送）"
+          placeholder="输入消息（Enter 发送，Shift+Enter 换行）"
           rows={2}
           className="flex-1 resize-none rounded-md border border-border bg-bg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           disabled={isStreaming}
@@ -52,11 +58,6 @@ export function Composer({ onSend, onAbort, status, modelSelector }: {
           </Button>
         )}
       </div>
-      {modelSelector && (
-        <div className="flex items-center gap-2 mt-2">
-          {modelSelector}
-        </div>
-      )}
     </form>
   );
 }
