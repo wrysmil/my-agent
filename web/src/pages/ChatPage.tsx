@@ -8,6 +8,7 @@ import { MessageList } from '@/components/chat/MessageList';
 import { StreamIndicator } from '@/components/chat/StreamIndicator';
 import { apiGet, apiPost } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
+import { logger } from '@/lib/logger';
 import { ChevronDown, Brain, Cpu, RefreshCw } from 'lucide-react';
 
 interface ModelInfo {
@@ -68,6 +69,7 @@ export function ChatPage() {
     apiPost<{ session: { id: string } }>('/api/sessions', { kind: 'gconv' })
       .then((data) => {
         if (!cancelled) {
+          logger.debug(`📝 新建会话: ${data.session.id}`);
           // 刷新侧边栏 session 列表
           queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
           // 记录活跃 session 到 localStorage，便于恢复

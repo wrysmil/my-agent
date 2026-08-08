@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { parseSseStream } from '@/lib/sse';
 import { apiGet } from '@/lib/api';
+import { logger } from '@/lib/logger';
 
 export type ChatStatus =
   | 'idle'
@@ -108,6 +109,7 @@ export function useChatStream(sessionId: string) {
       optionsRef.current = options ?? {};
       setStatusSafe('submitting');
       setMessages((m) => [...m, { role: 'user', text }]);
+      logger.debug(`📤 发送消息 → ${sessionId}`, { text: text.slice(0, 80) });
 
       if (submittingTimerRef.current) clearTimeout(submittingTimerRef.current);
       submittingTimerRef.current = setTimeout(() => {
@@ -157,6 +159,7 @@ export function useChatStream(sessionId: string) {
               const msg = (d?.message as Record<string, unknown>) || d;
               if (msg?.stream_id)
                 streamIdRef.current = msg.stream_id as string;
+              logger.debug("📥 流式响应开始", { streamId: streamIdRef.current });
             } else if (evt.event === 'content_block_delta') {
               // 后端发送 content_block_delta：data.delta 是 {type:"text_delta", text:"..."}
               const d = evt.data as Record<string, unknown>;
@@ -174,6 +177,7 @@ export function useChatStream(sessionId: string) {
                 return [...m, { role: 'assistant', text: delta }];
               });
             } else if (evt.event === 'done') {
+              logger.debug("📥 流式响应完成");
               setStatusSafe('done');
               return;
             } else if (evt.event === 'error') {
@@ -181,6 +185,7 @@ export function useChatStream(sessionId: string) {
               const errInfo = errData?.error as Record<string, unknown> | undefined;
               const errMsg =
                 (errInfo?.message as string) || '未知错误';
+              logger.error(`❌ 流式响应错误: ${errMsg}`);
               setMessages((m) => [
                 ...m,
                 { role: 'assistant', text: `❌ 错误：${errMsg}` },
@@ -206,8 +211,10 @@ export function useChatStream(sessionId: string) {
         setStatusSafe('done');
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') {
+          logger.debug("⏹️ 请求已取消");
           setStatusSafe('aborted');
         } else {
+          logger.error("❌ 流式请求失败", { error: err instanceof Error ? err.message : String(err) });
           setStatusSafe('error');
         }
       }

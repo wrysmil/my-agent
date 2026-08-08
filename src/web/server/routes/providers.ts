@@ -324,7 +324,7 @@ async function setActiveModel(ctx: HandlerCtx): Promise<void> {
   ctx.store.upsertProvider(updated);
   await ctx.store.save();
   ctx.log.info(
-    `[providers] active ${active.id} defaultModel → ${body.defaultModel}`,
+    `供应商 ${active.id} 默认模型已切换 → ${body.defaultModel}`,
   );
   sendJson(ctx.res, 200, { ok: true, data: stripEnvKey(updated) });
 }
@@ -366,7 +366,7 @@ async function toggleProviderEnabled(ctx: HandlerCtx): Promise<void> {
   }
 
   await ctx.store.save();
-  ctx.log.info(`[providers] toggle ${id} → enabled=${nextEnabled}`);
+  ctx.log.info(`供应商 ${id} ${nextEnabled ? "已启用" : "已禁用"}`);
   sendJson(ctx.res, 200, { ok: true, data: stripEnvKey(updated) });
 }
 
@@ -410,7 +410,7 @@ async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
     : body;
 
   await upsertAndSave(ctx.store, merged);
-  ctx.log.info(`[providers] ${existed ? "updated" : "created"} ${id}`);
+  ctx.log.info(`供应商 ${id} ${existed ? "已更新" : "已创建"}`);
   sendJson(ctx.res, 200, { ok: true, data: stripEnvKey(merged) });
 }
 
@@ -433,7 +433,7 @@ async function deleteProvider(ctx: HandlerCtx): Promise<void> {
   }
   ctx.store.removeProvider(id);
   await ctx.store.save();
-  ctx.log.info(`[providers] deleted ${id}`);
+  ctx.log.info(`供应商已删除: ${id}`);
   sendJson(ctx.res, 200, { ok: true, data: { deleted: id } });
 }
 
@@ -471,7 +471,7 @@ async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
   const apiKey = entry.apiKey || process.env.DEEPSEEK_API_KEY || "";
   const provider = new DeepSeekProvider({ apiKey, baseUrl: entry.baseUrl });
 
-  ctx.log.info(`[providers] testing connectivity for ${id}...`);
+  ctx.log.info(`正在测试供应商连通性: ${id}...`);
   const reachable = await provider.validateAuth();
 
   if (!reachable) {
@@ -485,7 +485,7 @@ async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
     return;
   }
 
-  ctx.log.info(`[providers] ${id} connectivity test passed`);
+  ctx.log.info(`供应商 ${id} 连通性测试通过 ✅`);
   sendJson(ctx.res, 200, {
     ok: true,
     data: { tested: id, reachable: true },

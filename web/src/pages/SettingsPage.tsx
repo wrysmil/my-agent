@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@/features/ui/useUiStore';
 import { useTranslation } from '@/i18n/useTranslation';
 import { apiGet, apiPut } from '@/lib/api';
+import { logger } from '@/lib/logger';
 import { Sun, Moon, Languages, Monitor, Cpu, Info, Zap, Brain } from 'lucide-react';
 
 function SettingGroup({ title, icon: Icon, children }: {
@@ -127,7 +128,10 @@ export function SettingsPage() {
   // Update config mutation
   const updateConfig = useMutation({
     mutationFn: (partial: Record<string, unknown>) => apiPut('/api/config', partial),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['config'] }),
+    onSuccess: (_data, variables) => {
+      logger.debug("⚙️ 配置已更新", variables);
+      queryClient.invalidateQueries({ queryKey: ['config'] });
+    },
   });
 
   return (
