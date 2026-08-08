@@ -10,6 +10,7 @@
     "providers": "提供商",
     "skills": "技能",
     "agents": "子 Agent",
+    "tools": "工具",
     "settings": "设置"
   },
   "chat": {
@@ -48,6 +49,10 @@
   "agents": {
     "title": "子 Agent",
     "empty": "暂无可用 Agent"
+  },
+  "tools": {
+    "title": "内置工具",
+    "empty": "暂无可用工具"
   },
   "settings": {
     "title": "设置",

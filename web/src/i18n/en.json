@@ -10,6 +10,7 @@
     "providers": "Providers",
     "skills": "Skills",
     "agents": "Sub Agents",
+    "tools": "Tools",
     "settings": "Settings"
   },
   "chat": {
@@ -48,6 +49,10 @@
   "agents": {
     "title": "Sub Agents",
     "empty": "No agents available"
+  },
+  "tools": {
+    "title": "Built-in Tools",
+    "empty": "No tools available"
   },
   "settings": {
     "title": "Settings",

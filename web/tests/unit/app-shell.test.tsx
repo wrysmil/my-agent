@@ -19,6 +19,7 @@ vi.mock('lucide-react', () => ({
   Moon: () => <span data-testid="icon-moon">moon</span>,
   Languages: () => <span data-testid="icon-lang">lang</span>,
   Command: () => <span data-testid="icon-cmd">cmd</span>,
+  Wrench: () => <span data-testid="icon-wrench">wrench</span>,
 }));
 
 // Mock i18n module
@@ -31,6 +32,7 @@ vi.mock('../../src/lib/i18n', () => ({
       'nav.chat': 'Chat',
       'nav.providers': 'Providers',
       'nav.skills': 'Skills',
+      'nav.tools': 'Tools',
       'nav.agents': 'Agents',
       'nav.settings': 'Settings',
       'settings.title': 'Settings',
@@ -97,6 +99,7 @@ describe('Sidebar i18n', () => {
         'nav.chat': '对话',
         'nav.providers': '提供商',
         'nav.skills': '技能',
+        'nav.tools': '工具',
         'nav.agents': '子 Agent',
         'nav.settings': '设置',
       };
@@ -117,6 +120,7 @@ describe('Sidebar i18n', () => {
         'nav.chat': 'Chat',
         'nav.providers': 'Providers',
         'nav.skills': 'Skills',
+        'nav.tools': 'Tools',
         'nav.agents': 'Sub Agents',
         'nav.settings': 'Settings',
       };

@@ -8,6 +8,7 @@ import {
   Plus,
   LayoutDashboard,
   Loader2,
+  Wrench,
 } from 'lucide-react';
 import { useSessions, type SessionItem } from '@/features/sessions/useSessions';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -25,6 +26,7 @@ export function Sidebar() {
     { to: '/chat', label: t('nav.chat'), icon: MessageSquare },
     { to: '/providers', label: t('nav.providers'), icon: Plug },
     { to: '/skills', label: t('nav.skills'), icon: SlidersHorizontal },
+    { to: '/tools', label: t('nav.tools'), icon: Wrench },
     { to: '/agents', label: t('nav.agents'), icon: Bot },
     { to: '/settings', label: t('nav.settings'), icon: Settings2 },
   ];
