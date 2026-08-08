@@ -237,8 +237,7 @@ async function listSessions(
     }
     try {
       const messages = session.getAllMessages();
-      const lastMsg = messages[messages.length - 1];
-      const lastTs = lastMsg?.turnId ? lastMsg.turnId : 0;
+      const lastTs = session.lastModified;
       return {
         id,
         name,

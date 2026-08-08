@@ -191,17 +191,25 @@ export class PersistentSession extends Session {
     const dir = sessionDir ?? defaultSessionDir();
     if (!fs.existsSync(dir)) return [];
 
-    const ids = new Set<string>();
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    const entries: Array<{ id: string; mtime: number }> = [];
+    const dirents = fs.readdirSync(dir, { withFileTypes: true });
 
-    for (const entry of entries) {
+    for (const entry of dirents) {
       if (!entry.isFile()) continue;
       // 兼容存量 session- 前缀与 gconv/cli/anon/extract kind 前缀
       const match = entry.name.match(/^((?:session|gconv|cli|anon|extract)-[a-z0-9-]+)\.jsonl$/);
-      if (match) ids.add(match[1]);
+      if (!match) continue;
+      try {
+        const stat = fs.statSync(path.join(dir, entry.name));
+        entries.push({ id: match[1], mtime: stat.mtimeMs });
+      } catch {
+        entries.push({ id: match[1], mtime: 0 });
+      }
     }
 
-    return Array.from(ids).sort();
+    // 按修改时间倒序：最新会话在最前
+    entries.sort((a, b) => b.mtime - a.mtime);
+    return entries.map((e) => e.id);
   }
 
   // ============================================================
@@ -592,8 +600,21 @@ export class PersistentSession extends Session {
     removeFile(this.contextFile);
   }
 
+  /** 会话文件的最后修改时间（Unix 毫秒），用于侧边栏排序。 */
+  get lastModified(): number {
+    try {
+      return fs.statSync(this.sessionFile).mtimeMs;
+    } catch {
+      return 0;
+    }
+  }
+
   /**
-   * 获取会话名称（基于首条用户消息的摘要）。
+   * 获取会话展示名称（基于首条用户消息摘要）。
+   *
+   * 设计：侧边栏宽度 224px（w-56），去掉 padding 约 200px，
+   * 中文约 14px/字 ≈ 14 字；取 20 字在视觉上刚好截断。
+   * 空会话回退为「新会话」而非原始 ID，更友好。
    */
   getDisplayName(): string {
     for (const msg of this.messages) {
@@ -601,12 +622,12 @@ export class PersistentSession extends Session {
         for (const block of msg.content) {
           if (block.type === "text") {
             const text = block.text.trim();
-            return text.length > 40 ? text.slice(0, 40) + "..." : text;
+            return text.length > 20 ? text.slice(0, 20) + "..." : text;
           }
         }
       }
     }
-    return this.sessionId;
+    return "新会话";
   }
 
   // ============================================================
