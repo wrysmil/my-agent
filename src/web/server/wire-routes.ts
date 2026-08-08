@@ -21,6 +21,7 @@ import type { RunnerFactory } from "./routes/messages.js";
 import { installConfigRoutes } from "./routes/config.js";
 import { listAgentsHandler, getAgentHandler } from "./routes/agents.js";
 import { listSkillsHandler, getSkillHandler, createSkillHandler, updateSkillHandler, deleteSkillHandler } from "./routes/skills.js";
+import { listToolsHandler, getToolHandler } from "./routes/tools.js";
 
 // ── 依赖类型 ──
 import type { ProvidersStore } from "../../storage/providers-store.js";
@@ -158,6 +159,16 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
       deleteSkillHandler(req, res, params),
   );
   if (logger) logger.debug("技能管理 API 路由已就绪 (5 条)");
+
+  // ── Tools 域 (2 条，无额外依赖) ──
+  replaceHandler("GET", "/api/tools", listToolsHandler);
+  replaceHandler(
+    "GET",
+    /^\/api\/tools\/([^/]+)$/,
+    (req: IncomingMessage, res: ServerResponse, params: Record<string, string>) =>
+      getToolHandler(req, res, params),
+  );
+  if (logger) logger.debug("工具管理 API 路由已就绪 (2 条)");
 
   // ── Config 域 (2 条) ──
   if (config && configPath) {

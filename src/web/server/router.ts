@@ -146,6 +146,10 @@ export const ROUTES: Route[] = [
   ["POST", "/api/skills", routeNotFoundPlaceholder, []],
   ["PUT", /^\/api\/skills\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
   ["DELETE", /^\/api\/skills\/([^/]+)$/, routeNotFoundPlaceholder, ["id"]],
+
+  // ---- Tools 域（tools-management-page） ----
+  ["GET", "/api/tools", routeNotFoundPlaceholder, []],
+  ["GET", /^\/api\/tools\/([^/]+)$/, routeNotFoundPlaceholder, ["name"]],
 ];
 
 // ============================================================
