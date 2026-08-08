@@ -25,6 +25,10 @@ import {
   createServer,
   installShutdownHandlers,
 } from "../src/web/server/index.js";
+import { ProvidersStore } from "../src/storage/providers-store.js";
+import { SessionStore } from "../src/storage/session-store.js";
+import { ProviderRegistry } from "../src/providers/registry.js";
+import { loadConfig } from "../src/config/loader.js";
 
 const logger = createLogger("web", "info");
 
@@ -35,16 +39,19 @@ async function main(): Promise<void> {
   const webRoot =
     process.env.MY_AGENT_WEB_ROOT ?? path.join(process.cwd(), "web");
 
-  // ---- Providers / Session store（可选；本期允许 undefined）----
-  // 真实加载逻辑将由后续 WU 注入；此处仅留接口形状
-  const providersStore = await loadProvidersStore();
-  const sessionStore = await loadSessionStore();
+  // ---- Providers / Session store + Config ----
+  const config = await loadConfig();
+  const providersStore = await ProvidersStore.load();
+  const sessionStore = new SessionStore();
+  const providers = new ProviderRegistry(config);
 
   // ---- 启动 HTTP server ----
   const server = await createServer({
     logger,
     providersStore,
     sessionStore,
+    config,
+    providers,
     port,
     host,
     webRoot,
@@ -71,25 +78,6 @@ async function main(): Promise<void> {
       logger.info("（自动打开浏览器暂未启用，请手动访问上述地址）");
     }
   }
-}
-
-// ============================================================
-// 辅助：可选加载 store（本期不接实现，留接口形状）
-// ============================================================
-
-async function loadProvidersStore(): Promise<undefined> {
-  // TODO(WU-02a): await ProvidersStore.load(providersFile())
-  // 本期 WU-01 不消费 providersStore，留 undefined 不影响骨架功能。
-  return undefined;
-}
-
-async function loadSessionStore(): Promise<
-  { closeAll(): void } | undefined
-> {
-  // TODO(WU-02b): new SessionStore({...})
-  // 本期 WU-01 不消费 sessionStore；installShutdownHandlers 对
-  // undefined sessionStore 容错（不会调用 closeAll）。
-  return undefined;
 }
 
 function parsePort(raw: string): number {

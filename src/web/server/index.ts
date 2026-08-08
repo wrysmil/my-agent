@@ -27,11 +27,16 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Logger } from "../../shared/logger.js";
 import type { ProvidersStore } from "../../storage/providers-store.js";
 import type { SessionStore } from "../../storage/session-store.js";
+import type { CoreAgentConfig } from "../../config/schema.js";
+import type { ProviderRegistry } from "../../providers/registry.js";
+import type { AgentRunner } from "../../agent/runner.js";
+import type { RunnerFactory } from "./routes/messages.js";
 
 import { applySecurityHeaders } from "./csp.js";
 import { matchRoute, ROUTES } from "./router.js";
 import { tryServeStatic } from "./static.js";
 import { handleError, ApiErrorCode, ApiError } from "./errors.js";
+import { wireApiRoutes } from "./wire-routes.js";
 
 // ============================================================
 // 公开类型
@@ -49,6 +54,10 @@ export type CreateServerDeps = {
   logger?: Logger;
   providersStore?: ProvidersStore;
   sessionStore?: SessionStore;
+  config?: CoreAgentConfig;
+  providers?: ProviderRegistry;
+  agentRunner?: AgentRunner;
+  runnerFactory?: RunnerFactory;
 
   /** 监听端口（默认 4321；环境变量由 bin 入口注入） */
   port?: number;
@@ -130,6 +139,17 @@ export async function createServer(
   const webRoot = path.resolve(
     deps.webRoot ?? path.join(process.cwd(), "web"),
   );
+
+  // ── 接线：把 5 个 handler 模块接入 ROUTES 占位表 ──
+  wireApiRoutes({
+    providersStore: deps.providersStore,
+    sessionStore: deps.sessionStore,
+    config: deps.config,
+    providers: deps.providers,
+    agentRunner: deps.agentRunner,
+    runnerFactory: deps.runnerFactory,
+    logger: log,
+  });
 
   const server = http.createServer((req, res) => {
     const requestId = randomUUID();
