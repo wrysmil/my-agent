@@ -7,18 +7,21 @@ import {
   Settings2,
   SlidersHorizontal,
 } from 'lucide-react';
-
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: MessageSquare },
-  { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/sessions', label: 'Sessions', icon: History },
-  { to: '/providers', label: 'Providers', icon: Plug },
-  { to: '/skills', label: 'Skills', icon: SlidersHorizontal },
-  { to: '/agents', label: 'Agents', icon: Bot },
-  { to: '/settings', label: 'Settings', icon: Settings2 },
-];
+import { useTranslation } from '@/i18n/useTranslation';
 
 export function Sidebar() {
+  const { t } = useTranslation();
+
+  const navItems = [
+    { to: '/', label: t('nav.dashboard'), icon: MessageSquare },
+    { to: '/chat', label: t('nav.chat'), icon: MessageSquare },
+    { to: '/sessions', label: t('nav.sessions'), icon: History },
+    { to: '/providers', label: t('nav.providers'), icon: Plug },
+    { to: '/skills', label: t('nav.skills'), icon: SlidersHorizontal },
+    { to: '/agents', label: t('nav.agents'), icon: Bot },
+    { to: '/settings', label: t('nav.settings'), icon: Settings2 },
+  ];
+
   return (
     <aside
       data-testid="sidebar"

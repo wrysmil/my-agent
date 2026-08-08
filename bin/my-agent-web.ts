@@ -1,3 +1,4 @@
+import "dotenv/config";
 #!/usr/bin/env tsx
 /**
  * my-agent Web 前端启动入口（WU-01 / B1）。
@@ -12,6 +13,7 @@
  * - `MY_AGENT_WEB_PORT`  监听端口，默认 4321
  * - `MY_AGENT_WEB_HOST`  监听主机，默认 127.0.0.1
  * - `MY_AGENT_WEB_ROOT`  静态资源根目录，默认 `<cwd>/web`
+ * - `MY_AGENT_LOG_LEVEL` 日志级别（debug|info|warn|error），默认 "info"
  * - `MY_AGENT_CONFIG`    配置文件路径（本期不消费，预留给 B2+）
  * - `MY_AGENT_HOME`      数据根目录（透传给 providers/session store）
  * - `CI=1`               跳过自动打开浏览器
@@ -20,7 +22,7 @@
 import * as path from "node:path";
 import * as os from "node:os";
 
-import { createLogger } from "../src/shared/logger.js";
+import { createLogger, type LogLevel } from "../src/shared/logger.js";
 import {
   createServer,
   installShutdownHandlers,
@@ -30,7 +32,13 @@ import { SessionStore } from "../src/storage/session-store.js";
 import { ProviderRegistry } from "../src/providers/registry.js";
 import { loadConfig } from "../src/config/loader.js";
 
-const logger = createLogger("web", "info");
+const LOG_LEVELS: LogLevel[] = ["debug", "info", "warn", "error"];
+const rawLevel = process.env.MY_AGENT_LOG_LEVEL ?? "info";
+const logLevel: LogLevel = LOG_LEVELS.includes(rawLevel as LogLevel)
+  ? (rawLevel as LogLevel)
+  : "info";
+
+const logger = createLogger("web", logLevel);
 
 async function main(): Promise<void> {
   // ---- 端口 / 主机 / 静态资源根 ----

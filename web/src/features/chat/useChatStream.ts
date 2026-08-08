@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { parseSseStream } from '@/lib/sse';
 
 export type ChatStatus =
@@ -22,6 +22,7 @@ const BACKOFF_MS = [1000, 2000, 4000, 8000, 16000];
 export function useChatStream(sessionId: string) {
   const [status, setStatus] = useState<ChatStatus>('idle');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const controllerRef = useRef<AbortController | null>(null);
   const streamIdRef = useRef<string | null>(null);
   const submittingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,6 +32,49 @@ export function useChatStream(sessionId: string) {
     statusRef.current = s;
     setStatus(s);
   }, []);
+
+  // Load history when sessionId changes
+  // Source: .ai-runtime-artifacts/specs/2026-08-08-six-issues-fix-spec.md §3.3.1
+  useEffect(() => {
+    if (!sessionId) return;
+    let cancelled = false;
+
+    setHistoryLoaded(false);
+    setMessages([]);
+
+    fetch(`/api/sessions/${sessionId}/history`, { credentials: 'same-origin' })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data: { messages?: Array<{ role: string; text?: string; content?: string; contentBlocks?: Array<{ type: string; text?: string }> }> }) => {
+        if (cancelled || !data?.messages) {
+          if (!cancelled) setHistoryLoaded(true);
+          return;
+        }
+        const loaded: ChatMessage[] = [];
+        for (const m of data.messages) {
+          const role = m.role === 'user' ? 'user' : 'assistant';
+          let text = m.text || m.content || '';
+          if (!text && m.contentBlocks) {
+            text = m.contentBlocks
+              .filter((b) => b.type === 'text')
+              .map((b) => b.text || '')
+              .join('\n');
+          }
+          if (text) loaded.push({ role: role as 'user' | 'assistant', text });
+        }
+        if (!cancelled) {
+          setMessages(loaded);
+          setHistoryLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setHistoryLoaded(true);
+      });
+
+    return () => { cancelled = true; };
+  }, [sessionId]);
 
   const send = useCallback(
     async (text: string) => {
@@ -96,6 +140,14 @@ export function useChatStream(sessionId: string) {
                 setStatusSafe('done');
                 return;
               } else if (evt.event === 'error') {
+                const errData = evt.data as Record<string, unknown>;
+                const errInfo = errData?.error as Record<string, unknown> | undefined;
+                const errMsg =
+                  (errInfo?.message as string) || '未知错误';
+                setMessages((m) => [
+                  ...m,
+                  { role: 'assistant', text: `❌ 错误：${errMsg}` },
+                ]);
                 setStatusSafe('error');
                 return;
               } else if (evt.event === 'aborted') {
@@ -146,5 +198,5 @@ export function useChatStream(sessionId: string) {
     if (lastUserMsg) send(lastUserMsg.text);
   }, [messages, send]);
 
-  return { status, messages, send, abort, retry };
+  return { status, messages, historyLoaded, send, abort, retry };
 }

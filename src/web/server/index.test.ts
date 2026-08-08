@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -12,6 +12,8 @@ import {
 } from "./index.js";
 import { tryServeStatic } from "./static.js";
 import { applySecurityHeaders } from "./csp.js";
+import { adaptStreamEvent } from "./routes/messages.js";
+import type { SseSession } from "./sse.js";
 
 // ============================================================
 // 共享夹具
@@ -256,5 +258,80 @@ describe("CSP 头字符串", () => {
     applySecurityHeaders(res);
 
     expect(headers["permissions-policy"]).toBeUndefined();
+  });
+});
+
+// ============================================================
+// adaptStreamEvent done 事件处理（Task 2 测试）
+// ============================================================
+
+describe("adaptStreamEvent done event", () => {
+  const makeSseSession = (): SseSession => ({
+    seq: 0,
+    clientGone: false,
+  });
+
+  it("done 事件带 error 时写 SSE error 事件", async () => {
+    const writeChunks: string[] = [];
+    const res = {
+      write: vi.fn((chunk: string, cb?: () => void) => {
+        writeChunks.push(chunk);
+        cb?.();
+        return true;
+      }),
+    } as unknown as import("node:http").ServerResponse;
+    const sse = makeSseSession();
+    const openTextBlocks = new Set<number>();
+
+    const doneEvent = {
+      type: "done" as const,
+      result: {
+        meta: {
+          error: { kind: "auth", message: "Auth failed" },
+        },
+      },
+    };
+
+    await adaptStreamEvent(
+      res,
+      doneEvent as any,
+      sse,
+      () => 0,
+      openTextBlocks,
+    );
+
+    expect(writeChunks.length).toBeGreaterThan(0);
+    const body = writeChunks.join("");
+    expect(body).toContain("event: error");
+    expect(body).toContain("AUTH_ERROR");
+    expect(body).toContain("Auth failed");
+  });
+
+  it("done 事件无 error 时写 SSE done 事件", async () => {
+    const writeChunks: string[] = [];
+    const res = {
+      write: vi.fn((chunk: string, cb?: () => void) => {
+        writeChunks.push(chunk);
+        cb?.();
+        return true;
+      }),
+    } as unknown as import("node:http").ServerResponse;
+    const sse = makeSseSession();
+    const openTextBlocks = new Set<number>();
+
+    const doneEvent = { type: "done" as const };
+
+    await adaptStreamEvent(
+      res,
+      doneEvent as any,
+      sse,
+      () => 0,
+      openTextBlocks,
+    );
+
+    expect(writeChunks.length).toBeGreaterThan(0);
+    const body = writeChunks.join("");
+    expect(body).toContain("event: done");
+    expect(body).toContain('"ok":true');
   });
 });

@@ -18,6 +18,7 @@ import type { RegisterProviderRoutesDeps } from "./routes/providers.js";
 import { installSessionRoutes } from "./routes/sessions.js";
 import { installMessageRoutes } from "./routes/messages.js";
 import type { RunnerFactory } from "./routes/messages.js";
+import { installConfigRoutes } from "./routes/config.js";
 import { listAgentsHandler, getAgentHandler } from "./routes/agents.js";
 import { listSkillsHandler, getSkillHandler } from "./routes/skills.js";
 
@@ -61,6 +62,7 @@ export interface WireApiRoutesDeps {
   providersStore?: ProvidersStore;
   sessionStore?: SessionStore;
   config?: CoreAgentConfig;
+  configPath?: string;
   providers?: ProviderRegistry;
   agentRunner?: AgentRunner;
   runnerFactory?: RunnerFactory;
@@ -79,7 +81,7 @@ export interface WireApiRoutesDeps {
  * 缺少必需依赖的域保持占位（不抛错），服务仍可启动。
  */
 export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
-  const { providersStore, sessionStore, config, providers, runnerFactory, logger } = deps;
+  const { providersStore, sessionStore, config, configPath, providers, runnerFactory, logger } = deps;
 
   // ── Provider 域 (8 条) ──
   if (providersStore) {
@@ -97,7 +99,7 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
 
   // ── Chat 流 (2 条 SSE) ──
   if (sessionStore && config && providers && runnerFactory) {
-    installMessageRoutes({ sessionStore, config, providers, runnerFactory });
+    installMessageRoutes({ sessionStore, config, providers, runnerFactory, logger });
     if (logger) logger.info("[wire] messages: SSE stream + abort wired");
   }
 
@@ -120,4 +122,62 @@ export function wireApiRoutes(deps: WireApiRoutesDeps = {}): void {
       getSkillHandler(req, res, params),
   );
   if (logger) logger.info("[wire] skills: 2 handlers wired");
+
+  // ── Config 域 (2 条) ──
+  if (config && configPath) {
+    // 向 ROUTES 表追加 config 路由（若尚未存在）
+    const hasConfigGet = ROUTES.some(
+      (r) => r[0] === "GET" && r[1] === "/api/config",
+    );
+    const hasConfigPut = ROUTES.some(
+      (r) => r[0] === "PUT" && r[1] === "/api/config",
+    );
+
+    if (!hasConfigGet) {
+      ROUTES.push([
+        "GET",
+        "/api/config",
+        routeNotFoundPlaceholder,
+        [],
+      ]);
+    }
+    if (!hasConfigPut) {
+      ROUTES.push([
+        "PUT",
+        "/api/config",
+        routeNotFoundPlaceholder,
+        [],
+      ]);
+    }
+
+    // 安装真实 handler
+    const { getConfig, putConfig } = installConfigRoutes({
+      config,
+      configPath,
+      logger,
+    });
+    replaceHandler("GET", "/api/config", getConfig);
+    replaceHandler("PUT", "/api/config", putConfig);
+
+    if (logger) logger.info("[wire] config: GET/PUT /api/config wired");
+  }
+}
+
+// routeNotFoundPlaceholder 引用（来自 router.ts；此处声明以在 push 时使用）
+function routeNotFoundPlaceholder(
+  _req: import("node:http").IncomingMessage,
+  res: import("node:http").ServerResponse,
+  _params: Record<string, string>,
+): void {
+  res.statusCode = 404;
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.end(
+    JSON.stringify({
+      ok: false,
+      error: {
+        code: "ROUTE_NOT_FOUND",
+        message: "Route is registered but not implemented in this build",
+      },
+    }),
+  );
 }

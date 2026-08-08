@@ -67,6 +67,7 @@ const NULL_LOGGER: Logger = {
   info: () => {},
   warn: () => {},
   error: () => {},
+  child: () => NULL_LOGGER,
 };
 
 // ============================================================
@@ -177,7 +178,7 @@ function spawnOnce(
       child.stdout.on("data", (chunk: Buffer) => {
         logger.debug(
           `[open-browser] ${command} stdout:`,
-          chunk.toString().trimEnd(),
+          { output: chunk.toString().trimEnd() },
         );
       });
     }
@@ -185,7 +186,7 @@ function spawnOnce(
       child.stderr.on("data", (chunk: Buffer) => {
         logger.debug(
           `[open-browser] ${command} stderr:`,
-          chunk.toString().trimEnd(),
+          { output: chunk.toString().trimEnd() },
         );
       });
     }

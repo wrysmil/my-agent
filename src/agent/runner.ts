@@ -32,6 +32,7 @@ import {
 } from "../prompts/system-prompt-builder.js";
 import { buildRuntimeDatetimeBlock } from "../prompts/runtime-context.js";
 import { ApiError, ApiErrorCode } from "../web/server/errors.js";
+import type { Logger } from "../shared/logger.js";
 
 // ============================================================
 // 压缩类型导出（contract § B8 / WU-06a）
@@ -702,6 +703,7 @@ export class AgentRunner {
   private readonly tools: Map<string, AgentTool> = new Map();
   private readonly session: Session;
   private readonly toolContextState: Record<string, unknown>;
+  private readonly logger: Logger;
 
   /**
    * @param opts.config — 核心 Agent 配置（模型列表、重试次数、工具循环上限等）。
@@ -727,6 +729,9 @@ export class AgentRunner {
    *   所有工具通过 `ToolContext.state` 可读写此对象。
    *   用于在工具间共享跨 run 的持久状态（如缓存、账本）。
    *
+   * @param opts.logger — 可选的结构化日志实例。
+   *   不传则使用静默 logger（无输出）。
+   *
    * @example
    * ```ts
    * // 多轮对话：复用 session 保持上下文
@@ -746,11 +751,19 @@ export class AgentRunner {
     session?: Session;
     disableTools?: boolean;
     toolContextState?: Record<string, unknown>;
+    logger?: Logger;
   }) {
     this.config = opts.config;
     this.providers = opts.providers ?? new ProviderRegistry(opts.config);
     this.session = opts.session ?? new Session();
     this.toolContextState = { ...(opts.toolContextState ?? {}) };
+    this.logger = opts.logger ?? {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      child: () => this.logger,
+    };
 
     // 注册工具
     if (!opts.disableTools) {
@@ -1016,6 +1029,14 @@ export class AgentRunner {
     const providerId = params.provider ?? agentConfig.defaultProvider;
     const maxRetries = agentConfig.maxRetries;
     const maxToolLoops = agentConfig.maxToolLoops;
+
+    this.logger.info("runStream start", {
+      model,
+      provider: providerId,
+      maxRetries,
+      maxToolLoops,
+      messageLength: params.message.length,
+    });
 
     let resolved = this.providers.resolveForModel(`${providerId}/${model}`);
     if (!resolved) {
@@ -1391,7 +1412,17 @@ export class AgentRunner {
           }
         }
         timings.providerMs += Math.max(0, Date.now() - activeProviderStartedAt);
+        const llmDuration = Math.max(0, Date.now() - (activeProviderStartedAt ?? Date.now()));
         activeProviderStartedAt = undefined;
+
+        this.logger.info("LLM call completed", {
+          model: streamModel,
+          tokens: streamUsage.totalTokens,
+          inputTokens: streamUsage.inputTokens,
+          outputTokens: streamUsage.outputTokens,
+          stopReason: streamStopReason,
+          durationMs: llmDuration,
+        });
 
         // 2f. 累积 token 用量
         lastUsageRef.value = mergeUsage(lastUsageRef.value, streamUsage);
@@ -1766,6 +1797,11 @@ export class AgentRunner {
         yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
         input.toolNamesSet.add(call.name);
 
+        this.logger.info(`tool start: ${call.name}`, {
+          tool: call.name,
+          id: call.id,
+        });
+
         const toolStart = Date.now();
         const outcome = await runToolWithWatchdog({
           call,
@@ -1824,6 +1860,10 @@ export class AgentRunner {
         for (const call of batch) {
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
           input.toolNamesSet.add(call.name);
+          this.logger.info(`tool start: ${call.name}`, {
+            tool: call.name,
+            id: call.id,
+          });
         }
 
         const cap = parallelToolCap();
