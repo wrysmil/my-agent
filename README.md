@@ -112,6 +112,52 @@ npx tsx chat.ts --load <id>  # 恢复指定会话（跳过菜单）
 - `/skills` — 列出所有 Skill
 - `/skill <id>` — 查看 Skill 详细内容
 
+## Web 模式
+
+除 CLI 外，亦提供浏览器版，启动后默认监听 `http://localhost:4321`。
+
+### 启动
+
+```bash
+npm run web          # 启动 Web 模式（默认端口 4321）
+npx my-agent-web     # 等价命令
+```
+
+启动后，`open-browser` 模块会**自动唤起默认浏览器**（macOS / Linux / Windows 跨平台支持）；若需手动打开，请访问 <http://localhost:4321>。
+
+### 主要功能
+
+- **会话管理** — 新建 / 列表 / 重命名 / 删除 / 导出
+- **Chat** — SSE 流式响应 + Markdown 渲染 + 工具调用卡片
+- **Provider 管理** — DeepSeek 等多 provider 切换与配置
+- **Agent / Skill 启动** — 一键拉起已注册的 Agent 与 Skill
+- **上下文压缩** — `/session-compact` 滑动窗口式摘要
+- **主题与 i18n** — 主题 `auto / light / dark`；i18n `zh / en`
+
+### 快捷键
+
+| 快捷键 | 作用 |
+| --- | --- |
+| `Cmd/Ctrl+K` | 命令面板 |
+| `Cmd/Ctrl+N` | 新建会话 |
+| `Cmd/Ctrl+,` | 打开设置 |
+| `Cmd/Ctrl+/` | 主菜单 |
+| `Cmd/Ctrl+B` | 切换侧栏 |
+| `Cmd/Ctrl+.` | 停止生成 |
+| `Cmd/Ctrl+Enter` | 发送（Chat composer 内） |
+| `Esc` | 关闭最上层 modal |
+
+### 安全
+
+- **CSP / SRI** — `index.html` 声明严格 CSP，所有外链资源均带 `integrity` + `crossorigin`
+- **零运行时依赖** — 仅 vanilla HTML / CSS / JS，无打包器、无运行时 npm 依赖
+- **vendor 本地化** — `marked` / `DOMPurify` 等第三方库全部本地化（位于 `web/js/vendor/`），离线可用、可审计
+- **API Key 隔离** — 与 CLI 共用 `~/.my-agent/providers.json`，前端不持久化原始 Key
+
+> 截图占位：<img src="docs/screenshots/web-home.png" alt="Web home — 主菜单">
+>
+> （截图待 PR 补；提交前请将 `docs/screenshots/web-home.png` 加入 PR）
+
 ## 开发
 
 ```bash
