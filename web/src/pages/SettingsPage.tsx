@@ -171,10 +171,11 @@ export function SettingsPage() {
           />
           <SelectRow
             label="思考级别"
-            value={config.agent.thinkingLevel || 'off'}
+            value={config.agent.thinkingLevel || 'medium'}
             options={[
               { value: 'off', label: '关闭' },
               { value: 'low', label: '低' },
+              { value: 'medium', label: '中' },
               { value: 'high', label: '高' },
             ]}
             onChange={(v) => updateConfig.mutate({ agent: { thinkingLevel: v } })}

@@ -114,9 +114,10 @@ export const AgentConfigSchema = z.object({
    * 扩展思考（extended thinking）级别。
    * - off: 关闭，仅常规推理
    * - low: 低强度思考，适用于简单任务
+   * - medium: 中等强度思考，适用于一般任务
    * - high: 高强度思考，适用于复杂推理任务
    */
-  thinkingLevel: z.enum(["off", "low", "high"]).default("off"),
+  thinkingLevel: z.enum(["off", "low", "medium", "high"]).default("medium"),
 });
 
 // ---------------------------------------------------------------------------

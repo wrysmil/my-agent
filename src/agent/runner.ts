@@ -1371,12 +1371,13 @@ export class AgentRunner {
           maxTokens: this.config.models.catalog[modelId]?.maxOutputTokens,
           signal: params.signal,
           sessionId: this.session.getSessionId(),
-          reasoning: params.thinkingLevel as "off" | "low" | "high" | undefined,
+          reasoning: params.thinkingLevel as "off" | "low" | "medium" | "high" | undefined,
           cacheRetention: params.cacheRetention,
         });
 
         // 2e. 消费流事件
         let streamText = "";
+        let streamThinking = "";
         let streamContent: MessageContent[] | undefined;
         let streamStopReason: import("../shared/types.js").StopReason = "end_turn";
         let streamUsage: Usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -1387,6 +1388,10 @@ export class AgentRunner {
             case "text_delta":
               streamText += ev.text;
               yield { type: "text_delta", text: ev.text };
+              break;
+            case "thinking_delta":
+              streamThinking += ev.thinking;
+              yield { type: "thinking_delta", thinking: ev.thinking };
               break;
             case "tool_use_start":
               yield { type: "tool_delta", id: ev.id, name: ev.name, inputDelta: "", inputBytes: 0 };
@@ -1436,8 +1441,12 @@ export class AgentRunner {
         }
 
         // 2h. 持久化 assistant 消息
-        const finalContent: MessageContent[] =
+        let finalContent: MessageContent[] =
           streamContent ?? (streamText ? [{ type: "text", text: streamText }] : []);
+        // 如果 provider 的 message_end.content 未包含 thinking，从 streamThinking 补上
+        if (streamThinking && !finalContent.some((c) => c.type === "thinking")) {
+          finalContent = [{ type: "thinking", thinking: streamThinking }, ...finalContent];
+        }
         await this.session.addAssistantMessage(finalContent);
 
         const turnText = textFromContent(finalContent);

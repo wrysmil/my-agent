@@ -92,7 +92,7 @@ export interface ChatMessage {
 
 export interface ChatOptions {
   model?: string;
-  thinkingLevel?: 'off' | 'low' | 'high';
+  thinkingLevel?: 'off' | 'low' | 'medium' | 'high';
 }
 
 // ============================================================

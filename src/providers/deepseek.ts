@@ -9,6 +9,7 @@ import { AuthError, RateLimitError, ProviderError, formatError } from "../shared
 type DeepSeekMessage = {
   role: "system" | "user" | "assistant" | "tool";
   content: string | null;
+  reasoning_content?: string;
   tool_calls?: DeepSeekToolCall[];
   tool_call_id?: string;
   name?: string;
@@ -42,6 +43,7 @@ type DeepSeekStreamChunk = {
     delta: {
       role?: string;
       content?: string;
+      reasoning_content?: string;
       tool_calls?: Array<{
         index: number;
         id?: string;
@@ -121,6 +123,7 @@ export class DeepSeekProvider implements LLMProvider {
     let inputTokens = 0;
     let outputTokens = 0;
     const textParts: string[] = [];
+    const thinkingParts: string[] = [];
     const toolCallAccumulators = new Map<
       number,
       { id: string; name: string; args: string }
@@ -155,6 +158,12 @@ export class DeepSeekProvider implements LLMProvider {
 
           for (const choice of chunk.choices) {
             const delta = choice.delta;
+
+            // 思考/推理 delta（extended thinking）
+            if (delta.reasoning_content) {
+              thinkingParts.push(delta.reasoning_content);
+              yield { type: "thinking_delta", thinking: delta.reasoning_content };
+            }
 
             // 文本 delta
             if (delta.content) {
@@ -208,6 +217,10 @@ export class DeepSeekProvider implements LLMProvider {
 
     // 构建 content
     const content: MessageContent[] = [];
+    const joinedThinking = thinkingParts.join("");
+    if (joinedThinking) {
+      content.push({ type: "thinking", thinking: joinedThinking });
+    }
     const joinedText = textParts.join("");
     if (joinedText) {
       content.push({ type: "text", text: joinedText });
@@ -315,16 +328,28 @@ export class DeepSeekProvider implements LLMProvider {
   private buildRequestBody(params: CompletionParams) {
     const messages = this.convertMessages(params.messages, params.systemPrompt);
     const tools = this.convertTools(params.tools);
+    const thinkingEnabled = params.reasoning && params.reasoning !== "off";
 
     return {
       model: params.model,
       messages,
       ...(tools.length > 0 ? { tools, tool_choice: "auto" } : {}),
       ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
-      ...(params.temperature != null ? { temperature: params.temperature } : {}),
-      ...(params.topP != null ? { top_p: params.topP } : {}),
+      // thinking 模式下 temperature/top_p 无效，不发送
+      ...(!thinkingEnabled && params.temperature != null
+        ? { temperature: params.temperature }
+        : {}),
+      ...(!thinkingEnabled && params.topP != null
+        ? { top_p: params.topP }
+        : {}),
       ...(params.stopSequences?.length
         ? { stop: params.stopSequences }
+        : {}),
+      ...(thinkingEnabled
+        ? {
+            thinking: { type: "enabled" },
+            reasoning_effort: params.reasoning,
+          }
         : {}),
       stream: true,
     };
@@ -346,15 +371,22 @@ export class DeepSeekProvider implements LLMProvider {
       const toolUseBlocks = msg.content.filter((b) => b.type === "tool_use");
       const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
       const imageBlocks = msg.content.filter((b) => b.type === "image");
+      const thinkingBlocks = msg.content.filter((b) => b.type === "thinking");
 
       // assistant 文本 + 工具调用合并为一条消息
       if (msg.role === "assistant") {
         const text = textBlocks.map((b) => (b as { text: string }).text).join("");
         const hasTools = toolUseBlocks.length > 0;
+        const reasoningContent = thinkingBlocks
+          .map((b) => (b as { thinking: string }).thinking)
+          .join("");
 
         out.push({
           role: "assistant",
           content: text || null,
+          ...(reasoningContent
+            ? { reasoning_content: reasoningContent }
+            : {}),
           ...(hasTools
             ? {
                 tool_calls: toolUseBlocks.map((tc) => ({

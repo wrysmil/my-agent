@@ -1,6 +1,12 @@
 #!/bin/bash
 # my-agent 服务管理脚本
-# 用法: sh manage.sh {start|stop|restart|status}
+# 用法: sh manage.sh {start|stop|restart|status|logs}
+#
+# 策略：
+#   - 用 setsid 启动 npm，让整个进程树独立于 shell 的进程组，便于整体清除
+#   - 以端口为唯一真实运行状态源
+#   - stop 时杀进程组 + 端口监听进程 + 兜底 pkill
+#   - restart 必须彻底杀死再启动
 
 set -e
 
@@ -9,27 +15,82 @@ PID_FILE="$PROJECT_DIR/.server.pid"
 LOG_FILE="$PROJECT_DIR/.server.log"
 PORT=4321
 
+# 超时（秒）
+STOP_TIMEOUT=10
+START_TIMEOUT=15
+
+# 用于匹配相关进程的 pattern（pgrep -f）
+APP_PATTERN="npm.*run.*web|node.*serve|tsx.*src/web"
+
 # ── 工具函数 ──
 
-get_pid() {
-  if [ -f "$PID_FILE" ]; then
-    cat "$PID_FILE"
-  else
-    echo ""
-  fi
+# 以端口为准判断是否在运行
+is_running() {
+  lsof -ti:"$PORT" >/dev/null 2>&1
 }
 
-is_running() {
-  local pid
-  pid=$(get_pid)
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-    return 0
+# 查找所有相关进程的 PID（去重）
+find_all_pids() {
+  {
+    lsof -ti:"$PORT" 2>/dev/null || true
+    pgrep -f "npm run web" 2>/dev/null || true
+    pgrep -f "serve.ts" 2>/dev/null || true
+    pgrep -f "src/web/server" 2>/dev/null || true
+  } | sort -u | grep -v "^$" || true
+}
+
+# 等待端口释放
+wait_port_free() {
+  local waited=0
+  while is_running; do
+    if [ "$waited" -ge "$STOP_TIMEOUT" ]; then
+      return 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 0
+}
+
+# 等待进程全部消失
+wait_no_pids() {
+  local waited=0
+  while [ -n "$(find_all_pids)" ]; do
+    if [ "$waited" -ge "$STOP_TIMEOUT" ]; then
+      return 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  return 0
+}
+
+# 彻底杀死：进程组 → 端口监听 → 模式匹配（SIGTERM → SIGKILL）
+kill_hard() {
+  local pids
+  pids=$(find_all_pids)
+  [ -z "$pids" ] && return 0
+
+  # 1) 先 SIGTERM
+  for pid in $pids; do
+    kill -TERM "$pid" 2>/dev/null || true
+  done
+
+  # 2) 等 3 秒优雅退出
+  local waited=0
+  while [ "$waited" -lt 3 ] && [ -n "$(find_all_pids)" ]; do
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  # 3) 还在就 SIGKILL
+  pids=$(find_all_pids)
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      kill -KILL "$pid" 2>/dev/null || true
+    done
+    sleep 1
   fi
-  # 兜底：通过端口检查
-  if lsof -ti:"$PORT" >/dev/null 2>&1; then
-    return 0
-  fi
-  return 1
 }
 
 # ── 子命令 ──
@@ -37,47 +98,73 @@ is_running() {
 start() {
   if is_running; then
     echo "❌ 服务已在运行（端口 $PORT 被占用）"
+    echo "   如需重启请用: sh manage.sh restart"
     exit 1
+  fi
+
+  # 兜底清理：端口是空的，但可能残留的 npm/node 僵尸进程还在
+  local stale
+  stale=$(find_all_pids)
+  if [ -n "$stale" ]; then
+    echo "🧹 清理残留进程: $stale"
+    kill_hard
   fi
 
   echo "🚀 启动后端服务..."
   cd "$PROJECT_DIR"
-  nohup npm run web > "$LOG_FILE" 2>&1 &
-  echo $! > "$PID_FILE"
-  sleep 2
+  rm -f "$PID_FILE"
 
-  if is_running; then
-    echo "✅ 后端已启动: http://127.0.0.1:$PORT"
-    echo "   PID: $(get_pid)"
-    echo "   日志: $LOG_FILE"
-  else
-    echo "❌ 启动失败，查看日志: $LOG_FILE"
-    exit 1
-  fi
+  # setsid 让 npm/node 跑在独立进程组，便于整体清除
+  setsid nohup npm run web > "$LOG_FILE" 2>&1 &
+  local pgid=$!
+  echo "$pgid" > "$PID_FILE"
+
+  # 轮询等待端口就绪
+  local waited=0
+  while ! is_running; do
+    if [ "$waited" -ge "$START_TIMEOUT" ]; then
+      echo "❌ 启动失败（${START_TIMEOUT}s 超时），查看日志: $LOG_FILE"
+      echo "   最后 20 行日志:"
+      tail -20 "$LOG_FILE" 2>/dev/null || true
+      kill_hard
+      rm -f "$PID_FILE"
+      exit 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  # 端口就绪后，更新 PID 文件为真实监听进程
+  local real_pid
+  real_pid=$(lsof -ti:"$PORT" 2>/dev/null | head -1 || echo "")
+  [ -n "$real_pid" ] && echo "$real_pid" > "$PID_FILE"
+
+  echo "✅ 后端已启动: http://127.0.0.1:$PORT"
+  echo "   PID: ${real_pid:-"未知"}"
+  echo "   日志: $LOG_FILE"
 }
 
 stop() {
-  if ! is_running; then
+  if ! is_running && [ -z "$(find_all_pids)" ]; then
     echo "⚠️  服务未运行"
     rm -f "$PID_FILE"
     return
   fi
 
   echo "🛑 停止服务..."
+  kill_hard
 
-  # 先尝试用 PID 文件杀
-  local pid
-  pid=$(get_pid)
-  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-    kill "$pid" 2>/dev/null
-    sleep 1
+  # 验证端口释放
+  if is_running; then
+    echo "❌ 端口 $PORT 仍被占用，停止失败"
+    exit 1
   fi
 
-  # 兜底：按端口强杀
-  local port_pid
-  port_pid=$(lsof -ti:"$PORT" 2>/dev/null)
-  if [ -n "$port_pid" ]; then
-    kill -9 "$port_pid" 2>/dev/null
+  # 验证残留进程
+  if [ -n "$(find_all_pids)" ]; then
+    echo "⚠️  仍有残留进程未清理:"
+    find_all_pids | sed 's/^/   /'
+    exit 1
   fi
 
   rm -f "$PID_FILE"
@@ -86,18 +173,66 @@ stop() {
 
 restart() {
   echo "🔄 重启服务..."
-  stop
+
+  # 1) 先彻底杀（不等 stop 的友好提示）
+  if is_running || [ -n "$(find_all_pids)" ]; then
+    echo "   1) 杀死旧进程..."
+    kill_hard
+    # 强制等待端口释放
+    if ! wait_port_free; then
+      echo "❌ 端口 $PORT 释放超时，放弃重启"
+      exit 1
+    fi
+  else
+    echo "   1) 无残留进程"
+  fi
+
+  # 2) 额外缓冲，避免 TIME_WAIT 等内核态延迟
   sleep 1
-  start
+
+  # 3) 启动新进程
+  echo "   2) 启动新进程..."
+  # 复用 start 但去掉前期的「服务已在运行」检查（restart 已保证端口空闲）
+  if is_running; then
+    echo "❌ 端口 $PORT 仍被占用，启动失败"
+    exit 1
+  fi
+
+  cd "$PROJECT_DIR"
+  rm -f "$PID_FILE"
+  setsid nohup npm run web > "$LOG_FILE" 2>&1 &
+  local pgid=$!
+  echo "$pgid" > "$PID_FILE"
+
+  local waited=0
+  while ! is_running; do
+    if [ "$waited" -ge "$START_TIMEOUT" ]; then
+      echo "❌ 启动失败（${START_TIMEOUT}s 超时），查看日志: $LOG_FILE"
+      echo "   最后 20 行日志:"
+      tail -20 "$LOG_FILE" 2>/dev/null || true
+      kill_hard
+      rm -f "$PID_FILE"
+      exit 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+
+  local real_pid
+  real_pid=$(lsof -ti:"$PORT" 2>/dev/null | head -1 || echo "")
+  [ -n "$real_pid" ] && echo "$real_pid" > "$PID_FILE"
+
+  echo "✅ 重启完成: http://127.0.0.1:$PORT (PID: ${real_pid:-"未知"})"
 }
 
 status() {
   if is_running; then
     local pid
-    pid=$(lsof -ti:"$PORT" 2>/dev/null)
+    pid=$(lsof -ti:"$PORT" 2>/dev/null | head -1)
     echo "✅ 服务运行中"
     echo "   端口: $PORT"
     echo "   PID:  ${pid:-"未知"}"
+    echo "   日志: $LOG_FILE"
   else
     echo "⚠️  服务未运行"
   fi
@@ -124,7 +259,7 @@ case "${1:-}" in
     echo ""
     echo "  start   — 启动后端服务"
     echo "  stop    — 停止后端服务"
-    echo "  restart — 重启后端服务"
+    echo "  restart — 彻底杀死旧进程后启动新进程"
     echo "  status  — 查看服务状态"
     echo "  logs    — 查看实时日志"
     exit 1

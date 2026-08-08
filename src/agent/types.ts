@@ -257,7 +257,7 @@ export type AgentRunParams = {
    * - `"high"` 模式首 token 延迟明显增加（可能数秒到数十秒）
    * - 对不支持 thinking 的模型，此参数被静默忽略
    */
-  thinkingLevel?: "off" | "low" | "high";
+  thinkingLevel?: "off" | "low" | "medium" | "high";
 
   // ---- Sandbox 环境 ----
 

@@ -22,7 +22,19 @@
     "copySuccess": "已复制",
     "copyFailed": "复制失败",
     "emptyState": "开始一段新对话吧",
-    "generating": "AI 正在生成..."
+    "generating": "AI 正在生成...",
+    "model": {
+      "label": "模型",
+      "placeholder": "选择模型",
+      "empty": "暂无可用模型"
+    },
+    "thinking": {
+      "label": "Effort",
+      "off": "关闭",
+      "low": "低",
+      "medium": "中",
+      "high": "高"
+    }
   },
   "providers": {
     "title": "提供商设置",

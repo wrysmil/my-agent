@@ -22,7 +22,19 @@
     "copySuccess": "Copied",
     "copyFailed": "Copy failed",
     "emptyState": "Start a new conversation",
-    "generating": "AI is generating..."
+    "generating": "AI is generating...",
+    "model": {
+      "label": "Model",
+      "placeholder": "Select model",
+      "empty": "No models available"
+    },
+    "thinking": {
+      "label": "Effort",
+      "off": "Off",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    }
   },
   "providers": {
     "title": "Provider Settings",
