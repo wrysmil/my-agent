@@ -376,19 +376,13 @@ describe("1. 启动管线 bootApp", () => {
 });
 
 describe("2. Theme 模块", () => {
-  it("themeModule exists on global scope (F0 export)", () => {
+  it("themeModule exists on MyAgent namespace (F0 export)", () => {
     const sandbox = build();
-    // F0 theme.js 导出到 window.themeModule（非 window.MyAgent.themeModule）
-    // 这是一个已知偏差：app.js installThemeAlias 查找 MyAgent.themeModule
-    // 但 F0 实际挂在 window.themeModule
-    const ctx = sandbox.ctx as Record<string, unknown>;
-    // 通过 runInContext 检查 ctx 上的 themeModule
     const { MA } = sandbox;
-    // theme.js 实际挂载点是 global.themeModule（不是 MyAgent 子属性）
-    // 验证全局有主题能力可用
+    // theme.js exports to window.MyAgent.themeModule (fixed C1)
     const hasThemeModule = MA.themeModule !== undefined;
-    // 如果 themeModule 在 MyAgent 下不可用，这是已知 F0/F15 对齐问题
-    expect(typeof MA.applyTheme === "undefined" || hasThemeModule).toBe(true);
+    expect(hasThemeModule).toBe(true);
+    expect(typeof (MA.themeModule as Record<string,unknown>)?.applyTheme).toBe("function");
   });
 
   it("theme event bridge: colon → dash forwarding", () => {
@@ -433,12 +427,9 @@ describe("3. Slash 命令", () => {
     };
     slash.installSlashCommandPalette();
 
-    // F0 theme.js 挂在 window.themeModule 而非 window.MyAgent.themeModule。
-    // slash.js 的 getThemeModule() 查找 MyAgent.themeModule → 返回 null，
-    // 因此 /theme 命令 handler 走降级分支 showToast('主题切换功能暂时不可用')。
-    // 但命令仍然成功执行（runCommand 返回 true）。
+    // theme.js exports to window.MyAgent.themeModule (fixed C1).
+    // slash.js getThemeModule() now correctly finds MyAgent.themeModule.
     const result = slash.runCommand("/theme dark");
-    // 命令注册表中存在 /theme，handler 正常执行完成
     expect(result).toBe(true);
   });
 

@@ -76,7 +76,7 @@
     try {
       var headers = { 'Content-Type': 'application/json', Accept: 'text/event-stream' };
       if (lastSeq[c.sessionId] != null) headers['Last-Event-ID'] = String(lastSeq[c.sessionId]);
-      var response = await global.fetch(apiPath(c.sessionId), { method: 'POST', headers: headers, body: JSON.stringify({ content: content }), signal: controller.signal });
+      var response = await global.fetch(apiPath(c.sessionId), { method: 'POST', headers: headers, body: JSON.stringify({ text: content }), signal: controller.signal });
       if (!response.ok || !response.body) throw new Error('SSE 请求失败（' + response.status + '）');
       var reader = response.body.getReader(), decoder = new TextDecoder(), buffer = '';
       while (true) { var part = await reader.read(); if (part.done) break; buffer += decoder.decode(part.value, { stream: true }); var lines = buffer.split(/\r?\n/); buffer = lines.pop(); lines.forEach(consumeLine); }

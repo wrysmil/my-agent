@@ -440,11 +440,14 @@ async function upsertAndSave(
  *
  * 当前 store 已做脱敏（resolveEnvApiKey 注入时仅在内存替换，不写盘），
  * 此函数是兜底（防止未来 store 改动泄漏）。
+ *
+ * 安全策略：apiKey 非空时返回 "***"（掩码），空时返回 ""。
+ * 前端无需知道真实 API Key；真实 key 仅由后端 resolveEnvApiKey 在 HTTP 请求
+ * 发出时注入，永不出现在 HTTP 响应中。
  */
 function stripEnvKey(p: ProviderConfigEntry): ProviderConfigEntry {
   return {
     ...p,
-    // 保留原始 apiKey（空 = 走环境变量）；不返回环境变量真值
-    apiKey: p.apiKey,
+    apiKey: p.apiKey ? "***" : "",
   };
 }

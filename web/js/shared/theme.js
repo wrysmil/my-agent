@@ -123,7 +123,8 @@
   // -------------------------------------------------------------------------
   // 导出(全局变量模块通信,与 spec § 4.2 + 仿写Agent前端框架指南一致)
   // -------------------------------------------------------------------------
-  global.themeModule = {
+  global.MyAgent = global.MyAgent || {};
+  global.MyAgent.themeModule = {
     applyTheme: applyTheme,
     getStoredTheme: getStoredTheme,
     setStoredTheme: setStoredTheme,
