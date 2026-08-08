@@ -6,10 +6,10 @@ export type ChatStatus =
   | 'idle'
   | 'submitting'
   | 'streaming'
+  | 'reconnecting'
   | 'done'
-  | 'aborted'
   | 'error'
-  | 'reconnecting';
+  | 'aborted';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -47,13 +47,20 @@ export function useChatStream(sessionId: string) {
     setStatus(s);
   }, []);
 
-  // Load message history on mount
+  // Load history when sessionId changes — reset state to force reload
   useEffect(() => {
-    if (!sessionId || historyLoaded) return;
+    if (!sessionId) return;
     let cancelled = false;
+
+    setHistoryLoaded(false);
+    setMessages([]);
+
     apiGet<{ messages: SerializedMsg[] }>(`/api/sessions/${sessionId}/history`)
       .then((data) => {
-        if (cancelled || !data?.messages) return;
+        if (cancelled || !data?.messages) {
+          if (!cancelled) setHistoryLoaded(true);
+          return;
+        }
         const loaded: ChatMessage[] = [];
         for (const m of data.messages) {
           const role = m.role === 'user' ? 'user' : 'assistant';
@@ -74,8 +81,9 @@ export function useChatStream(sessionId: string) {
       .catch(() => {
         if (!cancelled) setHistoryLoaded(true); // mark loaded even on error
       });
+
     return () => { cancelled = true; };
-  }, [sessionId, historyLoaded]);
+  }, [sessionId]);
 
   const send = useCallback(
     async (text: string, options?: ChatOptions) => {
@@ -90,9 +98,9 @@ export function useChatStream(sessionId: string) {
       setStatusSafe('submitting');
       setMessages((m) => [...m, { role: 'user', text }]);
 
+      if (submittingTimerRef.current) clearTimeout(submittingTimerRef.current);
       submittingTimerRef.current = setTimeout(() => {
-        ctrl.abort();
-        setStatusSafe('error');
+        if (statusRef.current === 'submitting') setStatusSafe('error');
       }, SUBMITTING_TIMEOUT_MS);
 
       try {
@@ -110,86 +118,91 @@ export function useChatStream(sessionId: string) {
             credentials: 'same-origin',
           },
         );
-        if (submittingTimerRef.current)
-          clearTimeout(submittingTimerRef.current);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (!res.body) throw new Error('no body');
-        setStatusSafe('streaming');
-        let assistantText = '';
-        let retries = 0;
-        while (true) {
+        if (!res.ok) {
+          const errBody = await res.text().catch(() => '');
+          let errMsg = `HTTP ${res.status}`;
           try {
-            for await (const evt of parseSseStream(res.body)) {
-              if (evt.event === 'message_start') {
-                streamIdRef.current = (evt.data as Record<string, unknown>)
-                  .streamId as string;
-              } else if (evt.event === 'content_block_delta') {
-                assistantText +=
-                  ((evt.data as Record<string, unknown>).delta as Record<
-                    string,
-                    unknown
-                  >)?.text ?? '';
-                setMessages((m) => {
-                  const last = m[m.length - 1];
-                  if (last?.role === 'assistant') {
-                    return [
-                      ...m.slice(0, -1),
-                      { role: 'assistant', text: assistantText },
-                    ];
-                  }
-                  return [...m, { role: 'assistant', text: assistantText }];
-                });
-              } else if (
-                evt.event === 'message_stop' ||
-                evt.event === 'done'
-              ) {
-                setStatusSafe('done');
-                return;
-              } else if (evt.event === 'error') {
-                setStatusSafe('error');
-                return;
-              } else if (evt.event === 'aborted') {
-                setStatusSafe('aborted');
-                return;
-              }
+            const j = JSON.parse(errBody);
+            if (j?.error?.message) errMsg = j.error.message;
+          } catch { /* ignore parse error */ }
+          setMessages((m) => [
+            ...m,
+            { role: 'assistant', text: `❌ ${errMsg}` },
+          ]);
+          setStatusSafe('error');
+          return;
+        }
+        if (!res.body) throw new Error('No response body');
+
+        const reader = res.body.getReader();
+        let retries = 0;
+
+        for await (const evt of parseSseStream(reader)) {
+          try {
+            if (evt.event === 'message_start') {
+              setStatusSafe('streaming');
+              if (submittingTimerRef.current)
+                clearTimeout(submittingTimerRef.current);
+              if (evt.data?.streamId)
+                streamIdRef.current = evt.data.streamId;
+            } else if (evt.event === 'text_delta') {
+              const delta = evt.data?.delta ?? '';
+              setMessages((m) => {
+                const last = m[m.length - 1];
+                if (last?.role === 'assistant') {
+                  return [
+                    ...m.slice(0, -1),
+                    { ...last, text: last.text + delta },
+                  ];
+                }
+                return [...m, { role: 'assistant', text: delta }];
+              });
+            } else if (evt.event === 'done') {
+              setStatusSafe('done');
+              return;
+            } else if (evt.event === 'error') {
+              const errData = evt.data as Record<string, unknown>;
+              const errInfo = errData?.error as Record<string, unknown> | undefined;
+              const errMsg =
+                (errInfo?.message as string) || '未知错误';
+              setMessages((m) => [
+                ...m,
+                { role: 'assistant', text: `❌ 错误：${errMsg}` },
+              ]);
+              setStatusSafe('error');
+              return;
+            } else if (evt.event === 'aborted') {
+              setStatusSafe('aborted');
+              return;
             }
-            return;
           } catch {
             if (retries >= MAX_RETRIES) {
               setStatusSafe('error');
               return;
             }
+            retries += 1;
+            await new Promise((r) =>
+              setTimeout(r, BACKOFF_MS[retries - 1] ?? 16000),
+            );
             setStatusSafe('reconnecting');
-            await new Promise((r) => setTimeout(r, BACKOFF_MS[retries]));
-            retries++;
-            setStatusSafe('streaming');
           }
         }
-      } catch {
-        if (submittingTimerRef.current)
-          clearTimeout(submittingTimerRef.current);
-        setStatusSafe('error');
+        setStatusSafe('done');
+      } catch (err: unknown) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          setStatusSafe('aborted');
+        } else {
+          setStatusSafe('error');
+        }
       }
     },
-    [sessionId, setStatusSafe],
+    [sessionId],
   );
 
-  const abort = useCallback(async () => {
+  const abort = useCallback(() => {
     controllerRef.current?.abort();
-    if (streamIdRef.current) {
-      try {
-        await fetch(`/api/sessions/${sessionId}/messages/abort`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ streamId: streamIdRef.current }),
-          credentials: 'same-origin',
-        });
-      } catch {
-        /* best-effort */
-      }
-    }
     setStatusSafe('aborted');
-  }, [sessionId, setStatusSafe]);
+  }, []);
 
   const retry = useCallback(() => {
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user');

@@ -164,12 +164,13 @@ function wrap(
 const SILENT_LOGGER: Logger = {
   debug: () => {},
   info: () => {},
-  warn: (msg: string, ...args: unknown[]): void => {
-    console.warn(msg, ...args);
+  warn: (msg: string, data?: Record<string, unknown>): void => {
+    console.warn(msg, data ?? "");
   },
-  error: (msg: string, ...args: unknown[]): void => {
-    console.error(msg, ...args);
+  error: (msg: string, data?: Record<string, unknown>): void => {
+    console.error(msg, data ?? "");
   },
+  child: () => SILENT_LOGGER,
 };
 
 // ============================================================
@@ -200,7 +201,7 @@ function sendError(
     });
     return;
   }
-  log.error("[providers] unexpected error:", err);
+  log.error("[providers] unexpected error", { error: String(err) });
   sendJson(res, 500, {
     ok: false,
     error: {
@@ -252,6 +253,10 @@ async function getActiveProvider(ctx: HandlerCtx): Promise<void> {
  */
 async function createProvider(ctx: HandlerCtx): Promise<void> {
   const body = await parseJsonBody(ctx.req, ProviderUpsertSchema);
+  // 防掩码污染：如果前端传来 "***"，视为未填写 apiKey
+  if (body.apiKey === "***") {
+    body.apiKey = "";
+  }
   const cfg = ctx.store.getConfig();
   if (cfg.providers[body.id]) {
     throw new ApiError(
@@ -391,6 +396,10 @@ async function upsertProviderById(ctx: HandlerCtx): Promise<void> {
         ],
       },
     );
+  }
+  // 防掩码污染：如果前端传来 "***"，视为未填写 apiKey
+  if (body.apiKey === "***") {
+    body.apiKey = "";
   }
   const cfg = ctx.store.getConfig();
   const existed = cfg.providers[id] != null;

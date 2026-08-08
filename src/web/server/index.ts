@@ -96,6 +96,7 @@ const SILENT_LOGGER: Logger = {
   error: (msg: string, ...args: unknown[]): void => {
     console.error(msg, ...args);
   },
+  child: () => SILENT_LOGGER,
 };
 
 // ============================================================
@@ -208,10 +209,33 @@ async function handleRequest(
   res: ServerResponse,
   ctx: HandleContext,
 ): Promise<void> {
+  const startTime = Date.now();
+
   // 0) 基础信息
   const { requestId } = ctx;
   res.setHeader("X-Request-Id", requestId);
   applySecurityHeaders(res);
+
+  // access log: 劫持 res.end 记录请求信息
+  const origEnd = res.end.bind(res);
+  res.end = function (
+    this: ServerResponse,
+    ...args: Parameters<ServerResponse["end"]>
+  ): ServerResponse {
+    const durationMs = Date.now() - startTime;
+    const method = req.method ?? "GET";
+    const pathname = (() => {
+      try {
+        return new URL(req.url ?? "/", "http://localhost").pathname;
+      } catch {
+        return req.url ?? "/";
+      }
+    })();
+    ctx.log.info(
+      `${method} ${pathname} ${res.statusCode} ${durationMs}ms`,
+    );
+    return origEnd(...args);
+  } as ServerResponse["end"];
 
   const method = req.method ?? "GET";
   let pathname: string;

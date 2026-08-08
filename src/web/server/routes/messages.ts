@@ -40,6 +40,7 @@ import type { SessionStore } from "../../../storage/session-store.js";
 import type { AgentRunParams, AgentRunResult } from "../../../agent/types.js";
 import type { StreamEvent, Usage, MessageContent } from "../../../shared/types.js";
 import type { PersistentSession } from "../../../agent/persistent-session.js";
+import type { Logger } from "../../../shared/logger.js";
 
 import { assertPathSegment } from "../../../storage/paths.js";
 import { ROUTES } from "../router.js";
@@ -89,15 +90,16 @@ export function installMessageRoutes(deps: {
   config: CoreAgentConfig;
   providers: ProviderRegistry;
   runnerFactory: RunnerFactory;
+  logger?: Logger;
 }): void {
-  const { sessionStore, runnerFactory } = deps;
+  const { sessionStore, runnerFactory, logger } = deps;
 
   replaceHandlerRegex(
     ROUTES,
     "POST",
     /^\/api\/sessions\/([^/]+)\/messages\/stream$/,
     (req, res, params) =>
-      postMessageStream(req, res, sessionStore, runnerFactory, params["id"] ?? ""),
+      postMessageStream(req, res, sessionStore, runnerFactory, params["id"] ?? "", logger),
   );
 
   replaceHandlerRegex(
@@ -136,6 +138,7 @@ async function postMessageStream(
   sessionStore: SessionStore,
   runnerFactory: RunnerFactory,
   rawId: string,
+  logger?: Logger,
 ): Promise<void> {
   // 1) 路径防御 + 加载 session
   let sessionId: string;
@@ -189,6 +192,9 @@ async function postMessageStream(
 
   // 4) 注册 hub 流（生成 streamId + AbortController）
   const { streamId, controller } = hub.register(sessionId);
+
+  // SSE stream 开始日志
+  logger?.info("SSE stream start", { sessionId, streamId });
 
   // 5) 读取 Last-Event-ID（spec § 6.1：客户端重连去重）
   const lastEventId = parseLastEventId(req.headers["last-event-id"]);
@@ -258,7 +264,7 @@ async function postMessageStream(
 
         await adaptStreamEvent(res, ev, sse, () => nextBlockIndex++, openTextBlocks);
 
-        if (ev.type === "message_end" || ev.type === "error") {
+        if (ev.type === "message_end" || ev.type === "error" || (ev.type as string) === "done") {
           // 终止类事件：不再 yield 后续
           if (ev.type === "message_end") endedNormally = true;
           break;
@@ -310,6 +316,7 @@ async function postMessageStream(
       }
     }
   } finally {
+    logger?.info("SSE stream end", { sessionId, streamId });
     hub.close(streamId);
     try {
       res.end();
@@ -549,6 +556,38 @@ export async function adaptStreamEvent(
           },
         },
       });
+      return;
+    }
+
+    // @ts-expect-error: done is a valid runtime StreamEvent variant not yet in the union
+    case "done": {
+      // runner 直接返回 done（如 auth error、provider not found）
+      const doneEv = ev as unknown as {
+        type: "done";
+        result?: { meta?: { error?: { kind?: string; message: string } } };
+      };
+      if (doneEv.result?.meta?.error) {
+        writeEvent(res, {
+          id: sse.seq,
+          event: "error",
+          data: {
+            ok: false,
+            error: {
+              code:
+                doneEv.result.meta.error.kind === "auth"
+                  ? "AUTH_ERROR"
+                  : "CHAT_RUNNER_ERROR",
+              message: doneEv.result.meta.error.message,
+            },
+          },
+        });
+      } else {
+        writeEvent(res, {
+          id: sse.seq,
+          event: "done",
+          data: { ok: true },
+        });
+      }
       return;
     }
 

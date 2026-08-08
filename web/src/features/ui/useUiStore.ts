@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { setLocale as setI18nLocale } from '@/lib/i18n';
 
 type Theme = 'light' | 'dark';
 type Locale = 'zh' | 'en';
@@ -30,6 +31,7 @@ export const useUiStore = create<UiState>((set) => ({
   }),
   setLocale: (locale) => {
     localStorage.setItem('locale', locale);
+    setI18nLocale(locale);
     set({ locale });
   },
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),

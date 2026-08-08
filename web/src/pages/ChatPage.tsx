@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useChatStream, type ChatOptions } from '@/features/chat/useChatStream';
+import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
 import { MessageList } from '@/components/chat/MessageList';
 import { StreamIndicator } from '@/components/chat/StreamIndicator';
@@ -19,14 +20,21 @@ interface ModelInfo {
 }
 
 const EFFORT_LEVELS = [
-  { value: 'off', label: '关闭思考' },
-  { value: 'low', label: '低' },
-  { value: 'high', label: '高' },
+  { value: 'off', labelKey: 'thinking.off' },
+  { value: 'low', labelKey: 'thinking.low' },
+  { value: 'high', labelKey: 'thinking.high' },
 ] as const;
+
+const EFFORT_LABELS: Record<string, string> = {
+  off: '关闭思考',
+  low: '低',
+  high: '高',
+};
 
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [creating, setCreating] = useState(false);
 
   // Model & effort state
@@ -108,7 +116,7 @@ export function ChatPage() {
     return (
       <div className="flex flex-col h-full items-center justify-center" data-testid="page-chat">
         <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-text-muted">{creating ? '创建会话中...' : '正在准备...'}</p>
+        <p className="text-sm text-text-muted">{creating ? t('chat.generating') : '正在准备...'}</p>
       </div>
     );
   }
@@ -160,7 +168,7 @@ export function ChatPage() {
         >
           <Brain className="w-3 h-3" />
           <span className={thinkingLevel !== 'off' ? 'text-accent-fg' : 'text-text-muted'}>
-            {thinkingLevel === 'off' ? '思考' : EFFORT_LEVELS.find(e => e.value === thinkingLevel)?.label}
+            {thinkingLevel === 'off' ? '思考' : EFFORT_LABELS[thinkingLevel]}
           </span>
           <ChevronDown className="w-3 h-3 text-text-muted" />
         </button>
@@ -176,7 +184,7 @@ export function ChatPage() {
                 onClick={() => { setThinkingLevel(level.value); setShowEffortMenu(false); }}
                 className={`w-full text-left px-3 py-1.5 text-xs hover:bg-surface-hover ${thinkingLevel === level.value ? 'text-primary font-medium' : 'text-text-muted'}`}
               >
-                {level.label}
+                {EFFORT_LABELS[level.value]}
               </button>
             ))}
           </div>
@@ -190,7 +198,7 @@ export function ChatPage() {
       {/* Header — simplified: just title + status */}
       <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-surface">
         <h2 className="text-sm font-medium text-text-muted shrink-0">
-          会话
+          {t('nav.chat')}
         </h2>
 
         {/* Status indicator */}

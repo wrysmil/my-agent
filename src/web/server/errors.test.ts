@@ -382,6 +382,7 @@ describe("handleError", () => {
       info: vi.fn(),
       warn,
       error: vi.fn(),
+      child: () => log,
     };
     handleError(
       new ApiError(ApiErrorCode.RATE_LIMITED, "slow down"),

@@ -3,6 +3,7 @@ import { useSessions, type SessionItem } from '@/features/sessions/useSessions';
 import { useAgents } from '@/features/agents/useAgents';
 import { useSkills } from '@/features/skills/useSkills';
 import { useProviders } from '@/features/providers/useProviders';
+import { useTranslation } from '@/i18n/useTranslation';
 import { Bot, Blocks, Plug, MessageSquare, ArrowRight, Loader2 } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, loading, color }: {
@@ -31,6 +32,7 @@ function StatCard({ icon: Icon, label, value, loading, color }: {
 
 export function DashboardPage() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { data: sessionsData, isLoading: sessionsLoading } = useSessions(false);
   const sessions: SessionItem[] = sessionsData?.sessions ?? [];

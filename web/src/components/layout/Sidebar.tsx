@@ -10,22 +10,24 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useSessions, type SessionItem } from '@/features/sessions/useSessions';
-
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/chat', label: 'Chat', icon: MessageSquare },
-  { to: '/providers', label: 'Providers', icon: Plug },
-  { to: '/skills', label: 'Skills', icon: SlidersHorizontal },
-  { to: '/agents', label: 'Agents', icon: Bot },
-  { to: '/settings', label: 'Settings', icon: Settings2 },
-];
+import { useTranslation } from '@/i18n/useTranslation';
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { data, isLoading } = useSessions(false);
   const sessions: SessionItem[] = data?.sessions ?? [];
 
   const recentSessions = sessions.slice(0, 20);
+
+  const navItems = [
+    { to: '/', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/chat', label: t('nav.chat'), icon: MessageSquare },
+    { to: '/providers', label: t('nav.providers'), icon: Plug },
+    { to: '/skills', label: t('nav.skills'), icon: SlidersHorizontal },
+    { to: '/agents', label: t('nav.agents'), icon: Bot },
+    { to: '/settings', label: t('nav.settings'), icon: Settings2 },
+  ];
 
   return (
     <aside
@@ -62,7 +64,7 @@ export function Sidebar() {
       <div className="flex-1 overflow-y-auto px-2 py-2">
         <div className="flex items-center justify-between px-3 py-1 mb-1">
           <span className="text-xs font-medium text-text-muted uppercase tracking-wider">
-            Sessions
+            {t('sessions.title')}
           </span>
           <button
             onClick={() => navigate('/chat')}
@@ -78,7 +80,7 @@ export function Sidebar() {
           </div>
         ) : recentSessions.length === 0 ? (
           <p className="px-3 py-2 text-xs text-text-muted">
-            暂无会话
+            {t('sessions.empty')}
           </p>
         ) : (
           <ul className="space-y-0.5">

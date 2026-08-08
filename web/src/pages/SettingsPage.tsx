@@ -1,7 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@/features/ui/useUiStore';
-import { apiGet } from '@/lib/api';
-import { Sun, Moon, Languages, Monitor, Cpu, Info } from 'lucide-react';
+import { useTranslation } from '@/i18n/useTranslation';
+import { apiGet, apiPut } from '@/lib/api';
+import { Sun, Moon, Languages, Monitor, Cpu, Info, Zap, Brain } from 'lucide-react';
 
 function SettingGroup({ title, icon: Icon, children }: {
   title: string;
@@ -65,8 +66,32 @@ function SelectRow({ label, value, options, onChange }: {
   );
 }
 
+function NumberInput({ label, value, min, max, onChange }: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <p className="text-sm text-text">{label}</p>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-20 rounded-md border border-border bg-bg px-2 py-1 text-xs text-text text-right"
+      />
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const { theme, toggleTheme, locale, setLocale } = useUiStore();
+  const { t } = useTranslation();
+  const queryClient = useQueryClient();
 
   // Fetch active provider info
   const { data: activeProvider } = useQuery({
@@ -75,10 +100,23 @@ export function SettingsPage() {
     staleTime: 30_000,
   });
 
+  // Fetch config for Agent/Memory sections
+  const { data: config } = useQuery({
+    queryKey: ['config'],
+    queryFn: () => apiGet<any>('/api/config').catch(() => null),
+    staleTime: 30_000,
+  });
+
+  // Update config mutation
+  const updateConfig = useMutation({
+    mutationFn: (partial: Record<string, unknown>) => apiPut('/api/config', partial),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['config'] }),
+  });
+
   return (
     <div className="p-6 space-y-6" data-testid="page-settings">
       <div>
-        <h1 className="text-xl font-bold text-text">设置</h1>
+        <h1 className="text-xl font-bold text-text">{t('settings.title')}</h1>
         <p className="text-sm text-text-muted mt-1">管理应用偏好和配置</p>
       </div>
 
@@ -91,7 +129,7 @@ export function SettingsPage() {
           onChange={() => toggleTheme()}
         />
         <SelectRow
-          label="语言"
+          label={t('settings.language')}
           value={locale}
           options={[
             { value: 'zh', label: '中文' },
@@ -100,6 +138,64 @@ export function SettingsPage() {
           onChange={(v) => setLocale(v as 'zh' | 'en')}
         />
       </SettingGroup>
+
+      {/* Agent Config (from config API) */}
+      {config?.agent && (
+        <SettingGroup title="Agent 配置" icon={Zap}>
+          <SelectRow
+            label="默认模型"
+            value={config.agent.defaultModel || ''}
+            options={[
+              { value: 'deepseek-chat', label: 'DeepSeek Chat' },
+              { value: 'deepseek-reasoner', label: 'DeepSeek Reasoner' },
+            ]}
+            onChange={(v) => updateConfig.mutate({ agent: { defaultModel: v } })}
+          />
+          <SelectRow
+            label="思考级别"
+            value={config.agent.thinkingLevel || 'off'}
+            options={[
+              { value: 'off', label: '关闭' },
+              { value: 'low', label: '低' },
+              { value: 'high', label: '高' },
+            ]}
+            onChange={(v) => updateConfig.mutate({ agent: { thinkingLevel: v } })}
+          />
+          <NumberInput
+            label="最大重试次数"
+            value={config.agent.maxRetries ?? 3}
+            min={0}
+            max={10}
+            onChange={(v) => updateConfig.mutate({ agent: { maxRetries: v } })}
+          />
+          <NumberInput
+            label="最大工具循环"
+            value={config.agent.maxToolLoops ?? 100}
+            min={1}
+            max={500}
+            onChange={(v) => updateConfig.mutate({ agent: { maxToolLoops: v } })}
+          />
+        </SettingGroup>
+      )}
+
+      {/* Memory Config (from config API) */}
+      {config?.memory && (
+        <SettingGroup title="记忆配置" icon={Brain}>
+          <ToggleRow
+            label="启用记忆"
+            description="开启后 Agent 会记录上下文信息"
+            checked={config.memory.enabled !== false}
+            onChange={(v) => updateConfig.mutate({ memory: { enabled: v } })}
+          />
+          <NumberInput
+            label="最大检索数"
+            value={config.memory.maxResults ?? 10}
+            min={1}
+            max={50}
+            onChange={(v) => updateConfig.mutate({ memory: { maxResults: v } })}
+          />
+        </SettingGroup>
+      )}
 
       {/* Model Provider */}
       <SettingGroup title="模型供应商" icon={Cpu}>

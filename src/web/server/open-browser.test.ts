@@ -26,6 +26,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as childProcess from "node:child_process";
+import type { Logger } from "../../shared/logger.js";
 
 // ============================================================
 // Mock node:child_process
@@ -348,11 +349,12 @@ describe("openBrowser — 鲁棒性", () => {
     spawnMock.mockReturnValue(fakeChild);
 
     const debugSpy = vi.fn();
-    const logger = {
+    const logger: Logger = {
       debug: debugSpy,
       info: () => {},
       warn: () => {},
       error: () => {},
+      child: () => logger,
     };
 
     const { openBrowser } = await import("./open-browser.js");
@@ -390,11 +392,12 @@ describe("openBrowser — 鲁棒性", () => {
     spawnMock.mockReturnValue(fakeChild);
 
     const debugSpy = vi.fn();
-    const logger = {
+    const logger: Logger = {
       debug: debugSpy,
       info: () => {},
       warn: () => {},
       error: () => {},
+      child: () => logger,
     };
 
     const { openBrowser } = await import("./open-browser.js");
@@ -405,7 +408,7 @@ describe("openBrowser — 鲁棒性", () => {
     onStderr(Buffer.from("warning: missing font\n"));
     expect(debugSpy).toHaveBeenCalledWith(
       "[open-browser] open stderr:",
-      "warning: missing font",
+      { output: "warning: missing font" },
     );
     restore();
   });

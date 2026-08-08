@@ -104,7 +104,7 @@ export function installShutdownHandlers(
       onExit(0);
     } catch (err) {
       clearTimeout(forceTimer);
-      log.error("[web] shutdown failed:", err);
+      log.error("[web] shutdown failed", { error: err instanceof Error ? err.message : String(err) });
       onExit(1);
     }
   };

@@ -1,10 +1,11 @@
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export interface Logger {
-  debug(msg: string, ...args: unknown[]): void;
-  info(msg: string, ...args: unknown[]): void;
-  warn(msg: string, ...args: unknown[]): void;
-  error(msg: string, ...args: unknown[]): void;
+  debug(msg: string, data?: Record<string, unknown>): void;
+  info(msg: string, data?: Record<string, unknown>): void;
+  warn(msg: string, data?: Record<string, unknown>): void;
+  error(msg: string, data?: Record<string, unknown>): void;
+  child(subsystem: string): Logger;
 }
 
 const LOG_LEVELS: Record<LogLevel, number> = {
@@ -14,30 +15,48 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
+function timestampPrefix(): string {
+  return new Date().toISOString();
+}
+
 export function createLogger(
   subsystem: string,
   level: LogLevel = "info",
 ): Logger {
   // 运行时兜底：非法 level 回退到 info，避免所有日志静默
   const threshold = LOG_LEVELS[level] ?? LOG_LEVELS.info;
-  const prefix = `[${subsystem}]`;
+  const prefix = `[${timestampPrefix()}] [${subsystem}]`;
 
   function shouldLog(lvl: LogLevel): boolean {
     return LOG_LEVELS[lvl] >= threshold;
   }
 
-  return {
-    debug(msg, ...args) {
-      if (shouldLog("debug")) console.debug(prefix, msg, ...args);
+  function formatData(data?: Record<string, unknown>): string {
+    if (!data || Object.keys(data).length === 0) return "";
+    try {
+      return " " + JSON.stringify(data);
+    } catch {
+      return " [unserializable data]";
+    }
+  }
+
+  const logger: Logger = {
+    debug(msg, data) {
+      if (shouldLog("debug")) console.debug(prefix, msg, formatData(data));
     },
-    info(msg, ...args) {
-      if (shouldLog("info")) console.info(prefix, msg, ...args);
+    info(msg, data) {
+      if (shouldLog("info")) console.info(prefix, msg, formatData(data));
     },
-    warn(msg, ...args) {
-      if (shouldLog("warn")) console.warn(prefix, msg, ...args);
+    warn(msg, data) {
+      if (shouldLog("warn")) console.warn(prefix, msg, formatData(data));
     },
-    error(msg, ...args) {
-      if (shouldLog("error")) console.error(prefix, msg, ...args);
+    error(msg, data) {
+      if (shouldLog("error")) console.error(prefix, msg, formatData(data));
+    },
+    child(sub: string): Logger {
+      return createLogger(`${subsystem}/${sub}`, level);
     },
   };
+
+  return logger;
 }
