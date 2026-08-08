@@ -1,3 +1,8 @@
+import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { routes } from './routes';
+
+const router = createHashRouter(routes);
+
 export function App() {
-  return <div data-testid="app">my-agent</div>;
+  return <RouterProvider router={router} />;
 }
