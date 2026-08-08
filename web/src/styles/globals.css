@@ -62,35 +62,278 @@
   min-width: 0;
 }
 
-/* Markdown 代码块横向滚动 */
+/* ============================================================
+   Markdown / Prose 排版增强
+   ============================================================ */
+
+/* 正文基础字号 — 聊天场景比文档稍大 */
+.prose {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--color-text);
+}
+
+.prose p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+/* 标题 */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  color: var(--color-text);
+  font-weight: 600;
+  margin-top: 1.2em;
+  margin-bottom: 0.4em;
+}
+
+/* 链接 */
+.prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose a:hover {
+  opacity: 0.8;
+}
+
+/* 列表 */
+.prose ul, .prose ol {
+  padding-left: 1.25em;
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+.prose li {
+  margin-top: 0.15em;
+  margin-bottom: 0.15em;
+}
+
+/* 引用块 */
+.prose blockquote {
+  border-left: 3px solid var(--color-primary);
+  padding-left: 0.75em;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0.5em 0;
+}
+
+/* 分割线 */
+.prose hr {
+  border-color: var(--color-border);
+  margin: 1em 0;
+}
+
+/* ============================================================
+   内联代码
+   ============================================================ */
+
+.prose code:not(pre code) {
+  font-family: 'JetBrainsMono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.875em;
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-border);
+}
+
+/* ============================================================
+   代码块（fenced code block）
+   ============================================================ */
+
 .prose pre {
   overflow-x: auto;
   max-width: 100%;
   white-space: pre;
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1em;
+  margin: 0.75em 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
 }
 
-/* Markdown 内联代码换行 */
-.prose code {
-  word-break: break-all;
-  overflow-wrap: anywhere;
+.prose pre code {
+  font-family: 'JetBrainsMono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: inherit;
+  background: none;
+  padding: 0;
+  border: none;
+  color: inherit;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
-/* Markdown 表格横向滚动 */
+/* ============================================================
+   代码块暗色模式
+   ============================================================ */
+
+[data-theme="dark"] .prose pre {
+  background: #0d1117;
+  border-color: var(--color-border);
+}
+
+/* highlight.js 暗色覆盖 — github 主题是亮色的 */
+[data-theme="dark"] .hljs {
+  color: #c9d1d9;
+  background: #0d1117;
+}
+
+[data-theme="dark"] .hljs-keyword,
+[data-theme="dark"] .hljs-selector-tag,
+[data-theme="dark"] .hljs-type {
+  color: #ff7b72;
+}
+
+[data-theme="dark"] .hljs-string,
+[data-theme="dark"] .hljs-addition,
+[data-theme="dark"] .hljs-attr {
+  color: #a5d6ff;
+}
+
+[data-theme="dark"] .hljs-number,
+[data-theme="dark"] .hljs-literal,
+[data-theme="dark"] .hljs-variable,
+[data-theme="dark"] .hljs-template-variable {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hljs-comment,
+[data-theme="dark"] .hljs-quote {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .hljs-title,
+[data-theme="dark"] .hljs-section,
+[data-theme="dark"] .hljs-name,
+[data-theme="dark"] .hljs-selector-id,
+[data-theme="dark"] .hljs-selector-class {
+  color: #d2a8ff;
+}
+
+[data-theme="dark"] .hljs-built_in,
+[data-theme="dark"] .hljs-params,
+[data-theme="dark"] .hljs-attribute {
+  color: #ffa657;
+}
+
+[data-theme="dark"] .hljs-meta {
+  color: #8b949e;
+}
+
+[data-theme="dark"] .hljs-symbol,
+[data-theme="dark"] .hljs-bullet,
+[data-theme="dark"] .hljs-link {
+  color: #79c0ff;
+}
+
+[data-theme="dark"] .hljs-deletion {
+  color: #ff7b72;
+}
+
+[data-theme="dark"] .hljs-emphasis {
+  font-style: italic;
+}
+
+[data-theme="dark"] .hljs-strong {
+  font-weight: 600;
+}
+
+/* ============================================================
+   表格
+   ============================================================ */
+
 .prose table {
   display: block;
   overflow-x: auto;
   max-width: 100%;
   white-space: nowrap;
+  border-collapse: collapse;
+  margin: 0.5em 0;
+  font-size: 0.875rem;
 }
 
-/* Markdown 图片自适应 */
+.prose th {
+  background: var(--color-surface-hover);
+  font-weight: 600;
+  padding: 0.4em 0.75em;
+  border: 1px solid var(--color-border);
+}
+
+.prose td {
+  padding: 0.3em 0.75em;
+  border: 1px solid var(--color-border);
+}
+
+.prose tr:nth-child(even) td {
+  background: var(--color-bg);
+}
+
+/* ============================================================
+   图片
+   ============================================================ */
+
 .prose img {
   max-width: 100%;
   height: auto;
+  border-radius: var(--radius-sm);
+  margin: 0.5em 0;
 }
 
-/* Process Tracker 内部滚动 */
+/* ============================================================
+   Process Tracker 内部滚动
+   ============================================================ */
+
 details.stream-process-body {
   max-height: 300px;
   overflow-y: auto;
+}
+
+/* ── Thinking Effort Slider ── */
+.thinking-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+.thinking-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent, #7c3aed);
+  cursor: pointer;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  margin-top: -5px;
+}
+.thinking-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+}
+.thinking-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-accent, #7c3aed);
+  cursor: pointer;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+.thinking-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-border, #e2e8f0);
 }
