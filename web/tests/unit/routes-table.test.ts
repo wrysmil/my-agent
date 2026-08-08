@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { routes } from '../../src/routes';
 
 describe('routes', () => {
-  it('declares 1 layout route wrapping 9 children', () => {
+  it('declares 1 layout route wrapping 10 children', () => {
     expect(routes.length).toBe(1);
-    expect(routes[0].children?.length).toBe(9);
+    expect(routes[0].children?.length).toBe(10);
   });
   it('declares index route → DashboardPage', () => {
     const index = routes[0].children?.find(c => c.index === true);
