@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { MessageBubble } from './MessageBubble';
 import type { ChatMessage } from '@/features/chat/useChatStream';
-import { MessageSquare, Cpu } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 export function MessageList({ messages }: { messages: ChatMessage[] }) {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -25,10 +25,6 @@ export function MessageList({ messages }: { messages: ChatMessage[] }) {
             </kbd>{' '}
             发送。可以在输入框下方选择模型和思考级别。
           </p>
-          <div className="flex items-center justify-center gap-2 text-xs text-text-muted/50">
-            <Cpu className="w-3 h-3" />
-            <span>支持 DeepSeek Chat / Reasoner 模型</span>
-          </div>
         </div>
       </div>
     );
