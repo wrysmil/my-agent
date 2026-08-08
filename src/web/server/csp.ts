@@ -26,7 +26,7 @@ import type { ServerResponse } from "node:http";
  * - `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`：
  *   'unsafe-inline' 仅留给 DOMPurify 输出（后续 F11 用），F0 主题切换
  *   不引入 inline style（只改 `<html data-theme>` + CSS 变量）
- * - `font-src https://fonts.gstatic.com data:`：Google Fonts
+ * - `font-src 'self' data:`：自托管 woff2 + data:（不再依赖 Google Fonts CDN）
  * - `img-src 'self' data:`：data: 给 inline SVG / base64 占位
  * - `object-src 'none'` / `frame-ancestors 'none'`：禁用 embed / iframe 嵌套
  * - `base-uri 'self'` / `form-action 'self'`：防 `<base>` 劫持 + 表单外发
@@ -35,7 +35,7 @@ export const CSP_HEADER = [
   "default-src 'self'",
   "script-src 'self'",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-  "font-src https://fonts.gstatic.com data:",
+  "font-src 'self' data:",
   "img-src 'self' data:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
