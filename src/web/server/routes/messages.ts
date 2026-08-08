@@ -563,16 +563,9 @@ export async function adaptStreamEvent(
     }
 
     case "tool_use_end": {
-      writeEvent(res, {
-        id: sse.seq,
-        event: "tool_result",
-        data: {
-          type: "tool_result",
-          tool_use_id: ev.id,
-          content: "",
-          is_error: false,
-        },
-      });
+      // Provider 层工具参数流结束。Runner 不 yield 此事件（仅 break），
+      // 故此处为防御性代码。不做任何 SSE 写入——工具调用的完成由后续
+      // tool_start（非 partial tool_use）标记，结果由 tool_end 发送。
       return;
     }
 

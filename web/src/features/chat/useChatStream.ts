@@ -75,11 +75,30 @@ function blocksText(blocks: Block[]): string {
 // Serialized types for history loading
 // ============================================================
 
+/** 对应后端 SerializedMessage（session-serde.ts）的 JSON 序列化格式 */
+interface SerializedContentBlock {
+  type: string;
+  text?: string;
+  thinking?: string;
+  thinkingSignature?: string;
+  /** tool_use 块：工具调用 ID（API camelCase） */
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+  /** tool_result 块：对应的 tool_use ID（API camelCase） */
+  toolUseId?: string;
+  content?: string;
+  isError?: boolean;
+  data?: string;
+  mediaType?: string;
+}
+
 interface SerializedMsg {
   role: string;
-  content?: string;
-  text?: string;
-  contentBlocks?: Array<{ type: string; text?: string; thinking?: string; tool_use_id?: string; name?: string; content?: string; is_error?: boolean }>;
+  /** API 返回的 content 始终是 MessageContent[] 数组（非字符串） */
+  content: SerializedContentBlock[];
+  turnId?: number;
+  ts?: number;
 }
 
 // ============================================================
@@ -123,20 +142,17 @@ export function useChatStream(sessionId: string) {
           const msgId = nextMsgId();
 
           if (role === 'user') {
+            // user 消息的 content 是 MessageContent[] 数组，提取 text 块
             let text = '';
-            if (typeof m.text === 'string' && m.text) {
-              text = m.text;
-            } else if (typeof m.content === 'string' && m.content) {
-              text = m.content;
-            } else if (Array.isArray(m.content)) {
-              text = (m.content as Array<{ type: string; text?: string }>)
+            if (Array.isArray(m.content)) {
+              text = m.content
                 .filter((b) => b.type === 'text')
                 .map((b) => b.text || '')
                 .join('\n');
             }
             loaded.push({ id: msgId, role: 'user', blocks: [], text });
           } else {
-            // Assistant 消息：尝试解析 content blocks
+            // Assistant 消息：解析 content blocks（含 tool_use / tool_result / thinking）
             const blocks = parseHistoryBlocks(m, msgId);
             loaded.push({ id: msgId, role: 'assistant', blocks });
           }
@@ -750,62 +766,50 @@ export function useChatStream(sessionId: string) {
 // 历史消息解析
 // ============================================================
 
-function parseHistoryBlocks(m: SerializedMsg, msgId: string): Block[] {
+function parseHistoryBlocks(m: SerializedMsg, _msgId: string): Block[] {
   const blocks: Block[] = [];
-  const contentBlocks = m.contentBlocks ?? [];
+  // API 返回的 content 始终是 MessageContent[] 数组
+  const contentArray = Array.isArray(m.content) ? m.content : [];
 
-  if (contentBlocks.length > 0) {
-    for (const cb of contentBlocks) {
-      switch (cb.type) {
-        case 'text':
-          if (cb.text) {
-            blocks.push({
-              id: nextBlockId(), type: 'text', status: 'done',
-              text: cb.text,
-            });
-          }
-          break;
-        case 'thinking':
-          if (cb.thinking) {
-            blocks.push({
-              id: nextBlockId(), type: 'thinking', status: 'done',
-              thinking: cb.thinking, collapsed: true,
-            });
-          }
-          break;
-        case 'tool_use':
+  for (const cb of contentArray) {
+    switch (cb.type) {
+      case 'text':
+        if (cb.text) {
           blocks.push({
-            id: nextBlockId(), type: 'tool_call', status: 'done',
-            toolId: cb.tool_use_id ?? '', toolName: cb.name ?? '',
-            inputRaw: '',
+            id: nextBlockId(), type: 'text', status: 'done',
+            text: cb.text,
           });
-          break;
-        case 'tool_result':
+        }
+        break;
+      case 'thinking':
+        if (cb.thinking) {
           blocks.push({
-            id: nextBlockId(), type: 'tool_result', status: cb.is_error ? 'error' : 'done',
-            toolCallId: cb.tool_use_id ?? '', toolName: cb.name ?? '',
-            content: cb.content ?? '', isError: cb.is_error ?? false,
+            id: nextBlockId(), type: 'thinking', status: 'done',
+            thinking: cb.thinking, collapsed: true,
           });
-          break;
-      }
-    }
-  }
-
-  // Fallback: 如果 content 是字符串
-  if (blocks.length === 0) {
-    let text = '';
-    if (typeof m.text === 'string' && m.text) {
-      text = m.text;
-    } else if (typeof m.content === 'string' && m.content) {
-      text = m.content;
-    } else if (Array.isArray(m.content)) {
-      text = (m.content as Array<{ type: string; text?: string }>)
-        .filter((b) => b.type === 'text')
-        .map((b) => b.text || '')
-        .join('\n');
-    }
-    if (text) {
-      blocks.push({ id: nextBlockId(), type: 'text', status: 'done', text });
+        }
+        break;
+      case 'tool_use':
+        // API 返回 camelCase：id, name, input
+        blocks.push({
+          id: nextBlockId(), type: 'tool_call', status: 'done',
+          toolId: cb.id ?? '',
+          toolName: cb.name ?? '',
+          input: cb.input,
+          inputRaw: '',
+        });
+        break;
+      case 'tool_result':
+        // API 返回 camelCase：toolUseId, content, isError
+        blocks.push({
+          id: nextBlockId(), type: 'tool_result',
+          status: cb.isError ? 'error' : 'done',
+          toolCallId: cb.toolUseId ?? '',
+          toolName: cb.name ?? '',
+          content: cb.content ?? '',
+          isError: cb.isError ?? false,
+        });
+        break;
     }
   }
 
