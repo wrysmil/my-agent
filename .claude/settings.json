@@ -58,7 +58,23 @@
       "Bash(git -c user.email=noreply@anthropic.com -c user.name=Claude commit -m ' *)",
       "Bash(echo \"exit=$?\")",
       "Bash(git restore *)",
-      "Bash(git rev-list *)"
+      "Bash(git rev-list *)",
+      "Bash(pnpm exec *)",
+      "Bash(./node_modules/.bin/tsc -b)",
+      "Bash(echo \"EXIT=$?\")",
+      "Bash(./node_modules/.bin/vitest run *)",
+      "Bash(git diff *)",
+      "Bash(node -e \"require\\('fs'\\).writeFileSync\\('/Users/mima0000/Documents/学习-001/do-project/my-agent/web/tests/e2e/fixtures/sample.png', Buffer.from\\('89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c4890000000d49444154789c636060000000050001a5f645400000000049454e44ae426082', 'hex'\\)\\)\")",
+      "Bash(node -e \"require\\('fs'\\).writeFileSync\\('/Users/mima0000/Documents/学习-001/do-project/my-agent/web/tests/e2e/fixtures/big-file-11mb.bin', Buffer.alloc\\(11 * 1024 * 1024\\)\\)\")",
+      "Bash(rg --files '/Users/mima0000/Documents/学习-001/源码学习/Orkas/src/renderer')",
+      "Bash(rg -i '\\(input|composer|chat\\).*\\\\.\\(html|css|scss|less\\)$')",
+      "Bash(rg -i '\\(chat|input|composer|message\\).*\\\\.\\(html|hbs|ejs\\)$')",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"AI chat agent developer tool SaaS dashboard\" --design-system -p \"MyAgent Chat\" -f markdown)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"developer tool AI assistant chat minimalist clean purple indigo\" --design-system -p \"MyAgent Chat\" -f markdown)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"chat message bubble spacing animation micro-interaction\" --domain ux -n 5)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"layout card empty-state transitions\" --stack react -n 5)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"minimal clean soft rounded card\" --domain style -n 5)",
+      "Bash(python3 .claude/skills/ui-ux-pro-max/scripts/search.py \"empty state skeleton loading\" --domain ux -n 5)"
     ],
     "ask": [
       "EnterWorktree"

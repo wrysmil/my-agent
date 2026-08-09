@@ -86,5 +86,81 @@
     "deleted": "Deleted",
     "copied": "Copied to clipboard",
     "error": "Operation failed, please try again"
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning, {name}",
+      "afternoon": "Good afternoon, {name}",
+      "evening": "Good evening, {name}",
+      "fallback_name": "friend"
+    },
+    "subtitle": "What would you like to do? Describe a task or pick a recent session to continue.",
+    "tasks": {
+      "section_title": "Try these tasks, one click to run",
+      "research": {
+        "title": "Research",
+        "description": "Research open-source AI desktop applications",
+        "deliverable": "Deliverable: research report"
+      },
+      "video": {
+        "title": "Video",
+        "description": "Make a science video about AI development trends",
+        "deliverable": "Deliverable: finished video"
+      },
+      "image": {
+        "title": "Image",
+        "description": "Design a poster for the City Summer Coffee Festival: Aug 16 14:00–20:00, City Central Square, featuring hand-brew experience, coffee market, and limited special drinks.",
+        "deliverable": "Deliverable: published poster"
+      },
+      "design": {
+        "title": "Design",
+        "description": "Design login & signup UI for a personal accounting app",
+        "deliverable": "Deliverable: login page design draft"
+      },
+      "office": {
+        "title": "Office",
+        "description": "Make an e-commerce monthly sales report",
+        "deliverable": "Deliverable: monthly report file"
+      },
+      "writing": {
+        "title": "Writing",
+        "description": "Write a social-media post recommending AI office assistants",
+        "deliverable": "Deliverable: social media draft"
+      },
+      "development": {
+        "title": "Development",
+        "description": "Build a portfolio website for a product designer",
+        "deliverable": "Deliverable: website"
+      },
+      "growth": {
+        "title": "Growth",
+        "description": "Plan SEO & GEO strategy for orkas.ai",
+        "deliverable": "Deliverable: growth plan"
+      },
+      "fallback_hint": "Offline suggestions"
+    },
+    "recent_sessions": "Recent sessions"
+  },
+  "composer": {
+    "attachment": {
+      "add": "Add attachment",
+      "remove": "Remove {filename}",
+      "popover_title": "Add attachment",
+      "menu_upload": "Upload file",
+      "menu_clipboard": "Paste from clipboard (coming soon)",
+      "menu_url": "Import from URL (coming soon)",
+      "toast_stub": "Attachment upload is in development, UI only for now",
+      "toast_file_too_large": "File exceeds 10MB",
+      "toast_invalid_mime": "Unsupported file type: {ext}",
+      "toast_too_many": "At most 5 files at a time",
+      "chip_size_kb": "{size} KB",
+      "chip_size_mb": "{size} MB"
+    },
+    "context": {
+      "to": "To: {value}",
+      "workspace": "Workspace: {value}",
+      "ai_default": "AI default",
+      "workspace_default": "default"
+    }
   }
 }

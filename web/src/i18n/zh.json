@@ -86,5 +86,81 @@
     "deleted": "已删除",
     "copied": "已复制到剪贴板",
     "error": "操作失败，请重试"
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "早上好，{name}",
+      "afternoon": "下午好，{name}",
+      "evening": "晚上好，{name}",
+      "fallback_name": "朋友"
+    },
+    "subtitle": "想完成什么？描述任务，或选一个最近会话继续",
+    "tasks": {
+      "section_title": "试试这些任务，点一下就能跑",
+      "research": {
+        "title": "研究",
+        "description": "研究开源 AI 桌面应用",
+        "deliverable": "交付：研究报告"
+      },
+      "video": {
+        "title": "视频",
+        "description": "制作一条 AI 发展趋势科普视频",
+        "deliverable": "交付：视频成片"
+      },
+      "image": {
+        "title": "图片",
+        "description": "设计城市夏日咖啡节活动海报：8 月 16 日 14:00–20:00，城市中央广场，包含手冲体验、咖啡市集和限定特调。",
+        "deliverable": "交付：发布海报"
+      },
+      "design": {
+        "title": "设计",
+        "description": "设计个人记账应用登录注册 UI",
+        "deliverable": "交付：登录页设计稿"
+      },
+      "office": {
+        "title": "办公",
+        "description": "制作一份电商销售月报",
+        "deliverable": "交付：月报文件"
+      },
+      "writing": {
+        "title": "写作",
+        "description": "写一篇 AI 办公助手推荐社媒文章",
+        "deliverable": "交付：社媒成稿"
+      },
+      "development": {
+        "title": "开发",
+        "description": "制作产品设计师个人作品集网站",
+        "deliverable": "交付：网站"
+      },
+      "growth": {
+        "title": "增长",
+        "description": "为 orkas.ai 制定 SEO 与 GEO 方案",
+        "deliverable": "交付：增长方案"
+      },
+      "fallback_hint": "离线推荐"
+    },
+    "recent_sessions": "最近会话"
+  },
+  "composer": {
+    "attachment": {
+      "add": "添加附件",
+      "remove": "移除 {filename}",
+      "popover_title": "添加附件",
+      "menu_upload": "上传文件",
+      "menu_clipboard": "从剪贴板粘贴（开发中）",
+      "menu_url": "从 URL 导入（开发中）",
+      "toast_stub": "附件上传开发中，本期仅 UI 占位",
+      "toast_file_too_large": "文件超过 10MB",
+      "toast_invalid_mime": "不支持的文件类型：{ext}",
+      "toast_too_many": "一次最多 5 个文件",
+      "chip_size_kb": "{size} KB",
+      "chip_size_mb": "{size} MB"
+    },
+    "context": {
+      "to": "给：{value}",
+      "workspace": "工作区：{value}",
+      "ai_default": "AI 默认",
+      "workspace_default": "默认"
+    }
   }
 }

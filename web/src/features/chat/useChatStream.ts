@@ -136,6 +136,9 @@ export function useChatStream(sessionId: string) {
   const submittingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const statusRef = useRef<ChatStatus>('idle');
   const optionsRef = useRef<ChatOptions>({});
+  // 追踪 message_stop 事件：后端发完 message_stop 后若连接异常关闭（非主动 abort），
+  // 用此标记将状态切为 'done' 而非 'error'，避免"回复完了但停止按钮仍显示"。
+  const messageStopRef = useRef(false);
 
   const setStatusSafe = useCallback((s: ChatStatus) => {
     statusRef.current = s;
@@ -216,6 +219,7 @@ export function useChatStream(sessionId: string) {
       controllerRef.current = ctrl;
       streamIdRef.current = null;
       optionsRef.current = options ?? {};
+      messageStopRef.current = false;
       setStatusSafe('submitting');
 
       const userMsgId = nextMsgId();
@@ -605,6 +609,9 @@ export function useChatStream(sessionId: string) {
               }
 
               case 'message_stop': {
+                // 标记：后端已确认消息完成。若后续连接异常关闭（非主动 abort），
+                // catch 块用此标记把 status 切为 'done' 而非 'error'。
+                messageStopRef.current = true;
                 // 标记所有 streaming block 为 done
                 setMessages((m) => {
                   const last = m[m.length - 1];
@@ -805,6 +812,11 @@ export function useChatStream(sessionId: string) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           logger.debug('⏹️ 请求已取消');
           setStatusSafe('aborted');
+        } else if (messageStopRef.current) {
+          // 后端已发 message_stop（消息内容完整）但连接异常关闭：
+          // 视为正常完成而非 error，避免「回复完了但停止按钮仍显示」。
+          logger.debug('📥 流式连接在 message_stop 后关闭，视为完成');
+          setStatusSafe('done');
         } else {
           logger.error('❌ 流式请求失败', { error: err instanceof Error ? err.message : String(err) });
           setStatusSafe('error');

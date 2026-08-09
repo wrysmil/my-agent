@@ -21,18 +21,22 @@ export function MessageList({
   if (messages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center" role="log" aria-live="polite">
-        <div className="text-center space-y-3 max-w-md px-6">
+        <div className="text-center space-y-4 max-w-md px-6">
           <div className="flex justify-center">
-            <MessageSquare className="w-12 h-12 text-text-muted/30" />
+            <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center">
+              <MessageSquare className="w-7 h-7 text-primary/40" />
+            </div>
           </div>
-          <h3 className="text-lg font-medium text-text-muted">开始对话</h3>
-          <p className="text-sm text-text-muted/70 leading-relaxed">
-            在下方输入框输入消息，按{' '}
-            <kbd className="px-1.5 py-0.5 text-xs bg-surface-hover border border-border rounded">
-              ⌘+Enter
-            </kbd>{' '}
-            发送。可以在输入框下方选择模型和思考级别。
-          </p>
+          <div>
+            <h3 className="text-base font-semibold text-text mb-1">开始对话</h3>
+            <p className="text-sm text-text-muted/70 leading-relaxed">
+              在下方输入框输入消息，按{' '}
+              <kbd className="px-1.5 py-0.5 text-[11px] bg-surface-hover border border-border rounded font-mono">
+                Enter
+              </kbd>{' '}
+              发送。Shift+Enter 换行。
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -43,21 +47,24 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-2 space-y-1"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-6 pb-4"
       role="log"
       aria-live="polite"
     >
-      {messages.map((m) => (
-        <MessageBubble
-          key={m.id}
-          message={m}
-          isStreaming={
-            isStreaming &&
-            m.role === 'assistant' &&
-            m === messages[messages.length - 1]
-          }
-        />
-      ))}
+      <div className="space-y-5">
+        {messages.map((m) => (
+          <div key={m.id} className="message-enter">
+            <MessageBubble
+              message={m}
+              isStreaming={
+                isStreaming &&
+                m.role === 'assistant' &&
+                m === messages[messages.length - 1]
+              }
+            />
+          </div>
+        ))}
+      </div>
       <div ref={bottomRef} />
     </div>
   );

@@ -3,13 +3,18 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatStream } from '@/features/chat/useChatStream';
 import type { ChatOptions } from '@/features/chat/types';
+import type { AttachmentDraft } from '@/features/attachments/validateAttachment';
 import {
   setPendingMessage,
   takePendingMessage,
 } from '@/features/chat/pending-message';
 import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
+import type { DropdownOption } from '@/components/chat/ContextDropdown';
 import { MessageList } from '@/components/chat/MessageList';
+import { TaskSuggestionsGrid } from '@/features/dashboard/TaskSuggestionsGrid';
+import type { TaskSuggestion } from '@/features/dashboard/taskSuggestions';
+import { useAgents } from '@/features/agents/useAgents';
 import { apiGet, apiPost } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { logger } from '@/lib/logger';
@@ -34,6 +39,14 @@ const EFFORT_LEVELS_SHORT: Record<Effort, string> = {
   high: 'HIGH',
 };
 
+/**
+ * 「工作区：xxx」选项 —— 本期最小 fallback。
+ * 未来接 /api/workspaces 后替换为动态数据。
+ */
+const WORKSPACE_FALLBACK: readonly DropdownOption[] = [
+  { id: '__default__', label: '默认' },
+];
+
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -46,6 +59,20 @@ export function ChatPage() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [thinkingLevel, setThinkingLevel] = useState<Effort>('medium');
   const [showModelMenu, setShowModelMenu] = useState(false);
+
+  // Context dropdown state（本期只存 id，UI 立刻反映；未来接 ChatOptions）
+  const [toValue, setToValue] = useState<string>('__default__');
+  const [workspaceValue, setWorkspaceValue] = useState<string>('__default__');
+
+  // ── 「给：xxx」选项 —— 从 /api/agents 动态拉取 ──
+  const { data: agents } = useAgents();
+  const toOptions: DropdownOption[] = [
+    { id: '__default__', label: t('composer.context.ai_default') },
+    ...(agents ?? []).map((a) => ({ id: a.id, label: a.name })),
+  ];
+
+  // ── 「工作区：xxx」选项 —— 本期最小 fallback ──
+  const workspaceOptions: readonly DropdownOption[] = WORKSPACE_FALLBACK;
 
   // Fetch available models from API
   const { data: modelsData } = useQuery({
@@ -104,23 +131,63 @@ export function ChatPage() {
   const sendRef = useRef(send);
   useEffect(() => { sendRef.current = send; }, [send]);
 
-  // 「懒创建」之后：新 ChatPage 实例拿到新 sessionId → 历史加载完 → 触发 pending send
+  /**
+   * 消费 pending-message：把 prompt 填入 Composer textarea，或自动发送。
+   *
+   * 触发场景：
+   *   1. 懒创建会话 → setPendingMessage(newId, text, { autoSend: true, options })
+   *      navigate → 新 ChatPage mount → 此 effect 自动调用 send() 发送
+   *   2. Dashboard 任务卡跳转 → setPendingMessage('__dashboard__', prompt)
+   *      → 填入 Composer textarea（不自动发送）
+   *   3. 会话续发 → setPendingMessage(sessionId, text) → 填入 Composer textarea
+   */
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+
   useEffect(() => {
     if (!sessionId || !historyLoaded) return;
-    const pending = takePendingMessage(sessionId);
-    if (!pending) return;
-    const opts: ChatOptions = {};
-    if (selectedModel) opts.model = selectedModel;
-    if (thinkingLevel !== 'off') opts.thinkingLevel = thinkingLevel;
-    logger.debug(`📤 续发首条消息 → ${sessionId}`);
-    sendRef.current(pending, opts);
-  }, [sessionId, historyLoaded, selectedModel, thinkingLevel]);
+    const entry = takePendingMessage(sessionId);
+    if (!entry) return;
+    if (entry.autoSend) {
+      // 懒创建会话：自动发送消息（无需用户再点一次发送按钮）
+      logger.debug(`🚀 懒创建后自动发送（session=${sessionId}）`);
+      sendRef.current(entry.text, entry.options);
+    } else {
+      // 会话续发：仅填入 textarea
+      logger.debug(`📥 把 pending prompt 填入 Composer（session=${sessionId}）`);
+      setPendingPrompt(entry.text);
+    }
+  }, [sessionId, historyLoaded]);
+
+  // 「dashboard 任务卡跳转」专用：sessionId 为空，historyLoaded 也是 false
+  // → 上面 effect 跳过 → 单独消费 '__dashboard__' 这份
+  useEffect(() => {
+    if (sessionId) return;
+    const entry = takePendingMessage('__dashboard__');
+    if (!entry) return;
+    logger.debug(`📥 把 dashboard pending prompt 填入 Composer`);
+    setPendingPrompt(entry.text);
+  }, [sessionId]);
+
+  /**
+   * 任务卡片被点：直接把 prompt 填入当前 Composer（不自动发送）。
+   *
+   * 因为已经在 /chat 路由上，不需要 navigate，也不需要 setPendingMessage。
+   */
+  const handlePickTask = (task: TaskSuggestion) => {
+    setPendingPrompt(task.prompt);
+  };
 
   const handleSend = useCallback(
-    async (text: string) => {
+    async (text: string, attachments: AttachmentDraft[]) => {
       const options: ChatOptions = {};
       if (selectedModel) options.model = selectedModel;
       if (thinkingLevel !== 'off') options.thinkingLevel = thinkingLevel;
+
+      // 本期附件是 UI 占位：上传逻辑 stub，未接 API。
+      // 仅在控制台记录一下，让「附件真的被消费」的体感存在。
+      if (attachments.length > 0) {
+        logger.debug(`📎 携带 ${attachments.length} 个附件（本期仅 UI 占位）`);
+      }
 
       if (sessionId) {
         // 已存在会话 → 直接发
@@ -138,14 +205,14 @@ export function ChatPage() {
           { kind: 'gconv' },
         );
         const newId = data.session.id;
-        logger.debug(`� 懒创建会话: ${newId}（由首条消息触发）`);
+        logger.debug(`🆕 懒创建会话: ${newId}（由首条消息触发）`);
         queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
         try { localStorage.setItem('my-agent.activeSession', newId); } catch {}
-        // 把待发送文本存进模块级 Map，新 mount 的 ChatPage 会接住
-        setPendingMessage(newId, text);
+        // 把待发送文本 + 选项存进模块级 Map，新 mount 的 ChatPage 会接住并自动发送
+        setPendingMessage(newId, text, { autoSend: true, options });
         navigate(`/chat/${newId}`, { replace: true });
         // 注意：不在此处调用 send，因为当前 useChatStream 绑的是旧 cid。
-        // 路由跳转后，新实例的 effect 会消费 pending 并触发真正的发送。
+        // 路由跳转后，新实例的 effect 会消费 pending 并自动调用 send()。
       } catch (err) {
         logger.error('❌ 创建会话失败', {
           error: err instanceof Error ? err.message : String(err),
@@ -293,42 +360,87 @@ export function ChatPage() {
     </>
   );
 
+  // ── 是否显示任务栅格（代替 MessageList）──
+  // 条件：无 sessionId（空白对话页）+ 无消息 + 非创建中
+  const showTaskGrid = !sessionId && messages.length === 0 && !creating;
+
   return (
     <div className="flex flex-col h-full min-h-0" data-testid="page-chat">
-      {/* Header — simplified: just title + status */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-surface">
-        <h2 className="text-sm font-medium text-text-muted shrink-0">
-          {t('nav.chat')}
-        </h2>
+      {/* ── Header（Orkas chat-header 风格）──
+          P1: 16px/600 标题 + 柔和状态指示器，顶部渐变装饰线 */}
+      <div className="relative shrink-0 border-b border-border bg-surface">
+        {/* 顶部渐变装饰线 */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary/60 via-primary/40 to-transparent" />
+        <div className="flex items-center gap-3 px-5 py-3">
+          <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary/10 text-primary shrink-0">
+            <Sparkles className="w-3.5 h-3.5" />
+          </span>
+          <h2 className="text-[15px] font-semibold text-text tracking-tight">
+            {sessionId ? t('nav.chat') : t('nav.chat')}
+          </h2>
 
-        {/* Status indicator */}
-        <div className="flex-1" />
-        {creating && !sessionId && (
-          <span className="text-xs text-text-muted/60">{t('chat.generating')}</span>
-        )}
-        {status === 'streaming' && (
-          <span className="text-xs text-text-muted/60">回复中...</span>
-        )}
-        {status === 'error' && (
-          <button
-            onClick={retry}
-            className="flex items-center gap-1 text-xs text-danger hover:underline"
-          >
-            <RefreshCw className="w-3 h-3" />
-            重试
-          </button>
-        )}
+          <div className="flex-1" />
+          {/* Status indicator — subtle pill */}
+          {creating && !sessionId && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-text-muted/60 bg-surface-hover px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              {t('chat.generating')}
+            </span>
+          )}
+          {status === 'streaming' && (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-primary/80 bg-primary/5 px-2.5 py-1 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              回复中...
+            </span>
+          )}
+          {status === 'error' && (
+            <button
+              onClick={retry}
+              className="inline-flex items-center gap-1 text-[11px] text-danger bg-danger/5 hover:bg-danger/10 px-2.5 py-1 rounded-full transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              重试
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Loading history indicator (only when an existing session is loading) */}
       {sessionId && !historyLoaded && (
-        <div className="flex items-center justify-center py-2 bg-surface-hover/50 border-b border-border">
-          <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full mr-2" />
+        <div className="flex items-center justify-center gap-3 py-3 bg-surface-hover/30 border-b border-border">
+          <div className="animate-spin h-3.5 w-3.5 border-2 border-primary border-t-transparent rounded-full" />
           <span className="text-xs text-text-muted">加载历史消息...</span>
         </div>
       )}
 
-      <MessageList messages={messages} status={status} />
+      {/* ── 消息区 / 任务栅格 ──
+          当 messages=[] 且无 sessionId（空白对话页）时显示任务栅格；
+          否则显示 MessageList。 */}
+      {showTaskGrid ? (
+        <div className="flex-1 overflow-y-auto animate-fade-in">
+          <div className="max-w-[960px] mx-auto w-full px-6 py-10">
+            {/* 空白对话页问候语（Orkas .new-chat-header 风格） */}
+            <div className="text-center mb-10">
+              <h1 className="text-[32px] font-semibold tracking-[-0.025em] text-text leading-tight">
+                {t('dashboard.greeting.morning', { name: '' }).replace(/[：:]\s*\{.*\}$/, '').replace(/[：:]\s*$/, '') || '你好，有什么可以帮忙的？'}
+              </h1>
+              <p className="mt-2.5 text-[15px] text-text-muted leading-relaxed">
+                {t('dashboard.subtitle')}
+              </p>
+            </div>
+            <div className="animate-stagger">
+              <TaskSuggestionsGrid onPick={handlePickTask} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="flex-1 overflow-hidden animate-fade-in">
+          <div className="h-full max-w-[860px] mx-auto w-full">
+            <MessageList messages={messages} status={status} />
+          </div>
+        </div>
+      )}
+
       {/*
         Composer 的 `key` 跟随 sessionId：会话切换时强制重挂载，
         让输入框文本也跟着重置。否则从 /chat/:a → /chat（点 ➕），
@@ -342,6 +454,14 @@ export function ChatPage() {
         onAbort={abort}
         status={creating ? 'submitting' : status}
         modelSelector={modelSelector}
+        toOptions={toOptions}
+        workspaceOptions={workspaceOptions}
+        toValue={toValue}
+        workspaceValue={workspaceValue}
+        onToChange={setToValue}
+        onWorkspaceChange={setWorkspaceValue}
+        initialText={pendingPrompt ?? undefined}
+        prominent={showTaskGrid}
       />
     </div>
   );

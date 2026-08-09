@@ -1,9 +1,33 @@
+/**
+ * Dashboard 页（升级版）。
+ *
+ * 来源：spec § 4 .ai-runtime-artifacts/specs/2026-08-09-chat-composer-redesign-spec.md
+ * 落地：plan § Step 3.2
+ *
+ * 布局（参考 Orkas）：
+ *   ┌──────────────────────────────────────────────────┐
+ *   │ <大字招呼语>                                          │
+ *   │ <副标题>                                              │
+ *   │                                                    │
+ *   │ ┌─ TaskSuggestionsGrid (max-w 1200) ─────────┐ │
+ *   │ │ 8 张卡片 4 列栅格                                │ │
+ *   │ └────────────────────────────────────────────┘ │
+ *   │                                                    │
+ *   │ <Stats Grid (4 cards)>                             │
+ *   │ <Recent Sessions>                                  │
+ *   └──────────────────────────────────────────────────┘
+ *
+ * 招呼语：localStorage['my-agent.displayName']，本期未实装取 fallback「朋友」。
+ * 时段：<12 早 / <18 下午 / 否则晚。
+ */
+
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/i18n/useTranslation';
 import { useSessions, type SessionItem } from '@/features/sessions/useSessions';
 import { useAgents } from '@/features/agents/useAgents';
 import { useSkills } from '@/features/skills/useSkills';
 import { useProviders } from '@/features/providers/useProviders';
-import { useTranslation } from '@/i18n/useTranslation';
 import { Bot, Blocks, Plug, MessageSquare, ArrowRight, Loader2 } from 'lucide-react';
 
 function StatCard({ icon: Icon, label, value, loading, color }: {
@@ -30,9 +54,31 @@ function StatCard({ icon: Icon, label, value, loading, color }: {
   );
 }
 
+function greetingKey(hour: number): 'morning' | 'afternoon' | 'evening' {
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [displayName, setDisplayName] = useState<string>('');
+
+  // 本期不实装 displayName 持久化（spec § 6.3）；读 localStorage 兜底空值 → 显示「朋友」
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('my-agent.displayName');
+      if (stored) setDisplayName(stored);
+    } catch {
+      /* jsdom / SSR 等场景下忽略 */
+    }
+  }, []);
+
+  const greeting = t(`dashboard.greeting.${greetingKey(new Date().getHours())}`, {
+    name: displayName || t('dashboard.greeting.fallback_name'),
+  });
+  const subtitle = t('dashboard.subtitle');
 
   const { data: sessionsData, isLoading: sessionsLoading } = useSessions(false);
   const sessions: SessionItem[] = sessionsData?.sessions ?? [];
@@ -47,11 +93,15 @@ export function DashboardPage() {
 
   return (
     <div className="h-full overflow-y-auto p-6 space-y-6" data-testid="page-dashboard">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold text-text">my-agent</h1>
-        <p className="text-sm text-text-muted mt-1">AI 辅助开发代理管理平台</p>
-      </div>
+      {/* Greeting */}
+      <header className="max-w-[1200px] mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold text-text" data-testid="dashboard-greeting">
+          {greeting}
+        </h1>
+        <p className="text-sm text-text-muted mt-2" data-testid="dashboard-subtitle">
+          {subtitle}
+        </p>
+      </header>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -137,7 +187,7 @@ export function DashboardPage() {
         {/* Recent Sessions */}
         <div className="rounded-lg border border-border bg-surface p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-text">最近会话</h3>
+            <h3 className="text-sm font-semibold text-text">{t('dashboard.recent_sessions')}</h3>
             <button
               onClick={() => navigate('/chat')}
               className="text-xs text-primary hover:underline"

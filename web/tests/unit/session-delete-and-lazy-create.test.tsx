@@ -31,6 +31,24 @@ vi.mock('lucide-react', () => ({
   Moon: () => <span>moon</span>,
   Languages: () => <span>lang</span>,
   Command: () => <span>cmd</span>,
+  // TaskSuggestionCard 动态图标（import * as Icons）
+  Search: () => <span>search</span>,
+  Video: () => <span>video</span>,
+  Image: () => <span>img</span>,
+  Palette: () => <span>palette</span>,
+  FileSpreadsheet: () => <span>file-spreadsheet</span>,
+  PenLine: () => <span>pen-line</span>,
+  Code: () => <span>code</span>,
+  TrendingUp: () => <span>trending-up</span>,
+  ArrowUpRight: () => <span>arrow-up-right</span>,
+  Upload: () => <span>upload</span>,
+  ClipboardPaste: () => <span>clipboard-paste</span>,
+  Link2: () => <span>link2</span>,
+  FileText: () => <span>file-text</span>,
+  AlertCircle: () => <span>alert-circle</span>,
+  X: () => <span>x</span>,
+  ArrowRight: () => <span>arrow-right</span>,
+  Blocks: () => <span>blocks</span>,
 }));
 
 vi.mock('@/i18n/useTranslation', () => ({
@@ -83,6 +101,26 @@ describe('ChatPage — 会话懒创建（首条消息触发）', () => {
   it('首条消息触发 POST /api/sessions（带 kind）', async () => {
     const fetchSpy = vi.spyOn(global, 'fetch');
 
+    // ChatPage mount 时先发起的查询（useAgents / models / providers）
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ ok: true, data: { agents: [] } }),
+        { status: 200 },
+      ),
+    );
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ ok: true, data: { models: [] } }),
+        { status: 200 },
+      ),
+    );
+    fetchSpy.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({ ok: true, data: null }),
+        { status: 200 },
+      ),
+    );
+
     // 1) POST /api/sessions → 返回新 id
     fetchSpy.mockResolvedValueOnce(
       new Response(
@@ -109,9 +147,9 @@ describe('ChatPage — 会话懒创建（首条消息触发）', () => {
 
     render(<ChatPage />, { wrapper });
 
-    const textarea = await screen.findByPlaceholderText(/输入消息/);
+    const textarea = await screen.findByTestId('composer-textarea');
     await userEvent.type(textarea, '你好');
-    await userEvent.click(screen.getByRole('button', { name: /发送/ }));
+    await userEvent.click(screen.getByTestId('composer-send-button'));
 
     await waitFor(() => {
       const createCalls = fetchSpy.mock.calls.filter(
