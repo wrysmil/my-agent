@@ -3,7 +3,7 @@
 # 用法: sh manage.sh {start|stop|restart|status|logs}
 #
 # 策略：
-#   - 用 setsid 启动 npm，让整个进程树独立于 shell 的进程组，便于整体清除
+#   - 启动时让 npm/node 脱离当前 shell（Linux: setsid；macOS: nohup+disown）
 #   - 以端口为唯一真实运行状态源
 #   - stop 时杀进程组 + 端口监听进程 + 兜底 pkill
 #   - restart 必须彻底杀死再启动
@@ -38,6 +38,21 @@ find_all_pids() {
     pgrep -f "serve.ts" 2>/dev/null || true
     pgrep -f "src/web/server" 2>/dev/null || true
   } | sort -u | grep -v "^$" || true
+}
+
+# 在后台启动命令并彻底脱离当前 shell，返回子进程 PID。
+#   Linux: setsid 创建新会话/进程组，便于 kill_hard 整体清除
+#   macOS (setsid 不存在): nohup 免疫 SIGHUP，&+disown 脱离 shell 作业表；
+#                          kill_hard 已用 pgrep 模式兜底清理，不依赖进程组
+launch_detached() {
+  local cmd="$1"
+  if command -v setsid >/dev/null 2>&1; then
+    setsid bash -c "$cmd" </dev/null >/dev/null 2>&1 &
+  else
+    nohup bash -c "$cmd" </dev/null >/dev/null 2>&1 &
+    disown 2>/dev/null || true
+  fi
+  echo $!
 }
 
 # 等待端口释放
@@ -115,9 +130,9 @@ start() {
   cd "$PROJECT_DIR"
   rm -f "$PID_FILE"
 
-  # setsid 让 npm/node 跑在独立进程组，便于整体清除
-  setsid nohup npm run web > "$LOG_FILE" 2>&1 &
-  local pgid=$!
+  # 脱离当前 shell 启动 npm（Linux: setsid；macOS: nohup+disown，详见 launch_detached）
+  local pgid
+  pgid=$(launch_detached "npm run web > '$LOG_FILE' 2>&1")
   echo "$pgid" > "$PID_FILE"
 
   # 轮询等待端口就绪
@@ -201,8 +216,8 @@ restart() {
 
   cd "$PROJECT_DIR"
   rm -f "$PID_FILE"
-  setsid nohup npm run web > "$LOG_FILE" 2>&1 &
-  local pgid=$!
+  local pgid
+  pgid=$(launch_detached "npm run web > '$LOG_FILE' 2>&1")
   echo "$pgid" > "$PID_FILE"
 
   local waited=0
