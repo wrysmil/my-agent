@@ -1,4 +1,5 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import type { MouseEvent } from 'react';
 import {
   MessageSquare,
   Bot,
@@ -9,14 +10,21 @@ import {
   LayoutDashboard,
   Loader2,
   Wrench,
+  Trash2,
 } from 'lucide-react';
-import { useSessions, type SessionItem } from '@/features/sessions/useSessions';
+import {
+  useSessions,
+  useDeleteSession,
+  type SessionItem,
+} from '@/features/sessions/useSessions';
 import { useTranslation } from '@/i18n/useTranslation';
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { t } = useTranslation();
   const { data, isLoading } = useSessions(false);
+  const deleteSession = useDeleteSession();
   const sessions: SessionItem[] = data?.sessions ?? [];
 
   const recentSessions = sessions.slice(0, 20);
@@ -30,6 +38,23 @@ export function Sidebar() {
     { to: '/agents', label: t('nav.agents'), icon: Bot },
     { to: '/settings', label: t('nav.settings'), icon: Settings2 },
   ];
+
+  /**
+   * 删除指定会话：先 confirm，避免误触；删完后：
+   * - TanStack-Query 已在 onSuccess 里 invalidate/remove
+   * - 若删的就是当前打开的会话，跳回空 /chat（首条消息才创建的入口）
+   */
+  const handleDeleteSession = (session: SessionItem, e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(t('sessions.confirmDelete'))) return;
+    const wasActive = location.pathname === `/chat/${session.id}`;
+    deleteSession.mutate(session.id, {
+      onSuccess: () => {
+        if (wasActive) navigate('/chat', { replace: true });
+      },
+    });
+  };
 
   return (
     <aside
@@ -71,7 +96,8 @@ export function Sidebar() {
           <button
             onClick={() => navigate('/chat')}
             className="p-0.5 rounded hover:bg-surface-hover text-text-muted hover:text-text"
-            title="新建会话"
+            title={t('chat.newChat')}
+            data-testid="new-session-btn"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -87,11 +113,11 @@ export function Sidebar() {
         ) : (
           <ul className="space-y-0.5">
             {recentSessions.map((s) => (
-              <li key={s.id}>
+              <li key={s.id} className="group relative">
                 <NavLink
                   to={`/chat/${s.id}`}
                   className={({ isActive }) =>
-                    `block px-3 py-1.5 rounded-md text-sm truncate transition-colors ${
+                    `block pl-3 pr-7 py-1.5 rounded-md text-sm truncate transition-colors ${
                       isActive
                         ? 'bg-accent text-accent-fg font-medium'
                         : 'text-text-muted hover:bg-surface-hover hover:text-text'
@@ -101,6 +127,16 @@ export function Sidebar() {
                 >
                   {s.name || s.id}
                 </NavLink>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteSession(s, e)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded text-text-muted/0 group-hover:text-text-muted hover:!text-danger hover:bg-danger/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  title={t('sessions.delete')}
+                  aria-label={`${t('sessions.delete')}: ${s.name || s.id}`}
+                  data-testid={`delete-session-${s.id}`}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
               </li>
             ))}
           </ul>

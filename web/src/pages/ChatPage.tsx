@@ -1,8 +1,12 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useChatStream } from '@/features/chat/useChatStream';
 import type { ChatOptions } from '@/features/chat/types';
+import {
+  setPendingMessage,
+  takePendingMessage,
+} from '@/features/chat/pending-message';
 import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
 import { MessageList } from '@/components/chat/MessageList';
@@ -35,6 +39,7 @@ export function ChatPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const queryClient = useQueryClient();
+  // creating：标记「首条消息触发懒创建会话」的进行中态，渲染上禁用 Composer 输入
   const [creating, setCreating] = useState(false);
 
   // Model & effort state
@@ -57,30 +62,7 @@ export function ChatPage() {
     staleTime: 60_000,
   });
 
-  // Auto-create session when no sessionId provided
-  useEffect(() => {
-    if (sessionId) return;
-    let cancelled = false;
-    setCreating(true);
-    apiPost<{ session: { id: string } }>('/api/sessions', { kind: 'gconv' })
-      .then((data) => {
-        if (!cancelled) {
-          logger.debug(`📝 新建会话: ${data.session.id}`);
-          // 刷新侧边栏 session 列表
-          queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
-          // 记录活跃 session 到 localStorage，便于恢复
-          try { localStorage.setItem('my-agent.activeSession', data.session.id); } catch {}
-          navigate(`/chat/${data.session.id}`, { replace: true });
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setCreating(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessionId, navigate]);
-
+  // cid：传给 useChatStream。无 sessionId 时为空串，hook 内部 useEffect 会跳过。
   const cid = sessionId || '';
   const { status, messages, send, abort, retry, historyLoaded } = useChatStream(cid);
 
@@ -105,17 +87,60 @@ export function ChatPage() {
     }
   }, [activeProvider, selectedModel]);
 
-  // Model label for current selection
-  const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
+  // 让 handleSend 拿到「最新」的 options 快照（避免闭包陈旧）
+  const sendRef = useRef(send);
+  useEffect(() => { sendRef.current = send; }, [send]);
+
+  // 「懒创建」之后：新 ChatPage 实例拿到新 sessionId → 历史加载完 → 触发 pending send
+  useEffect(() => {
+    if (!sessionId || !historyLoaded) return;
+    const pending = takePendingMessage(sessionId);
+    if (!pending) return;
+    const opts: ChatOptions = {};
+    if (selectedModel) opts.model = selectedModel;
+    if (thinkingLevel !== 'off') opts.thinkingLevel = thinkingLevel;
+    logger.debug(`📤 续发首条消息 → ${sessionId}`);
+    sendRef.current(pending, opts);
+  }, [sessionId, historyLoaded, selectedModel, thinkingLevel]);
 
   const handleSend = useCallback(
-    (text: string) => {
+    async (text: string) => {
       const options: ChatOptions = {};
       if (selectedModel) options.model = selectedModel;
       if (thinkingLevel !== 'off') options.thinkingLevel = thinkingLevel;
-      send(text, options);
+
+      if (sessionId) {
+        // 已存在会话 → 直接发
+        send(text, options);
+        return;
+      }
+
+      // 无会话：懒创建。Composer 在 creating=true 时已经禁用输入，
+      // 但理论上 handleSend 仍可能被旧请求触发（极少见），再次短路。
+      if (creating) return;
+      setCreating(true);
+      try {
+        const data = await apiPost<{ session: { id: string } }>(
+          '/api/sessions',
+          { kind: 'gconv' },
+        );
+        const newId = data.session.id;
+        logger.debug(`� 懒创建会话: ${newId}（由首条消息触发）`);
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+        try { localStorage.setItem('my-agent.activeSession', newId); } catch {}
+        // 把待发送文本存进模块级 Map，新 mount 的 ChatPage 会接住
+        setPendingMessage(newId, text);
+        navigate(`/chat/${newId}`, { replace: true });
+        // 注意：不在此处调用 send，因为当前 useChatStream 绑的是旧 cid。
+        // 路由跳转后，新实例的 effect 会消费 pending 并触发真正的发送。
+      } catch (err) {
+        logger.error('❌ 创建会话失败', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        setCreating(false);
+      }
     },
-    [send, selectedModel, thinkingLevel],
+    [sessionId, send, selectedModel, thinkingLevel, creating, navigate, queryClient],
   );
 
   // Close model popup on outside click
@@ -128,14 +153,8 @@ export function ChatPage() {
     return () => window.removeEventListener('click', handler);
   }, [showModelMenu]);
 
-  if (!sessionId) {
-    return (
-      <div className="flex flex-col h-full items-center justify-center" data-testid="page-chat">
-        <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mb-3" />
-        <p className="text-sm text-text-muted">{creating ? t('chat.generating') : '正在准备...'}</p>
-      </div>
-    );
-  }
+  // Model label for current selection
+  const selectedModelInfo = availableModels.find(m => m.id === selectedModel);
 
   // Model selector UI (moved to Composer area)
   const modelSelector = (
@@ -271,6 +290,9 @@ export function ChatPage() {
 
         {/* Status indicator */}
         <div className="flex-1" />
+        {creating && !sessionId && (
+          <span className="text-xs text-text-muted/60">{t('chat.generating')}</span>
+        )}
         {status === 'streaming' && (
           <span className="text-xs text-text-muted/60">回复中...</span>
         )}
@@ -285,8 +307,8 @@ export function ChatPage() {
         )}
       </div>
 
-      {/* Loading history indicator */}
-      {!historyLoaded && (
+      {/* Loading history indicator (only when an existing session is loading) */}
+      {sessionId && !historyLoaded && (
         <div className="flex items-center justify-center py-2 bg-surface-hover/50 border-b border-border">
           <div className="animate-spin h-3 w-3 border-2 border-primary border-t-transparent rounded-full mr-2" />
           <span className="text-xs text-text-muted">加载历史消息...</span>
@@ -297,7 +319,7 @@ export function ChatPage() {
       <Composer
         onSend={handleSend}
         onAbort={abort}
-        status={status}
+        status={creating ? 'submitting' : status}
         modelSelector={modelSelector}
       />
     </div>

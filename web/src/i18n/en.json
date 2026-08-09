@@ -50,6 +50,8 @@
     "search": "Search sessions…",
     "active": "Active",
     "archived": "Archived",
+    "delete": "Delete",
+    "confirmDelete": "Delete this session? This cannot be undone.",
     "empty": "No sessions yet",
     "emptySearch": "No matching sessions found",
     "emptyArchived": "No archived sessions"

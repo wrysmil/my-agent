@@ -20,6 +20,7 @@ vi.mock('lucide-react', () => ({
   Languages: () => <span data-testid="icon-lang">lang</span>,
   Command: () => <span data-testid="icon-cmd">cmd</span>,
   Wrench: () => <span data-testid="icon-wrench">wrench</span>,
+  Trash2: () => <span data-testid="icon-trash">trash</span>,
 }));
 
 // Mock i18n module
@@ -106,7 +107,12 @@ describe('Sidebar i18n', () => {
       return zhMap[key] || key;
     });
 
-    render(<MemoryRouter><AppShell /></MemoryRouter>);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter><AppShell /></MemoryRouter>
+      </QueryClientProvider>
+    );
     expect(screen.getByText('控制台')).toBeDefined();
     expect(screen.getByText('对话')).toBeDefined();
   });
@@ -127,7 +133,12 @@ describe('Sidebar i18n', () => {
       return enMap[key] || key;
     });
 
-    render(<MemoryRouter><AppShell /></MemoryRouter>);
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={qc}>
+        <MemoryRouter><AppShell /></MemoryRouter>
+      </QueryClientProvider>
+    );
     expect(screen.getByText('Dashboard')).toBeDefined();
     expect(screen.getByText('Chat')).toBeDefined();
   });
