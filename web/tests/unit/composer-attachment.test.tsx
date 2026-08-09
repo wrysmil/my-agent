@@ -10,25 +10,14 @@
  *   - 选超大文件 → toast 出现，chip 不出现
  *   - 移除 chip → chip 消失
  *   - 「+」popover outside click 关闭
- *   - 「给」「工作区」下拉可切换
  *   - 发送：文本 + 附件都存在 → onSend(text, attachments) 触发，state 重置
  *   - 流式状态：textarea disabled、stop 按钮出现
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within, waitFor } from '@testing-library/react';
 import { Composer } from '../../src/components/chat/Composer';
-import type { DropdownOption } from '../../src/components/chat/ContextDropdown';
 import type { AttachmentDraft } from '../../src/features/attachments/validateAttachment';
 import type { ChatStatus } from '../../src/features/chat/types';
-
-const TO_OPTIONS: readonly DropdownOption[] = [
-  { id: '__default__', label: 'AI 默认' },
-  { id: 'agent.researcher', label: '调研员' },
-];
-const WORKSPACE_OPTIONS: readonly DropdownOption[] = [
-  { id: '__default__', label: '默认' },
-  { id: 'ws.project-a', label: '项目 A' },
-];
 
 function makeFile(name: string, type: string, sizeBytes: number): File {
   const blob = new Blob([new Uint8Array(sizeBytes)], { type });
@@ -39,42 +28,28 @@ interface RenderArgs {
   onSend?: ReturnType<typeof vi.fn>;
   onAbort?: ReturnType<typeof vi.fn>;
   status?: ChatStatus;
-  toValue?: string;
-  workspaceValue?: string;
 }
 
 function renderComposer({
   onSend = vi.fn(),
   onAbort = vi.fn(),
   status = 'idle',
-  toValue = '__default__',
-  workspaceValue = '__default__',
 }: RenderArgs = {}) {
-  const onToChange = vi.fn();
-  const onWorkspaceChange = vi.fn();
   const utils = render(
     <Composer
       onSend={onSend}
       onAbort={onAbort}
       status={status}
-      toOptions={TO_OPTIONS}
-      workspaceOptions={WORKSPACE_OPTIONS}
-      toValue={toValue}
-      workspaceValue={workspaceValue}
-      onToChange={onToChange}
-      onWorkspaceChange={onWorkspaceChange}
     />,
   );
-  return { ...utils, onSend, onAbort, onToChange, onWorkspaceChange };
+  return { ...utils, onSend, onAbort };
 }
 
 describe('Composer attachment flow', () => {
-  it('渲染默认态：textarea + + 按钮 + 上下文下拉', () => {
+  it('渲染默认态：textarea + + 按钮', () => {
     renderComposer();
     expect(screen.getByTestId('composer-textarea')).toBeInTheDocument();
     expect(screen.getByTestId('composer-attachment-button')).toBeInTheDocument();
-    expect(screen.getByTestId('composer-context-to-button')).toBeInTheDocument();
-    expect(screen.getByTestId('composer-context-workspace-button')).toBeInTheDocument();
     // 默认无附件
     expect(screen.queryByTestId('composer-attachment-list')).not.toBeInTheDocument();
   });
@@ -157,24 +132,6 @@ describe('Composer attachment flow', () => {
     await waitFor(() => {
       expect(screen.queryByTestId('composer-attachment-chip')).not.toBeInTheDocument();
     });
-  });
-
-  it('「给」下拉 → 选中项触发 onToChange', async () => {
-    const { onToChange } = renderComposer({ toValue: '__default__' });
-    fireEvent.click(screen.getByTestId('composer-context-to-button'));
-    const menu = screen.getByTestId('composer-context-to-menu');
-    const researcher = within(menu).getByTestId('composer-context-to-option-agent.researcher');
-    fireEvent.click(researcher);
-    expect(onToChange).toHaveBeenCalledWith('agent.researcher');
-  });
-
-  it('「工作区」下拉 → 选中项触发 onWorkspaceChange', () => {
-    const { onWorkspaceChange } = renderComposer({ workspaceValue: '__default__' });
-    fireEvent.click(screen.getByTestId('composer-context-workspace-button'));
-    const menu = screen.getByTestId('composer-context-workspace-menu');
-    const projA = within(menu).getByTestId('composer-context-workspace-option-ws.project-a');
-    fireEvent.click(projA);
-    expect(onWorkspaceChange).toHaveBeenCalledWith('ws.project-a');
   });
 
   it('发送：文本 + 附件 → onSend(text, [attachments]) 触发，state 重置', async () => {

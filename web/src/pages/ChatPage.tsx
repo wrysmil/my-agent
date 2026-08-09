@@ -10,11 +10,9 @@ import {
 } from '@/features/chat/pending-message';
 import { useTranslation } from '@/i18n/useTranslation';
 import { Composer } from '@/components/chat/Composer';
-import type { DropdownOption } from '@/components/chat/ContextDropdown';
 import { MessageList } from '@/components/chat/MessageList';
 import { TaskSuggestionsGrid } from '@/features/dashboard/TaskSuggestionsGrid';
 import type { TaskSuggestion } from '@/features/dashboard/taskSuggestions';
-import { useAgents } from '@/features/agents/useAgents';
 import { apiGet, apiPost } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { logger } from '@/lib/logger';
@@ -39,14 +37,6 @@ const EFFORT_LEVELS_SHORT: Record<Effort, string> = {
   high: 'HIGH',
 };
 
-/**
- * 「工作区：xxx」选项 —— 本期最小 fallback。
- * 未来接 /api/workspaces 后替换为动态数据。
- */
-const WORKSPACE_FALLBACK: readonly DropdownOption[] = [
-  { id: '__default__', label: '默认' },
-];
-
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -59,20 +49,6 @@ export function ChatPage() {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [thinkingLevel, setThinkingLevel] = useState<Effort>('medium');
   const [showModelMenu, setShowModelMenu] = useState(false);
-
-  // Context dropdown state（本期只存 id，UI 立刻反映；未来接 ChatOptions）
-  const [toValue, setToValue] = useState<string>('__default__');
-  const [workspaceValue, setWorkspaceValue] = useState<string>('__default__');
-
-  // ── 「给：xxx」选项 —— 从 /api/agents 动态拉取 ──
-  const { data: agents } = useAgents();
-  const toOptions: DropdownOption[] = [
-    { id: '__default__', label: t('composer.context.ai_default') },
-    ...(agents ?? []).map((a) => ({ id: a.id, label: a.name })),
-  ];
-
-  // ── 「工作区：xxx」选项 —— 本期最小 fallback ──
-  const workspaceOptions: readonly DropdownOption[] = WORKSPACE_FALLBACK;
 
   // Fetch available models from API
   const { data: modelsData } = useQuery({
@@ -454,12 +430,6 @@ export function ChatPage() {
         onAbort={abort}
         status={creating ? 'submitting' : status}
         modelSelector={modelSelector}
-        toOptions={toOptions}
-        workspaceOptions={workspaceOptions}
-        toValue={toValue}
-        workspaceValue={workspaceValue}
-        onToChange={setToValue}
-        onWorkspaceChange={setWorkspaceValue}
         initialText={pendingPrompt ?? undefined}
         prominent={showTaskGrid}
       />

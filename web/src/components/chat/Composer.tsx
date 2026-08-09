@@ -16,7 +16,6 @@ import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type R
 import { Send, Square, AlertCircle } from 'lucide-react';
 import { AttachmentList } from './AttachmentList';
 import { ComposerAttachmentButton } from './ComposerAttachmentButton';
-import { ContextDropdown, type DropdownOption } from './ContextDropdown';
 import {
   validateAttachments,
   type AttachmentDraft,
@@ -29,18 +28,8 @@ export interface ComposerProps {
   onSend: (text: string, attachments: AttachmentDraft[]) => void;
   onAbort: () => void;
   status: ChatStatus;
-  /** 顶部一行（模型选择 + 思考级别），由 ChatPage 注入 */
+  /** 模型选择 + 思考级别（注入到底部栏左侧），由 ChatPage 注入 */
   modelSelector?: ReactNode;
-  /** 「给：xxx」选项 */
-  toOptions: readonly DropdownOption[];
-  /** 「工作区：xxx」选项 */
-  workspaceOptions: readonly DropdownOption[];
-  /** 受控值：当前选中的「给」id */
-  toValue: string;
-  /** 受控值：当前选中的「工作区」id */
-  workspaceValue: string;
-  onToChange: (id: string) => void;
-  onWorkspaceChange: (id: string) => void;
   /**
    * 初始文本：用于接收 pending-message（Dashboard 任务卡跳转 / ChatPage 续发）。
    * 仅在 Composer 首次挂载时生效一次；后续 prop 变化不会重置输入（用户编辑优先）。
@@ -59,12 +48,6 @@ export function Composer({
   onAbort,
   status,
   modelSelector,
-  toOptions,
-  workspaceOptions,
-  toValue,
-  workspaceValue,
-  onToChange,
-  onWorkspaceChange,
   initialText = '',
   prominent = false,
 }: ComposerProps) {
@@ -159,24 +142,19 @@ export function Composer({
       data-testid="composer-form"
       className="border-t border-border px-4 py-3 bg-surface shrink-0"
     >
-      {/* Top row: model + thinking */}
-      {modelSelector && (
-        <div className="flex items-center gap-2 mb-3 flex-wrap">{modelSelector}</div>
-      )}
-
       {/* ── 输入卡片（Orkas .chat-input-area 风格）──
           max-w:80% 居中、14px 圆角、resting shadow、focus-within 边框高亮 + 上浮。
           prominent 模式：更大输入框、更强阴影（Orkas .new-chat-input-area）。 */}
       <div
         className={`
           mx-auto flex flex-col gap-1.5
-          rounded-[14px] border bg-surface
+          rounded-2xl border bg-surface
           transition-all duration-200
-          focus-within:border-primary
+          focus-within:border-primary/60
           focus-within:-translate-y-0.5
           ${prominent
-            ? 'max-w-[720px] shadow-[0_4px_32px_rgba(28,45,89,0.06),0_1px_0_rgba(255,255,255,0.7)_inset] border-[var(--color-border)] focus-within:shadow-[0_4px_32px_rgba(108,92,231,0.12)]'
-            : 'max-w-[80%] shadow-[0_4px_24px_rgba(15,18,24,0.04)] border-border focus-within:shadow-[0_4px_32px_rgba(108,92,231,0.12)]'
+            ? 'max-w-[760px] border-border/60 shadow-[0_2px_12px_rgba(15,18,24,0.04),0_1px_0_rgba(255,255,255,0.6)_inset] focus-within:shadow-[0_8px_28px_rgba(108,92,231,0.10),0_1px_0_rgba(255,255,255,0.6)_inset]'
+            : 'max-w-[760px] border-border/60 shadow-[0_2px_8px_rgba(15,18,24,0.03)] focus-within:shadow-[0_4px_18px_rgba(108,92,231,0.08)]'
           }
         `}
       >
@@ -206,41 +184,27 @@ export function Composer({
           placeholder={t('chat.placeholder')}
           rows={prominent ? 3 : 2}
           data-testid="composer-textarea"
-          className={`w-full border-none outline-none resize-none px-4 py-1 text-[15px] leading-relaxed bg-transparent text-text placeholder:text-text-muted/50 max-h-[260px] ${
-            prominent ? 'min-h-[80px]' : 'min-h-[40px]'
+          className={`w-full border-none outline-none resize-none px-5 py-3 text-[15px] leading-[1.6] bg-transparent text-text placeholder:text-text-muted/40 max-h-[280px] ${
+            prominent ? 'min-h-[88px]' : 'min-h-[44px]'
           }`}
           disabled={isStreaming}
         />
 
-        {/* ── 底部栏（Orkas .chat-bottom-bar 风格）──
-            [+] | divider | To:xxx | Workspace:xxx | spacer | send/stop icon */}
+        {/* ── 底部栏（简化版）──
+            [+] | divider | modelSelector | spacer | send/stop icon */}
         <div className="flex items-center gap-1.5 px-3 pb-2.5 pt-0.5">
           <ComposerAttachmentButton onFiles={handleAddFiles} disabled={isStreaming} />
 
           {/* 1px 竖分隔线（Orkas .chat-composer-divider） */}
           <div className="w-px h-[18px] bg-border shrink-0 mx-0.5" />
 
-          <ContextDropdown
-            variant="to"
-            value={toValue}
-            options={toOptions}
-            onChange={onToChange}
-            defaultLabel={t('composer.context.ai_default')}
-            disabled={isStreaming}
-          />
-          <ContextDropdown
-            variant="workspace"
-            value={workspaceValue}
-            options={workspaceOptions}
-            onChange={onWorkspaceChange}
-            defaultLabel={t('composer.context.workspace_default')}
-            disabled={isStreaming}
-          />
+          {/* 模型选择 + 思考级别（由 ChatPage 注入） */}
+          {modelSelector}
 
           {/* 弹簧：把发送按钮推到最右 */}
           <div className="flex-1" />
 
-          {/* 发送 / 停止按钮 —— Orkas .chat-send-btn 风格：纯图标、32x32、圆角 8px */}
+          {/* 发送 / 停止按钮 —— 圆角矩形，柔和阴影 */}
           {isStreaming ? (
             <button
               type="button"
@@ -248,14 +212,15 @@ export function Composer({
               data-testid="composer-stop-button"
               aria-label={t('chat.stop')}
               className="
-                w-8 h-8 flex items-center justify-center shrink-0
-                bg-danger text-white border-none rounded-lg
+                w-9 h-9 flex items-center justify-center shrink-0
+                bg-danger text-white border-none rounded-full
                 cursor-pointer
-                shadow-[0_1px_2px_rgba(229,72,77,0.25)]
-                hover:bg-[#b91c1c] transition-colors
+                shadow-[0_2px_8px_rgba(229,72,77,0.25)]
+                hover:bg-[#b91c1c] hover:shadow-[0_3px_12px_rgba(229,72,77,0.35)]
+                transition-all duration-200
               "
             >
-              <Square size={14} />
+              <Square size={12} fill="currentColor" />
             </button>
           ) : (
             <button
@@ -264,13 +229,17 @@ export function Composer({
               data-testid="composer-send-button"
               aria-label={t('chat.send')}
               className="
-                w-8 h-8 flex items-center justify-center shrink-0
-                bg-primary text-white border-none rounded-lg
+                w-9 h-9 flex items-center justify-center shrink-0
+                bg-gradient-to-br from-primary to-primary/85 text-white border-none rounded-full
                 cursor-pointer
-                shadow-[0_1px_2px_rgba(108,92,231,0.25)]
-                hover:opacity-90 transition-opacity
-                disabled:bg-surface-hover disabled:text-text-muted
+                shadow-[0_2px_8px_rgba(108,92,231,0.25)]
+                hover:shadow-[0_3px_12px_rgba(108,92,231,0.35)]
+                hover:scale-[1.05]
+                active:scale-[0.98]
+                transition-all duration-200
+                disabled:bg-surface-hover disabled:text-text-muted/40
                 disabled:shadow-none disabled:cursor-not-allowed
+                disabled:hover:scale-100
               "
             >
               <Send size={14} />
