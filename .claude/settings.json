@@ -24,7 +24,9 @@
       "Bash(echo \"Started PID $!\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:4321/)",
       "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/features/providers/ProviderForm.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/features/providers/ProviderForm.tsx && echo \"ProviderForm synced\")",
-      "Bash(kill 49935)"
+      "Bash(kill 49935)",
+      "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/pages/ProvidersPage.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/pages/ProvidersPage.tsx && echo \"synced\")",
+      "Bash(kill 50653)"
     ],
     "additionalDirectories": [
       "/Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/features/providers",

@@ -192,7 +192,7 @@ export function ProvidersPage() {
 
   if (isLoading) {
     return (
-      <div data-testid="page-providers" className="p-6 flex items-center justify-center py-20">
+      <div data-testid="page-providers" className="h-full overflow-y-auto p-6 flex items-center justify-center py-20">
         <Loader2 className="w-6 h-6 animate-spin text-text-muted" />
       </div>
     );
@@ -200,7 +200,7 @@ export function ProvidersPage() {
 
   if (error) {
     return (
-      <div data-testid="page-providers" className="p-6">
+      <div data-testid="page-providers" className="h-full overflow-y-auto p-6">
         <div className="flex flex-col items-center justify-center rounded-lg border border-danger/30 bg-danger-bg p-8">
           <p className="mb-3 text-sm text-danger">加载失败，请稍后重试</p>
           <button
@@ -215,7 +215,7 @@ export function ProvidersPage() {
   }
 
   return (
-    <div data-testid="page-providers" className="p-6 space-y-8 max-w-6xl mx-auto">
+    <div data-testid="page-providers" className="h-full overflow-y-auto p-6 space-y-8 max-w-6xl mx-auto">
       {/* ====== Hero Header ====== */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
