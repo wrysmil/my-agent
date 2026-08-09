@@ -139,6 +139,13 @@ export function useChatStream(sessionId: string) {
   // 追踪 message_stop 事件：后端发完 message_stop 后若连接异常关闭（非主动 abort），
   // 用此标记将状态切为 'done' 而非 'error'，避免"回复完了但停止按钮仍显示"。
   const messageStopRef = useRef(false);
+  // sessionId 切换时递增。所有 stream events 的 setMessages 检查此值，
+  // 如果不匹配则丢弃，避免旧流污染新视图。
+  const streamGenerationRef = useRef(0);
+  // 跨 session 切换保留的"in-flight"消息快照（key = sessionId）。
+  // sessionId 切走时如果有正在生成的消息，先存到这里；切回时 history
+  // 加载完后如果还缺那条 AI 消息，从这里恢复显示。
+  const inFlightBySessionRef = useRef<Map<string, ChatMessage[]>>(new Map());
 
   const setStatusSafe = useCallback((s: ChatStatus) => {
     statusRef.current = s;
@@ -156,10 +163,27 @@ export function useChatStream(sessionId: string) {
     //   3. /chat     → /chat/:a  从空白页进入已有会话（首次加载也一样）
     // 在 (2) 这个分支，旧的 useEffect 写法是 `if (!sessionId) return` 直接早返回，
     // 导致 messages 仍是上一个会话的历史，页面看着像「+ 号根本没切」。
-    if (controllerRef.current) {
-      // 取消可能还在跑的流，避免上一个 session 的尾流落到新视图里
-      controllerRef.current.abort();
+
+    // 1) 把当前 messages 存到 in-flight 缓冲（如果流式未结束），然后清空视图
+    const wasStreaming =
+      statusRef.current === 'streaming' ||
+      statusRef.current === 'submitting' ||
+      statusRef.current === 'reconnecting';
+    if (wasStreaming && sessionId) {
+      // 用户切走时流式还在进行：把当前 messages 快照存到 in-flight map。
+      // sessionId 是 React 闭包里的「旧值」（effect 还没切换到新 sessionId），
+      // 所以这里的 sessionId 实际是上一个会话的 id。
+      inFlightBySessionRef.current.set(sessionId, messages);
     }
+    // 递增 stream generation：send() 和内部 stream events 会用它判断是否过期。
+    streamGenerationRef.current += 1;
+
+    // ⚠️ 不要立刻 abort 旧 controller！让旧流继续跑到 message_stop，
+    // 这样后端会正常持久化生成内容。generation 过期后 stream 循环会自动跳出。
+    // 只有在「用户主动点停止」时才 abort（走 abort() 函数路径）。
+    // 这里只是不再消费旧事件即可。
+    controllerRef.current = null;
+
     setMessages([]);
     setHistoryLoaded(false);
     setStatusSafe('idle');
@@ -195,6 +219,20 @@ export function useChatStream(sessionId: string) {
           }
         }
         if (!cancelled) {
+          // 如果 in-flight 缓冲里有这个 session 的快照，且 history 缺失了某些消息
+          // （即：用户切走时正在生成的那条 AI 消息还没被后端持久化），
+          // 把 in-flight 的尾部消息追加进来，让用户看到生成进度。
+          const inflight = inFlightBySessionRef.current.get(sessionId);
+          if (inflight && inflight.length > 0) {
+            // 用「消息文本/工具调用」指纹判断 history 是否已经包含 in-flight 的最新消息
+            const hasSameTail = loaded.length > 0 && inflight.length > 0 &&
+              isSameTailMessage(loaded[loaded.length - 1], inflight[inflight.length - 1]);
+            if (!hasSameTail) {
+              // history 还没追上 in-flight：补上 in-flight 尾部消息
+              loaded.push(...inflight);
+            }
+            inFlightBySessionRef.current.delete(sessionId);
+          }
           setMessages(loaded);
           setHistoryLoaded(true);
         }
@@ -220,6 +258,8 @@ export function useChatStream(sessionId: string) {
       streamIdRef.current = null;
       optionsRef.current = options ?? {};
       messageStopRef.current = false;
+      // 捕获当前 generation；sessionId 切换后会递增，stream 循环看到不匹配就跳出
+      const myGen = streamGenerationRef.current;
       setStatusSafe('submitting');
 
       const userMsgId = nextMsgId();
@@ -329,6 +369,12 @@ export function useChatStream(sessionId: string) {
 
         for await (const evt of parseSseStream(res.body)) {
           try {
+            // 用户切到其他会话/新会话后，本流已被 generation 标记过期；
+            // 立即跳出循环，避免 setMessages 污染新视图。
+            if (streamGenerationRef.current !== myGen) {
+              logger.debug('⏭️ 跳过过期 stream event');
+              return;
+            }
             const data = evt.data as SseEventData;
 
             switch (evt.event) {
@@ -901,4 +947,20 @@ function parseHistoryBlocks(m: SerializedMsg, _msgId: string): Block[] {
   }
 
   return blocks;
+}
+
+/**
+ * 判断两条消息是否「同一条」AI 回复，用于判断 history 是否已经追上 in-flight。
+ * 用 text + toolCall ids 作指纹。
+ */
+function isSameTailMessage(a: ChatMessage, b: ChatMessage): boolean {
+  if (a.role !== b.role || b.role !== 'assistant') return false;
+  const aText = messageText(a).trim();
+  const bText = messageText(b).trim();
+  // 文本内容一致或一方为空（都是还没生成完）时，认为是同一条
+  if (aText === bText) return true;
+  // 文本不同时：如果 in-flight 那条没文本、history 那条也没文本，认为是同一条
+  if (!aText && !bText) return true;
+  // 否则认为是不同的消息
+  return false;
 }
