@@ -52,6 +52,8 @@ const FIELD_ERROR_MAP: Record<string, keyof ProviderFormData> = {
 interface ProviderFormProps {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ProviderFormData>;
+  /** 创建模式下，指定预填的 type（点击厂商卡片时传入） */
+  initialType?: string;
   providerId?: string;
   onSuccess: () => void;
 }
@@ -59,6 +61,7 @@ interface ProviderFormProps {
 export function ProviderForm({
   mode,
   defaultValues,
+  initialType,
   providerId,
   onSuccess,
 }: ProviderFormProps) {
@@ -69,10 +72,10 @@ export function ProviderForm({
     defaultValues: {
       id: '',
       name: '',
-      type: 'deepseek',
-      baseUrl: 'https://api.deepseek.com/v1',
+      type: (initialType as ProviderFormData['type']) ?? 'deepseek',
+      baseUrl: initialType ? (TYPE_DEFAULTS[initialType]?.baseUrl ?? 'https://api.deepseek.com/v1') : 'https://api.deepseek.com/v1',
       apiKey: '',
-      defaultModel: 'deepseek-chat',
+      defaultModel: initialType ? (TYPE_DEFAULTS[initialType]?.defaultModel ?? 'deepseek-chat') : 'deepseek-chat',
       enabled: true,
       ...defaultValues,
     },

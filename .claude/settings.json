@@ -4,7 +4,12 @@
       "Bash(xxd /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/src/providers/codecs/openai-completions.ts)",
       "Bash(npm audit *)",
       "Bash(npx tsx *)",
-      "Bash(pnpm install *)"
+      "Bash(pnpm install *)",
+      "Bash(git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)",
+      "Bash(git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent log --oneline -3)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent status --short)",
+      "Bash(/usr/bin/git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)"
     ]
   }
 }
