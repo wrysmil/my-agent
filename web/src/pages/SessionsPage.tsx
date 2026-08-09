@@ -17,7 +17,7 @@ export function SessionsPage() {
   }, [sessions, search]);
 
   return (
-    <div data-testid="page-sessions">
+    <div className="h-full overflow-y-auto p-6" data-testid="page-sessions">
       {/* Tabs: Active / Archived */}
       <div role="tablist">
         <button

@@ -135,7 +135,7 @@ export function SettingsPage() {
   });
 
   return (
-    <div className="p-6 space-y-6" data-testid="page-settings">
+    <div className="h-full overflow-y-auto p-6 space-y-6" data-testid="page-settings">
       <div>
         <h1 className="text-xl font-bold text-text">{t('settings.title')}</h1>
         <p className="text-sm text-text-muted mt-1">管理应用偏好和配置</p>

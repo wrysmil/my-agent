@@ -46,7 +46,7 @@ export function DashboardPage() {
   const recentSessions = sessions.slice(0, 5);
 
   return (
-    <div className="p-6 space-y-6" data-testid="page-dashboard">
+    <div className="h-full overflow-y-auto p-6 space-y-6" data-testid="page-dashboard">
       {/* Header */}
       <div>
         <h1 className="text-xl font-bold text-text">my-agent</h1>

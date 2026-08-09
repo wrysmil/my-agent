@@ -82,7 +82,7 @@ export function ToolsPage() {
   }
 
   return (
-    <div className="p-6" data-testid="page-tools">
+    <div className="h-full overflow-y-auto p-6" data-testid="page-tools">
       <div className="mb-6">
         <h1 className="text-xl font-bold text-text">工具</h1>
         <p className="mt-1 text-sm text-text-muted">

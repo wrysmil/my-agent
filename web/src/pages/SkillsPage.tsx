@@ -140,7 +140,7 @@ export function SkillsPage() {
   }
 
   return (
-    <div className="p-6" data-testid="page-skills">
+    <div className="h-full overflow-y-auto p-6" data-testid="page-skills">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-text">技能</h1>
