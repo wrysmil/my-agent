@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/src/providers/codecs/openai-completions.ts)",
+      "Bash(npm audit *)",
+      "Bash(npx tsx *)",
+      "Bash(pnpm install *)"
+    ]
+  }
+}

@@ -49,6 +49,14 @@ import {
   validateProviderId,
 } from "../validators/providers.js";
 import { DeepSeekProvider } from "../../../providers/deepseek.js";
+import { AnthropicProvider } from "../../../providers/anthropic.js";
+import { OpenAIProvider } from "../../../providers/openai.js";
+import { GoogleProvider } from "../../../providers/google.js";
+import { MoonshotProvider } from "../../../providers/moonshot.js";
+import { QwenProvider } from "../../../providers/qwen.js";
+import { MistralProvider } from "../../../providers/mistral.js";
+import { GrokProvider } from "../../../providers/grok.js";
+import type { LLMProvider } from "../../../providers/base.js";
 
 // ============================================================
 // 依赖类型
@@ -440,9 +448,9 @@ async function deleteProvider(ctx: HandlerCtx): Promise<void> {
 /**
  * POST /api/providers/:id/test —— 测试 Provider 联通性。
  *
- * - 创建临时 DeepSeekProvider 实例，调用 validateAuth()
- * - apiKey 优先使用 store 中存储的值，为空则 fallback 到 DEEPSEEK_API_KEY 环境变量
- * - 仅支持 deepseek 类型（当前唯一 provider）
+ * - 按 entry.type 创建对应 Provider 实例，调用 validateAuth()
+ * - apiKey 优先使用 store 中存储的值，为空则 fallback 到对应环境变量
+ * - 支持全部 8 种 provider 类型
  * - 200 OK + { tested, reachable }；失败返回 200 + ok:false + error
  */
 async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
@@ -456,8 +464,9 @@ async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
     );
   }
 
-  // 仅支持 deepseek
-  if (entry.type !== "deepseek") {
+  // 按 type 创建临时 Provider 实例（仅用于联通测试）
+  const provider = createProviderForTest(entry);
+  if (!provider) {
     sendJson(ctx.res, 200, {
       ok: false,
       error: {
@@ -467,9 +476,6 @@ async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
     });
     return;
   }
-
-  const apiKey = entry.apiKey || process.env.DEEPSEEK_API_KEY || "";
-  const provider = new DeepSeekProvider({ apiKey, baseUrl: entry.baseUrl });
 
   ctx.log.info(`正在测试供应商连通性: ${id}...`);
   const reachable = await provider.validateAuth();
@@ -495,6 +501,32 @@ async function testProviderConnectivity(ctx: HandlerCtx): Promise<void> {
 // ============================================================
 // 内部工具
 // ============================================================
+
+/** 按 provider 类型 + 配置创建临时实例（仅用于联通测试） */
+function createProviderForTest(entry: ProviderConfigEntry): LLMProvider | null {
+  const apiKey = entry.apiKey || "";
+  const baseUrl = entry.baseUrl;
+  switch (entry.type) {
+    case "deepseek":
+      return new DeepSeekProvider({ apiKey, baseUrl });
+    case "anthropic":
+      return new AnthropicProvider({ apiKey, baseUrl });
+    case "openai":
+      return new OpenAIProvider({ apiKey, baseUrl });
+    case "google":
+      return new GoogleProvider({ apiKey, baseUrl });
+    case "moonshot":
+      return new MoonshotProvider({ apiKey, baseUrl });
+    case "qwen":
+      return new QwenProvider({ apiKey, baseUrl });
+    case "mistral":
+      return new MistralProvider({ apiKey, baseUrl });
+    case "xai":
+      return new GrokProvider({ apiKey, baseUrl });
+    default:
+      return null;
+  }
+}
 
 /** 写 store + save；统一错误出口。调用方必须 `await`。 */
 async function upsertAndSave(

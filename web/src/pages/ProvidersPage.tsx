@@ -3,7 +3,18 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ProviderForm, useProviders, ProviderTestButton } from '@/features/providers';
 import { queryKeys } from '@/lib/query-keys';
 import { apiPut, apiPost, apiDelete } from '@/lib/api';
-import { Pencil, Loader2 } from 'lucide-react';
+import { Pencil, Loader2, Server, Wifi, WifiOff, Star } from 'lucide-react';
+
+const TYPE_LABELS: Record<string, string> = {
+  deepseek: 'DeepSeek',
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  google: 'Gemini',
+  moonshot: 'Moonshot',
+  qwen: 'Qwen',
+  mistral: 'Mistral',
+  xai: 'Grok',
+};
 
 export function ProvidersPage() {
   const { data, isLoading, error, refetch } = useProviders();
@@ -91,7 +102,7 @@ export function ProvidersPage() {
         <div>
           <h2 className="text-lg font-semibold">模型供应商</h2>
           <p className="text-sm text-text-muted mt-1">
-            当前仅支持 DeepSeek 类型
+            支持 DeepSeek · Anthropic · OpenAI · Gemini · Moonshot · Qwen · Mistral · Grok
           </p>
         </div>
         <button
@@ -144,6 +155,7 @@ export function ProvidersPage() {
 
       {providers.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border p-12">
+          <Server className="w-10 h-10 text-text-muted mb-3 opacity-40" />
           <p className="text-text-muted">暂无供应商配置</p>
           <p className="text-sm text-text-muted mt-1">
             点击「添加供应商」创建第一个
@@ -151,83 +163,95 @@ export function ProvidersPage() {
         </div>
       ) : (
         <ul className="space-y-3">
-          {providers.map((provider: any) => (
+          {providers.map((provider: any) => {
+            const typeLabel = TYPE_LABELS[provider.type] || provider.type;
+            const isActive = provider.id === activeId;
+            return (
             <li
               key={provider.id}
-              className={`rounded-lg border p-4 ${
-                provider.id === activeId
-                  ? 'border-primary bg-primary/10'
-                  : 'border-border bg-surface'
+              className={`rounded-lg border-2 transition-colors ${
+                isActive
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : provider.enabled
+                    ? 'border-border bg-surface hover:border-accent'
+                    : 'border-border bg-surface opacity-60'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{provider.name || provider.id}</span>
-                    <span className="text-xs rounded-full bg-accent px-2 py-0.5 text-accent-fg">
-                      {provider.type}
-                    </span>
-                    {!provider.enabled && (
-                      <span className="text-xs rounded-full bg-danger/20 px-2 py-0.5 text-danger">
-                        已禁用
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {isActive && <Star className="w-4 h-4 text-primary flex-shrink-0" />}
+                      <span className={`font-semibold ${isActive ? 'text-primary' : ''}`}>
+                        {provider.name || provider.id}
                       </span>
-                    )}
-                    {provider.id === activeId && (
-                      <span className="text-xs rounded-full bg-primary/20 px-2 py-0.5 text-primary">
-                        激活中
+                      <span className="text-xs rounded-full bg-accent px-2 py-0.5 text-accent-fg font-medium">
+                        {typeLabel}
                       </span>
-                    )}
+                      {provider.enabled ? (
+                        <span className="flex items-center gap-1 text-xs text-success">
+                          <Wifi className="w-3 h-3" /> 已启用
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-danger">
+                          <WifiOff className="w-3 h-3" /> 已禁用
+                        </span>
+                      )}
+                      {isActive && (
+                        <span className="text-xs rounded-full bg-primary/15 px-2 py-0.5 text-primary font-medium">
+                          当前使用
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
+                      <span className="truncate max-w-[280px]" title={provider.baseUrl}>
+                        {provider.baseUrl}
+                      </span>
+                      <span className="text-text-muted/50">·</span>
+                      <span className="font-mono text-xs">{provider.defaultModel}</span>
+                    </div>
+                    <p className="text-xs text-text-muted/60 mt-1">
+                      ID: {provider.id}
+                    </p>
                   </div>
-                  <p className="text-xs text-text-muted mt-1 truncate">
-                    {provider.baseUrl} · {provider.defaultModel}
-                  </p>
-                  <p className="text-xs text-text-muted mt-0.5">
-                    ID: {provider.id}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  {/* Test connectivity button */}
-                  <ProviderTestButton providerId={provider.id} />
-                  {/* Edit button */}
-                  <button
-                    className="text-xs text-text-muted hover:text-text px-2 py-1 rounded border border-border hover:bg-surface-hover flex items-center gap-1"
-                    onClick={() => { setEditingId(editingId === provider.id ? null : provider.id); setShowForm(false); }}
-                  >
-                    <Pencil className="w-3 h-3" />
-                    编辑
-                  </button>
-                  <button
-                    className="text-xs text-text-muted hover:text-text px-2 py-1 rounded border border-border hover:bg-surface-hover"
-                    onClick={() => handleToggle(provider.id)}
-                    disabled={toggling === provider.id}
-                  >
-                    {toggling === provider.id ? '...' : provider.enabled ? '禁用' : '启用'}
-                  </button>
-                  {provider.id !== activeId && (
+                  <div className="flex items-center gap-1.5 ml-3 flex-shrink-0">
+                    <ProviderTestButton providerId={provider.id} />
                     <button
-                      className="text-xs text-primary hover:underline px-2 py-1"
-                      onClick={() => handleSetActive(provider.id)}
-                      disabled={activating === provider.id}
+                      className="text-xs text-text-muted hover:text-text px-2 py-1 rounded border border-border hover:bg-surface-hover flex items-center gap-1 transition-colors"
+                      onClick={() => { setEditingId(editingId === provider.id ? null : provider.id); setShowForm(false); }}
                     >
-                      {activating === provider.id ? '激活中...' : '设为激活'}
+                      <Pencil className="w-3 h-3" />
+                      编辑
                     </button>
-                  )}
-                  {provider.id === activeId && (
-                    <span className="text-xs text-text-muted px-2 py-1">
-                      当前激活
-                    </span>
-                  )}
-                  <button
-                    className="text-xs text-danger hover:underline px-2 py-1"
-                    onClick={() => handleDelete(provider.id)}
-                    disabled={deleting === provider.id || provider.id === activeId}
-                  >
-                    {deleting === provider.id ? '删除中...' : '删除'}
-                  </button>
+                    <button
+                      className="text-xs text-text-muted hover:text-text px-2 py-1 rounded border border-border hover:bg-surface-hover transition-colors"
+                      onClick={() => handleToggle(provider.id)}
+                      disabled={toggling === provider.id}
+                    >
+                      {toggling === provider.id ? '...' : provider.enabled ? '禁用' : '启用'}
+                    </button>
+                    {!isActive && (
+                      <button
+                        className="text-xs text-primary hover:bg-primary/10 px-2 py-1 rounded font-medium transition-colors"
+                        onClick={() => handleSetActive(provider.id)}
+                        disabled={activating === provider.id}
+                      >
+                        {activating === provider.id ? '激活中...' : '设为激活'}
+                      </button>
+                    )}
+                    <button
+                      className="text-xs text-danger hover:bg-danger/10 px-2 py-1 rounded transition-colors"
+                      onClick={() => handleDelete(provider.id)}
+                      disabled={deleting === provider.id || isActive}
+                    >
+                      {deleting === provider.id ? '删除中...' : '删除'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
     </div>

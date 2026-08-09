@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -6,10 +7,34 @@ import { apiPost, apiPut, ApiError } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { Button } from '@/components/ui/button';
 
+const PROVIDER_TYPES = ['deepseek', 'anthropic', 'openai', 'google', 'moonshot', 'qwen', 'mistral', 'xai'] as const;
+
+const TYPE_LABELS: Record<string, string> = {
+  deepseek: 'DeepSeek',
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  google: 'Google Gemini',
+  moonshot: 'Moonshot (月之暗面)',
+  qwen: 'Qwen (通义千问)',
+  mistral: 'Mistral AI',
+  xai: 'Grok (xAI)',
+};
+
+const TYPE_DEFAULTS: Record<string, { baseUrl: string; defaultModel: string; apiKeyEnv: string }> = {
+  deepseek: { baseUrl: 'https://api.deepseek.com/v1', defaultModel: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY' },
+  anthropic: { baseUrl: 'https://api.anthropic.com/v1', defaultModel: 'claude-sonnet-4-5', apiKeyEnv: 'ANTHROPIC_API_KEY' },
+  openai: { baseUrl: 'https://api.openai.com/v1', defaultModel: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+  google: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta', defaultModel: 'gemini-2.5-flash', apiKeyEnv: 'GOOGLE_API_KEY' },
+  moonshot: { baseUrl: 'https://api.moonshot.cn/v1', defaultModel: 'moonshot-v1-8k', apiKeyEnv: 'MOONSHOT_API_KEY' },
+  qwen: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', defaultModel: 'qwen-max', apiKeyEnv: 'QWEN_API_KEY' },
+  mistral: { baseUrl: 'https://api.mistral.ai/v1', defaultModel: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY' },
+  xai: { baseUrl: 'https://api.x.ai/v1', defaultModel: 'grok-2', apiKeyEnv: 'XAI_API_KEY' },
+};
+
 const providerSchema = z.object({
   id: z.string().min(1, 'Provider ID is required').max(64),
   name: z.string().min(1, 'Display name is required').max(128),
-  type: z.enum(['deepseek']),
+  type: z.enum(PROVIDER_TYPES),
   baseUrl: z.string().min(1, 'Base URL is required').url('Must be a valid URL'),
   apiKey: z.string(),
   defaultModel: z.string().min(1, 'Default model is required').max(128),
@@ -52,6 +77,21 @@ export function ProviderForm({
       ...defaultValues,
     },
   });
+
+  // 切换 type 时自动填充 baseUrl / defaultModel / name（仅 create 模式下且字段为空或为原默认时）
+  const selectedType = form.watch('type');
+  useEffect(() => {
+    if (mode !== 'create') return;
+    const defaults = TYPE_DEFAULTS[selectedType];
+    if (!defaults) return;
+    // 自动填充 name（若未手动填写）
+    const currentName = form.getValues('name');
+    if (!currentName || TYPE_LABELS[currentName] != null) {
+      form.setValue('name', defaults.apiKeyEnv ? '' : TYPE_LABELS[selectedType]);
+    }
+    form.setValue('baseUrl', defaults.baseUrl);
+    form.setValue('defaultModel', defaults.defaultModel);
+  }, [selectedType, mode, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: ProviderFormData) => apiPost('/api/providers', data),
@@ -155,7 +195,7 @@ export function ProviderForm({
         )}
       </div>
 
-      {/* Type (当前仅支持 deepseek) */}
+      {/* Type (支持全部 8 种厂商) */}
       <div>
         <label htmlFor="provider-type" className="block text-sm font-medium mb-1">
           Type
@@ -166,8 +206,13 @@ export function ProviderForm({
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
         >
-          <option value="deepseek">DeepSeek</option>
+          {PROVIDER_TYPES.map((t) => (
+            <option key={t} value={t}>{TYPE_LABELS[t]}</option>
+          ))}
         </select>
+        <p className="text-xs text-text-muted mt-1">
+          选择厂商类型会自动填充默认 Base URL 和默认模型
+        </p>
         {form.formState.errors.type && (
           <p className="text-sm text-danger mt-1">
             {form.formState.errors.type.message}
@@ -205,7 +250,7 @@ export function ProviderForm({
           {...form.register('apiKey')}
           className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
           disabled={isSubmitting}
-          placeholder={mode === 'edit' ? '留空则保持原值' : '留空则使用环境变量 DEEPSEEK_API_KEY'}
+          placeholder={mode === 'edit' ? '留空则保持原值' : `留空则使用环境变量 ${TYPE_DEFAULTS[selectedType]?.apiKeyEnv || 'API_KEY'}`}
         />
         {form.formState.errors.apiKey && (
           <p className="text-sm text-danger mt-1">
