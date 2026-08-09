@@ -87,11 +87,13 @@ export function ChatPage() {
   // handleSend 走懒创建分支时 setCreating(true)，但无论 POST /api/sessions 成功还是
   // 失败，creating 必须最终被释放。否则在这段窗口里，Composer 的 prop status 永远是
   // 'submitting'（看下方 <Composer status={creating ? 'submitting' : status} />），
-  // 即使用 useChatStream 的 status 已经变 'aborted' / 'error'，textarea 仍永久 disabled，
-  // 「点停止后无法输入」的卡死就是这么来的。
+  // 即使用 useChatStream 的 status 已经变 'done' / 'aborted' / 'error'，
+  // textarea 仍永久 disabled，「发完消息无法继续输入」就是这么来的。
   useEffect(() => {
     if (!creating) return;
-    if (status === 'aborted' || status === 'error') {
+    // 任何"非进行中"的状态都应释放 creating：
+    // - done/aborted/error: 流结束
+    if (status !== 'idle' && status !== 'submitting' && status !== 'streaming' && status !== 'reconnecting') {
       setCreating(false);
     }
   }, [creating, status]);
