@@ -293,73 +293,108 @@
 }
 
 /* ============================================================
+   紧凑型 prose — 用于思考过程等折叠次要区域
+   ============================================================ */
+
+.prose-compact {
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+.prose-compact > :first-child { margin-top: 0; }
+.prose-compact > :last-child  { margin-bottom: 0; }
+.prose-compact p { margin: 0.4em 0; }
+.prose-compact h1, .prose-compact h2, .prose-compact h3,
+.prose-compact h4, .prose-compact h5, .prose-compact h6 {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+.prose-compact a { color: var(--color-primary); }
+.prose-compact ul, .prose-compact ol {
+  padding-left: 1.1em;
+  margin: 0.3em 0;
+}
+.prose-compact li { margin: 0.1em 0; }
+.prose-compact blockquote {
+  border-left: 2px solid var(--color-primary);
+  padding-left: 0.6em;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin: 0.4em 0;
+}
+.prose-compact hr {
+  border-color: var(--color-border);
+  margin: 0.6em 0;
+}
+.prose-compact code:not(pre code) {
+  font-family: 'JetBrainsMono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.7rem;
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  border: 1px solid var(--color-border);
+}
+.prose-compact pre {
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: pre;
+  background: #f6f8fa;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.6em;
+  margin: 0.5em 0;
+  font-size: 0.6875rem;
+  line-height: 1.5;
+}
+.prose-compact pre code {
+  font-family: 'JetBrainsMono', 'Cascadia Code', 'Fira Code', monospace;
+  font-size: inherit;
+  background: none;
+  padding: 0;
+  border: none;
+  color: inherit;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+[data-theme="dark"] .prose-compact pre {
+  background: #0d1117;
+}
+.prose-compact table {
+  display: block;
+  overflow-x: auto;
+  max-width: 100%;
+  white-space: nowrap;
+  border-collapse: collapse;
+  margin: 0.4em 0;
+  font-size: 0.7rem;
+}
+.prose-compact th,
+.prose-compact td {
+  padding: 0.25em 0.55em;
+  border: 1px solid var(--color-border);
+}
+.prose-compact th {
+  background: var(--color-surface-hover);
+  font-weight: 600;
+}
+.prose-compact img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  margin: 0.4em 0;
+}
+
+/* ============================================================
    Process Tracker 内部滚动
    ============================================================ */
 
 details.stream-process-body {
   max-height: 300px;
   overflow-y: auto;
-}
-
-/* ── Thinking Effort Slider ── */
-.thinking-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-  height: 24px;
-  background: transparent;
-  position: relative;
-  z-index: 2;
-}
-.thinking-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  cursor: grab;
-  border: 2.5px solid var(--color-accent, #7c3aed);
-  box-shadow:
-    0 2px 6px rgba(124, 58, 237, 0.35),
-    0 0 0 4px color-mix(in srgb, var(--color-accent, #7c3aed) 22%, transparent);
-  margin-top: -8px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.thinking-slider::-webkit-slider-thumb:hover {
-  transform: scale(1.15);
-  box-shadow:
-    0 3px 8px rgba(124, 58, 237, 0.45),
-    0 0 0 5px color-mix(in srgb, var(--color-accent, #7c3aed) 28%, transparent);
-}
-.thinking-slider::-webkit-slider-thumb:active {
-  cursor: grabbing;
-  transform: scale(1.2);
-}
-.thinking-slider::-webkit-slider-runnable-track {
-  height: 2px;
-  border-radius: 1px;
-  background: transparent;
-}
-.thinking-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  cursor: grab;
-  border: 2.5px solid var(--color-accent, #7c3aed);
-  box-shadow:
-    0 2px 6px rgba(124, 58, 237, 0.35),
-    0 0 0 4px color-mix(in srgb, var(--color-accent, #7c3aed) 22%, transparent);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.thinking-slider::-moz-range-thumb:hover {
-  transform: scale(1.1);
-}
-.thinking-slider::-moz-range-track {
-  height: 2px;
-  border-radius: 1px;
-  background: transparent;
-  border: none;
-}
 }
