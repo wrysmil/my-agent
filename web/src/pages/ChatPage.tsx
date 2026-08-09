@@ -37,6 +37,12 @@ const EFFORT_LEVELS_SHORT: Record<Effort, string> = {
   high: 'HIGH',
 };
 
+export function getGreetingKey(hour: number): 'morning' | 'afternoon' | 'evening' {
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
+}
+
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
@@ -399,8 +405,11 @@ export function ChatPage() {
           <div className="max-w-[960px] mx-auto w-full px-6 py-10">
             {/* 空白对话页问候语（Orkas .new-chat-header 风格） */}
             <div className="text-center mb-10">
-              <h1 className="text-[32px] font-semibold tracking-[-0.025em] text-text leading-tight">
-                {t('dashboard.greeting.morning', { name: '' }).replace(/[：:]\s*\{.*\}$/, '').replace(/[：:]\s*$/, '') || '你好，有什么可以帮忙的？'}
+              <h1
+                className="text-[32px] font-semibold tracking-[-0.025em] text-text leading-tight"
+                data-testid="chat-empty-greeting"
+              >
+                {t(`dashboard.greeting.${getGreetingKey(new Date().getHours())}`, { name: '' })}
               </h1>
               <p className="mt-2.5 text-[15px] text-text-muted leading-relaxed">
                 {t('dashboard.subtitle')}
@@ -412,8 +421,11 @@ export function ChatPage() {
           </div>
         </div>
       ) : (
-        <div className="flex-1 overflow-hidden animate-fade-in">
-          <div className="h-full max-w-[860px] mx-auto w-full">
+        // ⚠️ min-h-0 + flex flex-col 让 MessageList（flex-1 overflow-y-auto）
+        // 真正撑满剩余高度并可滚动；否则外层 flex-1 overflow-hidden
+        // 加上中间 wrapper 没设 flex，会让 MessageList 的滚动失效。
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-fade-in">
+          <div className="flex-1 min-h-0 max-w-[860px] mx-auto w-full">
             <MessageList messages={messages} status={status} />
           </div>
         </div>

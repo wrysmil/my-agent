@@ -18,7 +18,7 @@ import {
   setPendingMessage,
   takePendingMessage,
 } from '../../src/features/chat/pending-message';
-import { ChatPage } from '../../src/pages/ChatPage';
+import { ChatPage, getGreetingKey } from '../../src/pages/ChatPage';
 
 vi.mock('@/i18n/useTranslation', () => ({
   useTranslation: () => ({
@@ -96,6 +96,29 @@ beforeEach(() => {
   try { localStorage.clear(); } catch { /* ignore */ }
   // 清理 pending map
   takePendingMessage('__dashboard__');
+});
+
+describe('ChatPage 空白页动态问候语', () => {
+  it.each([
+    [0, 'morning'],
+    [11, 'morning'],
+    [12, 'afternoon'],
+    [17, 'afternoon'],
+    [18, 'evening'],
+    [23, 'evening'],
+  ] as const)('%i 时使用 %s 问候语', (hour, expected) => {
+    expect(getGreetingKey(hour)).toBe(expected);
+  });
+
+  it('根据浏览器本地小时渲染对应问候语', () => {
+    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(14);
+
+    render(<ChatPage />, { wrapper: wrapperWith });
+
+    expect(screen.getByTestId('chat-empty-greeting')).toHaveTextContent(
+      'dashboard.greeting.afternoon',
+    );
+  });
 });
 
 describe('pending-message 模块', () => {

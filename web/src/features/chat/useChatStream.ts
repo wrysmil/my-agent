@@ -124,6 +124,28 @@ interface SerializedMsg {
 }
 
 // ============================================================
+// Module-level generationBySession
+// ============================================================
+//
+// 每个 sessionId 一个计数器。send() 时 +1（让同会话再发的旧流 stale）；
+// sessionId 切换**不**递增 —— 切走时活跃流继续 reader（写到旧实例的 setMessages，
+// 被 unmount 忽略），但后端仍持续生成 → message_stop 后写库 → 切回时 history
+// 拿到完整内容；in-flight 快照提供「切走瞬间的进度」。
+
+const generationBySession = new Map<string, number>();
+
+function nextGeneration(sid: string): number {
+  const cur = generationBySession.get(sid) ?? 0;
+  const next = cur + 1;
+  generationBySession.set(sid, next);
+  return next;
+}
+
+function getGeneration(sid: string): number {
+  return generationBySession.get(sid) ?? 0;
+}
+
+// ============================================================
 // useChatStream hook
 // ============================================================
 
@@ -139,9 +161,27 @@ export function useChatStream(sessionId: string) {
   // 追踪 message_stop 事件：后端发完 message_stop 后若连接异常关闭（非主动 abort），
   // 用此标记将状态切为 'done' 而非 'error'，避免"回复完了但停止按钮仍显示"。
   const messageStopRef = useRef(false);
-  // sessionId 切换时递增。所有 stream events 的 setMessages 检查此值，
-  // 如果不匹配则丢弃，避免旧流污染新视图。
+  // sessionId 切换时：sink 的 setMessages 指向新 React 实例，旧 sink 标记 alive=false
+  // （cleanup）。活跃流通过 module-level generation 判断丢弃目标。
+  //
+  // Module-level generation 的语义：
+  //   - send() 时递增（新 send 的流用新 generation）
+  //   - sessionId 切换**不**递增（让流能在切回时继续写入）
+  // Module-level generation（key=sessionId）的镜像。流用这个判断是否过期。
+  // sessionId 变化时（除了空 sessionId 首次进入）→ 重置为 module-level 值。
   const streamGenerationRef = useRef(0);
+
+  // hook 挂载时（首次进入会话）把 module-level generation 同步到本地 ref
+  // ——避免同会话再发时旧 ref=0 + 新 myGen=N 出现「false stale」。
+  // 后续 sessionId 变化（切走/切回）→ 不递增 generation（让流能跨 mount 复活）。
+  useEffect(() => {
+    if (sessionId) {
+      streamGenerationRef.current = getGeneration(sessionId);
+    }
+  }, [sessionId]);
+  // 标记 stale 流「第一次」进入丢弃模式时是否已经打过日志：
+  // 同一个过期流可能拉上百个 chunk，每个都打会刷屏。
+  const staleEventLoggedRef = useRef(false);
   // 跨 session 切换保留的"in-flight"消息快照（key = sessionId）。
   // sessionId 切走时如果有正在生成的消息，先存到这里；切回时 history
   // 加载完后如果还缺那条 AI 消息，从这里恢复显示。
@@ -151,6 +191,14 @@ export function useChatStream(sessionId: string) {
     statusRef.current = s;
     setStatus(s);
   }, []);
+
+  // 进入新 sessionId 时把本地 streamGenerationRef 与 module-level 同步。
+  // 这样切走/切回同一会话时 generation 不会"看上去"变了（避免 false stale）。
+  useEffect(() => {
+    if (sessionId) {
+      streamGenerationRef.current = getGeneration(sessionId);
+    }
+  }, [sessionId]);
 
   // ==========================================================
   // 加载历史消息（以及：每次 sessionId 变化都把视图先清空）
@@ -164,26 +212,24 @@ export function useChatStream(sessionId: string) {
     // 在 (2) 这个分支，旧的 useEffect 写法是 `if (!sessionId) return` 直接早返回，
     // 导致 messages 仍是上一个会话的历史，页面看着像「+ 号根本没切」。
 
-    // 1) 把当前 messages 存到 in-flight 缓冲（如果流式未结束），然后清空视图
+    // 1) 把当前 messages 存到 in-flight 缓冲（如果流式未结束）。
     const wasStreaming =
       statusRef.current === 'streaming' ||
       statusRef.current === 'submitting' ||
       statusRef.current === 'reconnecting';
     if (wasStreaming && sessionId) {
-      // 用户切走时流式还在进行：把当前 messages 快照存到 in-flight map。
-      // sessionId 是 React 闭包里的「旧值」（effect 还没切换到新 sessionId），
-      // 所以这里的 sessionId 实际是上一个会话的 id。
       inFlightBySessionRef.current.set(sessionId, messages);
     }
-    // 递增 stream generation：send() 和内部 stream events 会用它判断是否过期。
-    streamGenerationRef.current += 1;
 
-    // ⚠️ 不要立刻 abort 旧 controller！让旧流继续跑到 message_stop，
-    // 这样后端会正常持久化生成内容。generation 过期后 stream 循环会自动跳出。
-    // 只有在「用户主动点停止」时才 abort（走 abort() 函数路径）。
-    // 这里只是不再消费旧事件即可。
+    // ⚠️ 切走时**不**递增 generation —— 旧 hook 实例的 setMessages 写入
+    // 已被 unmount 的 React fiber（被 React 忽略，不会污染新会话视图）。
+    // 后端 SSE 流继续 reader → message_stop 后写库 → 切回时 history 拿到完整内容。
+    // 同一 sessionId 内再 send() 才需要调 nextGeneration 递增。
+
+    // ⚠️ 不要 abort 旧 controller —— 让活跃流继续跑到 message_stop。
     controllerRef.current = null;
 
+    // 清空 React state（让 UI 不显示旧会话消息）
     setMessages([]);
     setHistoryLoaded(false);
     setStatusSafe('idle');
@@ -219,17 +265,14 @@ export function useChatStream(sessionId: string) {
           }
         }
         if (!cancelled) {
-          // 如果 in-flight 缓冲里有这个 session 的快照，且 history 缺失了某些消息
-          // （即：用户切走时正在生成的那条 AI 消息还没被后端持久化），
-          // 把 in-flight 的尾部消息追加进来，让用户看到生成进度。
+          // 如果 in-flight 缓冲里有这个 session 的快照（用户切走时正在生成），
+          // 计算「history 没有、in-flight 有」的差集并 append —— 这样切回时能看到
+          // 工具执行中/未持久化的 AI 消息。仅 append 尾部差异，避免重复。
           const inflight = inFlightBySessionRef.current.get(sessionId);
           if (inflight && inflight.length > 0) {
-            // 用「消息文本/工具调用」指纹判断 history 是否已经包含 in-flight 的最新消息
-            const hasSameTail = loaded.length > 0 && inflight.length > 0 &&
-              isSameTailMessage(loaded[loaded.length - 1], inflight[inflight.length - 1]);
-            if (!hasSameTail) {
-              // history 还没追上 in-flight：补上 in-flight 尾部消息
-              loaded.push(...inflight);
+            const tailToAppend = computeInflightTail(loaded, inflight);
+            if (tailToAppend.length > 0) {
+              loaded.push(...tailToAppend);
             }
             inFlightBySessionRef.current.delete(sessionId);
           }
@@ -258,8 +301,14 @@ export function useChatStream(sessionId: string) {
       streamIdRef.current = null;
       optionsRef.current = options ?? {};
       messageStopRef.current = false;
-      // 捕获当前 generation；sessionId 切换后会递增，stream 循环看到不匹配就跳出
-      const myGen = streamGenerationRef.current;
+      // 捕获 module-level generation 并 +1。同会话再发 → 旧流 stale；
+      // 切走时不递增 → 旧流继续 reader（写到旧实例 setMessages，被 React 忽略，
+      // 但后端仍持续生成 → message_stop 后持久化 → 切回时 history 拿到完整内容）。
+      const myGen = nextGeneration(sessionId);
+      streamGenerationRef.current = myGen;
+      // 进入 stale 模式后，finalization 路径不再写 messages / 不切 status，
+      // 但 reader 继续消费直到流自然结束（避免 TCP buffer 满导致后端 agent 卡住）。
+      let wentStale = false;
       setStatusSafe('submitting');
 
       const userMsgId = nextMsgId();
@@ -370,11 +419,21 @@ export function useChatStream(sessionId: string) {
         for await (const evt of parseSseStream(res.body)) {
           try {
             // 用户切到其他会话/新会话后，本流已被 generation 标记过期；
-            // 立即跳出循环，避免 setMessages 污染新视图。
-            if (streamGenerationRef.current !== myGen) {
-              logger.debug('⏭️ 跳过过期 stream event');
-              return;
+            // 仍然消费 chunk（不 return）让 SSE reader 继续读 → TCP buffer 不满 →
+            // 后端 agent 不会卡住。但**不写** messages / 不 setStatusSafe，
+            // 避免污染新视图。
+            const isStale = streamGenerationRef.current !== myGen;
+            if (isStale) {
+              wentStale = true;
+              // 只在第一个过期 event 上打日志，避免每个 chunk 都打
+              if (!staleEventLoggedRef.current) {
+                logger.debug('⏭️ 进入 stale stream（不再 setMessages；继续消费以保持连接活着）');
+                staleEventLoggedRef.current = true;
+              }
+              // 不渲染、不切状态、不改 messages —— 但 continue 让 reader 继续
+              continue;
             }
+            staleEventLoggedRef.current = false;
             const data = evt.data as SseEventData;
 
             switch (evt.event) {
@@ -825,36 +884,46 @@ export function useChatStream(sessionId: string) {
         }
 
         // 流自然结束（没有 done 事件的情况）
-        if (pendingTextBuf) {
-          const remaining = pendingTextBuf;
-          pendingTextBuf = '';
-          setMessages((m) => {
-            const last = m[m.length - 1];
-            if (!last || last.role !== 'assistant') return m;
-            const blocks = [...last.blocks];
-            const textBlock = lastBlockOf<TextBlock>(blocks, 'text');
-            if (textBlock && textBlock.status !== 'done') {
-              const idx = blocks.indexOf(textBlock);
-              blocks[idx] = { ...textBlock, text: textBlock.text + remaining, status: 'done' };
-            }
-            return [...m.slice(0, -1), {
-              ...last, blocks: finalizeStreamingBlocks(blocks), streamState: 'done',
-            }];
-          });
+        // ⚠️ stale 流：用户已切走 → 不写 messages 也不切 status（避免污染新视图）
+        if (!wentStale) {
+          if (pendingTextBuf) {
+            const remaining = pendingTextBuf;
+            pendingTextBuf = '';
+            setMessages((m) => {
+              const last = m[m.length - 1];
+              if (!last || last.role !== 'assistant') return m;
+              const blocks = [...last.blocks];
+              const textBlock = lastBlockOf<TextBlock>(blocks, 'text');
+              if (textBlock && textBlock.status !== 'done') {
+                const idx = blocks.indexOf(textBlock);
+                blocks[idx] = { ...textBlock, text: textBlock.text + remaining, status: 'done' };
+              }
+              return [...m.slice(0, -1), {
+                ...last, blocks: finalizeStreamingBlocks(blocks), streamState: 'done',
+              }];
+            });
+          } else {
+            // 没有 pending text buffer，也要兜底 finalize 残留的 streaming block
+            setMessages((m) => {
+              const last = m[m.length - 1];
+              if (!last || last.role !== 'assistant') return m;
+              const finalized = finalizeStreamingBlocks(last.blocks);
+              if (finalized === last.blocks) return m;
+              return [...m.slice(0, -1), {
+                ...last, blocks: finalized, streamState: 'done',
+              }];
+            });
+          }
+          setStatusSafe('done');
         } else {
-          // 没有 pending text buffer，也要兜底 finalize 残留的 streaming block
-          setMessages((m) => {
-            const last = m[m.length - 1];
-            if (!last || last.role !== 'assistant') return m;
-            const finalized = finalizeStreamingBlocks(last.blocks);
-            if (finalized === last.blocks) return m;
-            return [...m.slice(0, -1), {
-              ...last, blocks: finalized, streamState: 'done',
-            }];
-          });
+          logger.debug('⏹️ stale 流自然结束（reader 已读完、后端已完成持久化）');
         }
-        setStatusSafe('done');
       } catch (err: unknown) {
+        // stale 流异常：reader 关闭属于预期，不污染 status
+        if (wentStale) {
+          logger.debug('⏹️ stale 流连接关闭（忽略异常）');
+          return;
+        }
         if (err instanceof DOMException && err.name === 'AbortError') {
           logger.debug('⏹️ 请求已取消');
           setStatusSafe('aborted');
@@ -950,17 +1019,69 @@ function parseHistoryBlocks(m: SerializedMsg, _msgId: string): Block[] {
 }
 
 /**
+ * 计算「history 没有、in-flight 有」的尾部消息差集。
+ *
+ * 场景：用户在 A 会话生成中切走 → 切回时 history 是切走前的快照，
+ * in-flight 是切走瞬间的 messages（含可能未持久化的 userB/assistantB-toolcall）。
+ * 只 append in-flight 头部与 history 尾部不重合的部分，避免把已有消息重复追加。
+ *
+ * 策略：
+ *   1. 找到 inflight 头部与 loaded 尾部最长的「对齐点」
+ *   2. 把对齐点之后的 inflight 消息全部 append
+ */
+function computeInflightTail(
+  loaded: ChatMessage[],
+  inflight: ChatMessage[],
+): ChatMessage[] {
+  if (loaded.length === 0) return inflight;
+
+  // 在 loaded 尾部找「最早」与 inflight[0] 同一条消息的位置
+  let overlapStart = -1;
+  for (let i = loaded.length - 1; i >= 0; i--) {
+    if (messageFingerprint(loaded[i]) === messageFingerprint(inflight[0])) {
+      overlapStart = i;
+      break;
+    }
+  }
+
+  if (overlapStart < 0) {
+    // 完全没对齐 —— 把整个 inflight 追加（保守）
+    return inflight;
+  }
+  // 跳过 overlap 那一项 + 之前的部分
+  return inflight.slice(1);
+}
+
+/**
+ * 消息指纹：用于判断两条消息是否同一条。
+ * role + text(前 80 字符) + blocks 数量 —— 简单但能区分"同一条 vs 不同条"。
+ */
+function messageFingerprint(m: ChatMessage): string {
+  const text = messageText(m).slice(0, 80);
+  return `${m.role}|${text}|${m.blocks.length}`;
+}
+
+/**
  * 判断两条消息是否「同一条」AI 回复，用于判断 history 是否已经追上 in-flight。
  * 用 text + toolCall ids 作指纹。
+ *
+ * 同一条的情形：
+ *   1. 文本完全一致
+ *   2. 两边都没文本（都还在生成开头）
+ *   3. in-flight 文本是 history 文本的前缀（说明 history 已超过 in-flight，
+ *      即后端已经生成到了 in-flight 之后的更多内容 —— history 已追上 in-flight）
  */
-function isSameTailMessage(a: ChatMessage, b: ChatMessage): boolean {
-  if (a.role !== b.role || b.role !== 'assistant') return false;
-  const aText = messageText(a).trim();
-  const bText = messageText(b).trim();
-  // 文本内容一致或一方为空（都是还没生成完）时，认为是同一条
-  if (aText === bText) return true;
-  // 文本不同时：如果 in-flight 那条没文本、history 那条也没文本，认为是同一条
-  if (!aText && !bText) return true;
-  // 否则认为是不同的消息
+function isSameTailMessage(history: ChatMessage, inflight: ChatMessage): boolean {
+  if (history.role !== inflight.role || inflight.role !== 'assistant') return false;
+  const hText = messageText(history).trim();
+  const iText = messageText(inflight).trim();
+  // 文本完全一致
+  if (hText === iText) return true;
+  // 两边都没文本
+  if (!hText && !iText) return true;
+  // history 比 inflight 长（多出来的部分可能是后端在我们切走期间继续生成的）
+  if (hText.length > iText.length && iText.length > 0 && hText.startsWith(iText)) return true;
+  // inflight 是 history 的严格前缀（小尾巴对齐）—— 同上
+  if (hText.length > 0 && iText.length > hText.length && iText.startsWith(hText)) return true;
   return false;
 }
