@@ -17,3 +17,4 @@ dist/
 
 # Harness 内部工作树（不入仓）
 .claude/worktrees/
+tsconfig.tsbuildinfo
