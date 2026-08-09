@@ -1,6 +1,10 @@
-import type { LLMProvider, CompletionParams, ToolDefinition } from "./base.js";
+import type { CompletionParams } from "./base.js";
+import { AbstractLLMProvider } from "./base.js";
 import type { StreamEvent, Message, MessageContent, StopReason } from "../shared/types.js";
 import { AuthError, RateLimitError, ProviderError, formatError } from "../shared/errors.js";
+import { OpenAiCompletionsCodec } from "./codecs/openai-completions.js";
+import { OpenAiCompletionsThinkingAdapter } from "./thinking/openai-completions.js";
+import type { ModelCapabilities, ReasoningLevel } from "./types.js";
 
 // ============================================================
 // DeepSeek API 类型（OpenAI 兼容）
@@ -21,15 +25,6 @@ type DeepSeekToolCall = {
   function: {
     name: string;
     arguments: string;
-  };
-};
-
-type DeepSeekToolDef = {
-  type: "function";
-  function: {
-    name: string;
-    description: string;
-    parameters: Record<string, unknown>;
   };
 };
 
@@ -64,36 +59,106 @@ type DeepSeekStreamChunk = {
 };
 
 // ============================================================
+// DeepSeek 默认模型能力
+// ============================================================
+
+const DEEPSEEK_DEFAULT_CAPABILITIES: ModelCapabilities = {
+  vision: false,
+  tool_use: true,
+  thinking: true,
+  json_mode: true,
+  prompt_caching: false,
+  streaming: true,
+};
+
+// ============================================================
 // DeepSeekProvider
 // ============================================================
 
-export class DeepSeekProvider implements LLMProvider {
+export class DeepSeekProvider extends AbstractLLMProvider {
   readonly id = "deepseek";
   readonly name = "DeepSeek";
+
+  protected readonly codec: OpenAiCompletionsCodec;
+  protected readonly thinkingAdapter: OpenAiCompletionsThinkingAdapter;
 
   private readonly apiKey: string;
   private readonly baseUrl: string;
 
-  constructor(opts: { apiKey: string; baseUrl?: string }) {
+  constructor(opts: {
+    apiKey: string;
+    baseUrl?: string;
+    capabilities?: Partial<ModelCapabilities>;
+  }) {
+    super();
+    const caps: ModelCapabilities = {
+      ...DEEPSEEK_DEFAULT_CAPABILITIES,
+      ...opts.capabilities,
+    };
     this.apiKey = opts.apiKey;
     this.baseUrl = opts.baseUrl ?? "https://api.deepseek.com/v1";
+    this.codec = new OpenAiCompletionsCodec(caps);
+    this.thinkingAdapter = new OpenAiCompletionsThinkingAdapter();
   }
 
-  async validateAuth(): Promise<boolean> {
-    try {
-      const resp = await fetch(`${this.baseUrl}/models`, {
-        headers: this.headers(),
-        signal: AbortSignal.timeout(10_000),
-      });
-      return resp.ok;
-    } catch {
-      return false;
+  // ==========================================================
+  // AbstractLLMProvider 抽象方法覆写
+  // ==========================================================
+
+  protected buildRequestBody(params: CompletionParams): unknown {
+    const messages = this.convertMessages(params.messages, params.systemPrompt);
+    const tools = this.codec.buildTools(params.tools ?? []);
+    const thinkingFields = this.thinkingAdapter.extractFromRequest({
+      level: (params.reasoning || "off") as ReasoningLevel,
+    });
+    const thinkingEnabled = params.reasoning && params.reasoning !== "off";
+
+    return {
+      model: params.model,
+      messages,
+      ...(tools.length > 0 ? { tools, tool_choice: "auto" } : {}),
+      ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
+      // thinking 模式下 temperature/top_p 无效，不发送
+      ...(!thinkingEnabled && params.temperature != null
+        ? { temperature: params.temperature }
+        : {}),
+      ...(!thinkingEnabled && params.topP != null
+        ? { top_p: params.topP }
+        : {}),
+      ...(params.stopSequences?.length
+        ? { stop: params.stopSequences }
+        : {}),
+      ...(thinkingFields as Record<string, unknown>),
+      stream: true,
+    };
+  }
+
+  protected async *parseStreamChunk(
+    _chunk: string,
+  ): AsyncIterable<StreamEvent> {
+    // Stream 解析逻辑在覆写的 stream() 中完整实现
+  }
+
+  protected classifyError(err: unknown): Error {
+    if (
+      err instanceof AuthError ||
+      err instanceof RateLimitError ||
+      err instanceof ProviderError
+    ) {
+      return err;
     }
+    return new ProviderError(
+      `DeepSeek error: ${formatError(err)}`,
+      "deepseek",
+      undefined,
+      err instanceof Error ? err : undefined,
+    );
   }
 
   // ==========================================================
-  // 流式 Completion
+  // 流式 Completion（完整覆写，保留原有 SSE buffer 分割逻辑）
   // ==========================================================
+
   async *stream(params: CompletionParams): AsyncIterable<StreamEvent> {
     const body = this.buildRequestBody(params);
     const response = await this.fetchWithErrorHandling(
@@ -189,7 +254,11 @@ export class DeepSeekProvider implements LLMProvider {
                 }
                 if (tc.function?.arguments) {
                   acc.args += tc.function.arguments;
-                  yield { type: "tool_use_delta", id: acc.id, input: tc.function.arguments };
+                  yield {
+                    type: "tool_use_delta",
+                    id: acc.id,
+                    input: tc.function.arguments,
+                  };
                 }
 
                 toolCallAccumulators.set(tc.index, acc);
@@ -244,7 +313,7 @@ export class DeepSeekProvider implements LLMProvider {
 
     yield {
       type: "message_end",
-      stopReason: this.mapStopReason(finishReason),
+      stopReason: this.codec.mapStopReason(finishReason),
       usage: {
         inputTokens,
         outputTokens,
@@ -258,13 +327,14 @@ export class DeepSeekProvider implements LLMProvider {
   // ==========================================================
   // 非流式 Completion
   // ==========================================================
+
   async complete(params: CompletionParams): Promise<{
     content: MessageContent[];
     stopReason: StopReason;
     usage: { inputTokens: number; outputTokens: number; totalTokens: number };
     model: string;
   }> {
-    const body = { ...this.buildRequestBody(params), stream: false };
+    const body = { ...(this.buildRequestBody(params) as Record<string, unknown>), stream: false };
     const response = await this.fetchWithErrorHandling(
       `${this.baseUrl}/chat/completions`,
       {
@@ -305,14 +375,30 @@ export class DeepSeekProvider implements LLMProvider {
 
     return {
       content,
-      stopReason: this.mapStopReason(choice?.finish_reason),
+      stopReason: this.codec.mapStopReason(choice?.finish_reason),
       usage: {
         inputTokens: json.usage?.prompt_tokens ?? 0,
         outputTokens: json.usage?.completion_tokens ?? 0,
-        totalTokens: json.usage?.total_tokens ?? 0,
+        totalTokens: json.usage?.totalTokens ?? 0,
       },
       model: json.model ?? params.model,
     };
+  }
+
+  // ==========================================================
+  // 凭证验证
+  // ==========================================================
+
+  async validateAuth(): Promise<boolean> {
+    try {
+      const resp = await fetch(`${this.baseUrl}/models`, {
+        headers: this.headers(),
+        signal: AbortSignal.timeout(10_000),
+      });
+      return resp.ok;
+    } catch {
+      return false;
+    }
   }
 
   // ==========================================================
@@ -322,36 +408,6 @@ export class DeepSeekProvider implements LLMProvider {
   private headers(): Record<string, string> {
     return {
       Authorization: `Bearer ${this.apiKey}`,
-    };
-  }
-
-  private buildRequestBody(params: CompletionParams) {
-    const messages = this.convertMessages(params.messages, params.systemPrompt);
-    const tools = this.convertTools(params.tools);
-    const thinkingEnabled = params.reasoning && params.reasoning !== "off";
-
-    return {
-      model: params.model,
-      messages,
-      ...(tools.length > 0 ? { tools, tool_choice: "auto" } : {}),
-      ...(params.maxTokens ? { max_tokens: params.maxTokens } : {}),
-      // thinking 模式下 temperature/top_p 无效，不发送
-      ...(!thinkingEnabled && params.temperature != null
-        ? { temperature: params.temperature }
-        : {}),
-      ...(!thinkingEnabled && params.topP != null
-        ? { top_p: params.topP }
-        : {}),
-      ...(params.stopSequences?.length
-        ? { stop: params.stopSequences }
-        : {}),
-      ...(thinkingEnabled
-        ? {
-            thinking: { type: "enabled" },
-            reasoning_effort: params.reasoning,
-          }
-        : {}),
-      stream: true,
     };
   }
 
@@ -366,101 +422,50 @@ export class DeepSeekProvider implements LLMProvider {
     }
 
     for (const msg of messages) {
-      // 将同一 Message 的多个 content block 合并为一条 DeepSeek 消息
-      const textBlocks = msg.content.filter((b) => b.type === "text");
-      const toolUseBlocks = msg.content.filter((b) => b.type === "tool_use");
-      const toolResultBlocks = msg.content.filter((b) => b.type === "tool_result");
-      const imageBlocks = msg.content.filter((b) => b.type === "image");
-      const thinkingBlocks = msg.content.filter((b) => b.type === "thinking");
-
-      // assistant 文本 + 工具调用合并为一条消息
       if (msg.role === "assistant") {
-        const text = textBlocks.map((b) => (b as { text: string }).text).join("");
-        const hasTools = toolUseBlocks.length > 0;
-        const reasoningContent = thinkingBlocks
-          .map((b) => (b as { thinking: string }).thinking)
-          .join("");
+        // 将同一 Message 的多个 content block 合并为一条 assistant 消息
+        let textContent = "";
+        let reasoningContent = "";
+        const toolCalls: DeepSeekToolCall[] = [];
+
+        for (const block of msg.content) {
+          const converted = this.codec.outbound(block) as Record<
+            string,
+            unknown
+          > | null;
+          if (!converted) continue;
+
+          if (typeof converted.content === "string") {
+            textContent += converted.content;
+          }
+          if (typeof converted.reasoning_content === "string") {
+            reasoningContent += converted.reasoning_content;
+          }
+          if (Array.isArray(converted.tool_calls)) {
+            toolCalls.push(...(converted.tool_calls as DeepSeekToolCall[]));
+          }
+        }
 
         out.push({
           role: "assistant",
-          content: text || null,
+          content: textContent || null,
           ...(reasoningContent
             ? { reasoning_content: reasoningContent }
             : {}),
-          ...(hasTools
-            ? {
-                tool_calls: toolUseBlocks.map((tc) => ({
-                  id: tc.id,
-                  type: "function" as const,
-                  function: {
-                    name: tc.name,
-                    arguments: JSON.stringify(tc.input),
-                  },
-                })),
-              }
-            : {}),
+          ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
         });
         continue;
       }
 
-      // user 文本
-      for (const block of textBlocks) {
-        out.push({
-          role: "user",
-          content: (block as { text: string }).text,
-        });
-      }
-
-      // tool 结果（每条 tool_result 独立一条 tool 消息）
-      for (const block of toolResultBlocks) {
-        out.push({
-          role: "tool",
-          tool_call_id: block.toolUseId,
-          content: block.content,
-        });
-      }
-
-      // 图片 → DeepSeek vision 格式
-      for (const block of imageBlocks) {
-        out.push({
-          role: "user",
-          content: JSON.stringify([
-            {
-              type: "image_url",
-              image_url: {
-                url: `data:${(block as { mediaType: string }).mediaType};base64,${(block as { data: string }).data}`,
-              },
-            },
-          ]),
-        } as DeepSeekMessage);
+      // user / tool 消息：每个 block 通过 codec.outbound 转换后直接推入
+      for (const block of msg.content) {
+        const converted = this.codec.outbound(block) as DeepSeekMessage | null;
+        if (!converted) continue;
+        out.push(converted);
       }
     }
 
     return out;
-  }
-
-  private convertTools(tools?: ToolDefinition[]): DeepSeekToolDef[] {
-    if (!tools?.length) return [];
-    return tools.map((t) => ({
-      type: "function" as const,
-      function: {
-        name: t.name,
-        description: t.description,
-        parameters: t.inputSchema,
-      },
-    }));
-  }
-
-  private mapStopReason(finishReason: string | null | undefined): StopReason {
-    switch (finishReason) {
-      case "tool_calls":
-        return "tool_use";
-      case "length":
-        return "max_tokens";
-      case "stop":
-      default:
-        return "end_turn";
-    }
   }
 
   private async fetchWithErrorHandling(
