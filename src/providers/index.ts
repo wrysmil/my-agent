@@ -1,6 +1,11 @@
 export { DeepSeekProvider } from "./deepseek.js";
 export { AnthropicProvider } from "./anthropic.js";
 export { OpenAIProvider } from "./openai.js";
+export { GoogleProvider } from "./google.js";
+export { MoonshotProvider } from "./moonshot.js";
+export { QwenProvider } from "./qwen.js";
+export { MistralProvider } from "./mistral.js";
+export { GrokProvider } from "./grok.js";
 export type { LLMProvider, ProviderFactory, CompletionParams, CompletionResult, ToolDefinition } from "./base.js";
 export { AbstractLLMProvider } from "./base.js";
 export { ProviderRegistry } from "./registry.js";

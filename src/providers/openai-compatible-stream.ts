@@ -7,10 +7,76 @@
  * 参考 Orkas pi-provider.ts 模式：协议层抽象为可复用函数而非基类方法。
  */
 import type { CompletionParams } from "./base.js";
-import type { StreamEvent, MessageContent } from "../shared/types.js";
+import type { StreamEvent, MessageContent, Message } from "../shared/types.js";
 import { AuthError, RateLimitError, ProviderError, formatError } from "../shared/errors.js";
 import type { OpenAiCompletionsCodec } from "./codecs/openai-completions.js";
 import type { OpenAiCompletionsThinkingAdapter } from "./thinking/openai-completions.js";
+
+// ============================================================
+// convertOpenAiCompatibleMessages — 共享的消息转换逻辑
+// ============================================================
+
+/**
+ * 将内部 Message 列表转换为 OpenAI 兼容的消息数组。
+ * 所有使用 openai-completions 协议的 provider 共享此逻辑，
+ * 避免在每个 provider 中重复 ~40 行 convertMessages。
+ */
+export function convertOpenAiCompatibleMessages(
+  messages: Message[],
+  systemPrompt: string | undefined,
+  codec: OpenAiCompletionsCodec,
+): unknown[] {
+  const out: unknown[] = [];
+
+  if (systemPrompt) {
+    out.push({ role: "system", content: systemPrompt });
+  }
+
+  for (const msg of messages) {
+    if (msg.role === "assistant") {
+      let textContent = "";
+      let reasoningContent = "";
+      const toolCalls: unknown[] = [];
+
+      for (const block of msg.content) {
+        const converted = codec.outbound(block) as Record<
+          string,
+          unknown
+        > | null;
+        if (!converted) continue;
+
+        if (typeof converted.content === "string") {
+          textContent += converted.content;
+        }
+        if (typeof converted.reasoning_content === "string") {
+          reasoningContent += converted.reasoning_content;
+        }
+        if (Array.isArray(converted.tool_calls)) {
+          toolCalls.push(...(converted.tool_calls as unknown[]));
+        }
+      }
+
+      out.push({
+        role: "assistant",
+        content: textContent || null,
+        ...(reasoningContent
+          ? { reasoning_content: reasoningContent }
+          : {}),
+        ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
+      });
+      continue;
+    }
+
+    // user / tool 消息
+    for (const block of msg.content) {
+      const converted = codec.outbound(block);
+      if (!converted) continue;
+      out.push(converted);
+    }
+  }
+
+  return out;
+}
 
 type DeepSeekCompatibleChunk = {
   id: string;
