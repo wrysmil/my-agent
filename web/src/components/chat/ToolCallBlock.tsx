@@ -29,7 +29,7 @@ export function ToolCallBlockView({ block }: { block: ToolCallBlockType }) {
   return (
     <div className="flex items-start gap-2 my-1 px-2.5 py-1.5 rounded-md bg-surface-hover/30 border border-border/30 text-xs">
       {isStreaming ? (
-        <Loader2 className="w-3.5 h-3.5 shrink-0 mt-px animate-spin text-accent" />
+        <Loader2 className="w-3.5 h-3.5 shrink-0 mt-px animate-spin text-accent-fg" />
       ) : (
         <Wrench className="w-3.5 h-3.5 shrink-0 mt-px text-text-muted" />
       )}
