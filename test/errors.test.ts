@@ -7,10 +7,12 @@ import {
   OutputLimitError,
   ProviderError,
   TimeoutError,
+  CapabilityUnsupportedError,
   classifyRetryableError,
   isRetryableError,
   isTransientNetworkError,
   formatError,
+  toLocalizedErrorKey,
   type RetryableErrorKind,
 } from "../src/shared/errors.js";
 
@@ -211,6 +213,94 @@ describe("错误分类与重试策略", () => {
         "network",
       ];
       expect(kinds).toHaveLength(6);
+    });
+  });
+
+  // ─── CapabilityUnsupportedError ─────────────────
+  describe("CapabilityUnsupportedError", () => {
+    it("继承自 CoreAgentError", () => {
+      const err = new CapabilityUnsupportedError("vision not supported", "vision", "openai");
+      expect(err).toBeInstanceOf(CoreAgentError);
+      expect(err).toBeInstanceOf(Error);
+    });
+
+    it("携带 capability 和 providerId", () => {
+      const err = new CapabilityUnsupportedError("no thinking", "thinking", "anthropic");
+      expect(err.capability).toBe("thinking");
+      expect(err.providerId).toBe("anthropic");
+    });
+
+    it("code 为 CAPABILITY_UNSUPPORTED，name 正确", () => {
+      const err = new CapabilityUnsupportedError("msg", "tool_use", "gemini");
+      expect(err.code).toBe("CAPABILITY_UNSUPPORTED");
+      expect(err.name).toBe("CapabilityUnsupportedError");
+    });
+
+    it("支持 5 种 capability 值", () => {
+      const capabilities = ["vision", "tool_use", "thinking", "json_mode", "prompt_caching"] as const;
+      for (const cap of capabilities) {
+        const err = new CapabilityUnsupportedError("test", cap, "test-provider");
+        expect(err.capability).toBe(cap);
+      }
+    });
+
+    it("可携带 cause", () => {
+      const cause = new Error("root cause");
+      const err = new CapabilityUnsupportedError("wrapped", "vision", "openai", cause);
+      expect(err.cause).toBe(cause);
+    });
+  });
+
+  // ─── toLocalizedErrorKey ─────────────────────────
+  describe("toLocalizedErrorKey — i18n 错误键映射", () => {
+    it("AuthError → errors.provider.auth", () => {
+      expect(toLocalizedErrorKey(new AuthError("bad key"))).toBe("errors.provider.auth");
+    });
+
+    it("RateLimitError → errors.provider.rate_limited", () => {
+      expect(toLocalizedErrorKey(new RateLimitError("rate"))).toBe("errors.provider.rate_limited");
+    });
+
+    it("CapabilityUnsupportedError → errors.provider.capability_unsupported", () => {
+      expect(toLocalizedErrorKey(new CapabilityUnsupportedError("no vision", "vision", "openai")))
+        .toBe("errors.provider.capability_unsupported");
+    });
+
+    it("ContextOverflowError → errors.provider.context_overflow", () => {
+      expect(toLocalizedErrorKey(new ContextOverflowError("too long")))
+        .toBe("errors.provider.context_overflow");
+    });
+
+    it("OutputLimitError → errors.provider.output_limit", () => {
+      expect(toLocalizedErrorKey(new OutputLimitError("max tokens")))
+        .toBe("errors.provider.output_limit");
+    });
+
+    it("connection_dropped 消息 → errors.provider.connection_dropped", () => {
+      expect(toLocalizedErrorKey(new Error("fetch failed")))
+        .toBe("errors.provider.connection_dropped");
+    });
+
+    it("timeout 消息 → errors.provider.timeout", () => {
+      expect(toLocalizedErrorKey(new Error("ETIMEDOUT")))
+        .toBe("errors.provider.timeout");
+    });
+
+    it("server_error 状态码 → errors.provider.server", () => {
+      expect(toLocalizedErrorKey(new ProviderError("500", "test", 500)))
+        .toBe("errors.provider.server");
+    });
+
+    it("service_unavailable → errors.provider.server", () => {
+      expect(toLocalizedErrorKey(new ProviderError("503", "test", 503)))
+        .toBe("errors.provider.server");
+    });
+
+    it("未知错误 → errors.provider.unknown", () => {
+      // null causes classifyRetryableError to return null, so no kind branch
+      // matches and we fall through to the "unknown" default.
+      expect(toLocalizedErrorKey(null))
+        .toBe("errors.provider.unknown");
     });
   });
 });

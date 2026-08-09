@@ -242,3 +242,46 @@ export function isRetryableError(err: unknown): boolean {
 export function isTransientNetworkError(err: unknown): boolean {
   return classifyTransient(err) !== null;
 }
+
+// ============================================================
+// 能力不支持错误
+// ============================================================
+
+export class CapabilityUnsupportedError extends CoreAgentError {
+  public readonly capability: "vision" | "tool_use" | "thinking" | "json_mode" | "prompt_caching";
+  public readonly providerId: string;
+
+  constructor(
+    message: string,
+    capability: CapabilityUnsupportedError["capability"],
+    providerId: string,
+    cause?: Error,
+  ) {
+    super(message, "CAPABILITY_UNSUPPORTED", cause);
+    this.name = "CapabilityUnsupportedError";
+    this.capability = capability;
+    this.providerId = providerId;
+  }
+}
+
+// ============================================================
+// i18n 错误键映射
+// ============================================================
+
+export function toLocalizedErrorKey(err: unknown): string {
+  // Instance checks first — some error types (e.g. CapabilityUnsupportedError)
+  // are not filtered by classifyRetryableError and would be misclassified as
+  // "network" if we checked kind first.
+  if (err instanceof AuthError) return "errors.provider.auth";
+  if (err instanceof CapabilityUnsupportedError) return "errors.provider.capability_unsupported";
+  if (err instanceof ContextOverflowError) return "errors.provider.context_overflow";
+  if (err instanceof OutputLimitError) return "errors.provider.output_limit";
+
+  const kind = classifyRetryableError(err);
+  if (kind === "rate_limit") return "errors.provider.rate_limited";
+  if (kind === "timeout") return "errors.provider.timeout";
+  if (kind === "connection_dropped") return "errors.provider.connection_dropped";
+  if (kind === "service_unavailable" || kind === "server_error") return "errors.provider.server";
+  if (kind === "network") return "errors.provider.network";
+  return "errors.provider.unknown";
+}
