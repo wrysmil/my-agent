@@ -56,7 +56,9 @@
       "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent commit -m 'chore\\(manage\\): start/restart 启动前自动确保前端 dist 是最新的' -m '- 新增 ensure_frontend_built\\(\\)： *)",
       "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent log --oneline -5)",
       "Bash(git -c user.email=noreply@anthropic.com -c user.name=Claude commit -m ' *)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(git restore *)",
+      "Bash(git rev-list *)"
     ],
     "ask": [
       "EnterWorktree"
