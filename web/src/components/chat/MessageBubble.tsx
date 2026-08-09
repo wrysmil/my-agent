@@ -57,10 +57,10 @@ export function MessageBubble({ message, isStreaming }: {
       className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'} group relative mb-4`}
     >
       <div
-        className={`max-w-[80%] min-w-0 rounded-lg px-4 py-2 ${
+        className={`max-w-[80%] min-w-0 rounded-lg ${
           role === 'user'
-            ? 'bg-blue-500 text-white'
-            : 'bg-surface border border-border'
+            ? 'bg-blue-100 text-blue-900 px-4 py-3 dark:bg-blue-900/40 dark:text-blue-100'
+            : 'bg-surface border border-border px-4 py-2'
         }`}
       >
         {role === 'user' ? (

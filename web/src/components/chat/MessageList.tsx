@@ -43,7 +43,7 @@ export function MessageList({
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-1"
+      className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-2 space-y-1"
       role="log"
       aria-live="polite"
     >
