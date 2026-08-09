@@ -38,6 +38,10 @@ export function MessageBubble({ message, isStreaming }: {
   );
   const showThinkingDots = isStreaming && !hasContent;
 
+  // user 消息没有任何文本/内容时不渲染空气泡（避免流断开时显示空蓝色占位）
+  const isEmptyUserMessage = role === 'user' && !message.text && !textContent;
+  if (isEmptyUserMessage) return null;
+
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(textContent);
