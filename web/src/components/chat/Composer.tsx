@@ -140,21 +140,22 @@ export function Composer({
     <form
       onSubmit={handleSubmit}
       data-testid="composer-form"
-      className="border-t border-border px-4 py-3 bg-surface shrink-0"
+      className="px-4 py-3 bg-transparent shrink-0"
     >
-      {/* ── 输入卡片（Orkas .chat-input-area 风格）──
-          max-w:80% 居中、14px 圆角、resting shadow、focus-within 边框高亮 + 上浮。
-          prominent 模式：更大输入框、更强阴影（Orkas .new-chat-input-area）。 */}
+      {/* ── 输入卡片（融入页面背景，无突兀白色块）──
+          柔和边框 + 微阴影，focus-within 时边框高亮 + 上浮。 */}
       <div
         className={`
           mx-auto flex flex-col gap-1.5
-          rounded-2xl border bg-surface
+          rounded-2xl border border-border/60
+          bg-surface/80 backdrop-blur-sm
           transition-all duration-200
           focus-within:border-primary/60
+          focus-within:bg-surface
           focus-within:-translate-y-0.5
           ${prominent
-            ? 'max-w-[760px] border-border/60 shadow-[0_2px_12px_rgba(15,18,24,0.04),0_1px_0_rgba(255,255,255,0.6)_inset] focus-within:shadow-[0_8px_28px_rgba(108,92,231,0.10),0_1px_0_rgba(255,255,255,0.6)_inset]'
-            : 'max-w-[760px] border-border/60 shadow-[0_2px_8px_rgba(15,18,24,0.03)] focus-within:shadow-[0_4px_18px_rgba(108,92,231,0.08)]'
+            ? 'max-w-[760px] shadow-[0_2px_12px_rgba(15,18,24,0.04)] focus-within:shadow-[0_8px_28px_rgba(108,92,231,0.10)]'
+            : 'max-w-[760px] shadow-[0_2px_8px_rgba(15,18,24,0.03)] focus-within:shadow-[0_4px_18px_rgba(108,92,231,0.08)]'
           }
         `}
       >
