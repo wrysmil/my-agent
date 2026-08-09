@@ -46,6 +46,28 @@ function lastBlockOf<T extends Block>(blocks: Block[], type: T['type']): T | und
   return undefined;
 }
 
+/**
+ * 把 blocks 里所有 status === 'streaming' 的项翻成 'done'。
+ *
+ * 用于流收尾路径（done / error / aborted / 流自然结束）兜底：
+ * 正常情况下 `message_stop` 会处理这件事，但 SSE 解析偶发丢包时该事件不到达，
+ * 没有这个兜底的话 thinking / tool_call block 会一直停留在 streaming 状态，
+ * UI 上 "思考中..." 永远不消失。
+ *
+ * 如果没有需要收尾的 block，返回原数组引用以避免无谓的重渲染。
+ */
+function finalizeStreamingBlocks(blocks: Block[]): Block[] {
+  let changed = false;
+  const next = blocks.map((b) => {
+    if (b.status === 'streaming') {
+      changed = true;
+      return { ...b, status: 'done' as const };
+    }
+    return b;
+  });
+  return changed ? next : blocks;
+}
+
 /** 找消息中最后一个状态不是 done 的 block */
 function activeBlock(blocks: Block[]): Block | undefined {
   for (let i = blocks.length - 1; i >= 0; i--) {
@@ -617,7 +639,8 @@ export function useChatStream(sessionId: string) {
 
               // ---- 流结束 ----
               case 'done': {
-                // 刷新剩余的 text buffer
+                // 刷新剩余的 text buffer + 兜底 finalize 所有 streaming block
+                // （防止 message_stop 丢失导致 thinking/tool_call 永远停在 streaming）
                 if (pendingTextBuf) {
                   const remaining = pendingTextBuf;
                   pendingTextBuf = '';
@@ -631,7 +654,18 @@ export function useChatStream(sessionId: string) {
                       blocks[idx] = { ...textBlock, text: textBlock.text + remaining, status: 'done' };
                     }
                     return [...m.slice(0, -1), {
-                      ...last, blocks, streamState: 'done',
+                      ...last, blocks: finalizeStreamingBlocks(blocks), streamState: 'done',
+                    }];
+                  });
+                } else {
+                  // 没有 pending text buffer，也要兜底 finalize 残留的 streaming block
+                  setMessages((m) => {
+                    const last = m[m.length - 1];
+                    if (!last || last.role !== 'assistant') return m;
+                    const finalized = finalizeStreamingBlocks(last.blocks);
+                    if (finalized === last.blocks) return m;
+                    return [...m.slice(0, -1), {
+                      ...last, blocks: finalized, streamState: 'done',
                     }];
                   });
                 }
@@ -660,7 +694,8 @@ export function useChatStream(sessionId: string) {
                 setMessages((m) => {
                   const last = m[m.length - 1];
                   if (last?.role === 'assistant') {
-                    const blocks = [...last.blocks];
+                    // 兜底 finalize 残留的 streaming block，再追加错误文本块
+                    const blocks = finalizeStreamingBlocks([...last.blocks]);
                     blocks.push({
                       id: nextBlockId(),
                       type: 'text',
@@ -694,6 +729,16 @@ export function useChatStream(sessionId: string) {
                   rafHandle = null;
                   rafScheduled = false;
                 }
+                // 兜底 finalize 残留的 streaming block
+                setMessages((m) => {
+                  const last = m[m.length - 1];
+                  if (!last || last.role !== 'assistant') return m;
+                  const finalized = finalizeStreamingBlocks(last.blocks);
+                  if (finalized === last.blocks) return m;
+                  return [...m.slice(0, -1), {
+                    ...last, blocks: finalized, streamState: 'done',
+                  }];
+                });
                 setStatusSafe('aborted');
                 return;
               }
@@ -728,7 +773,18 @@ export function useChatStream(sessionId: string) {
               blocks[idx] = { ...textBlock, text: textBlock.text + remaining, status: 'done' };
             }
             return [...m.slice(0, -1), {
-              ...last, blocks, streamState: 'done',
+              ...last, blocks: finalizeStreamingBlocks(blocks), streamState: 'done',
+            }];
+          });
+        } else {
+          // 没有 pending text buffer，也要兜底 finalize 残留的 streaming block
+          setMessages((m) => {
+            const last = m[m.length - 1];
+            if (!last || last.role !== 'assistant') return m;
+            const finalized = finalizeStreamingBlocks(last.blocks);
+            if (finalized === last.blocks) return m;
+            return [...m.slice(0, -1), {
+              ...last, blocks: finalized, streamState: 'done',
             }];
           });
         }

@@ -13,7 +13,7 @@
 const PREFIX = "[my-agent]";
 
 const isDev = typeof import.meta !== "undefined" &&
-  (import.meta as Record<string, unknown>).env?.["DEV"] === true;
+  (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true;
 
 function formatTime(): string {
   return new Date().toISOString().slice(11, 23); // HH:MM:SS.sss

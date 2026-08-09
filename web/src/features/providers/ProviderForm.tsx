@@ -262,7 +262,7 @@ export function ProviderForm({
                       {meta.short}
                     </p>
                     <p className="text-[10px] text-text-muted truncate">
-                      {meta.defaultModel}
+                      {TYPE_DEFAULTS[t]?.defaultModel ?? ''}
                     </p>
                   </div>
                 </div>
