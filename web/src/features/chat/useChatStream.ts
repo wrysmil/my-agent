@@ -143,14 +143,26 @@ export function useChatStream(sessionId: string) {
   }, []);
 
   // ==========================================================
-  // 加载历史消息
+  // 加载历史消息（以及：每次 sessionId 变化都把视图先清空）
   // ==========================================================
   useEffect(() => {
+    // 每次 sessionId 变化都先无条件重置，避免粘连上一个会话的视图。
+    // 这覆盖三种跳转：
+    //   1. /chat/:a → /chat/:b   切换两个已有会话
+    //   2. /chat/:a → /chat      点 Sidebar ➕ 号进入空白页
+    //   3. /chat     → /chat/:a  从空白页进入已有会话（首次加载也一样）
+    // 在 (2) 这个分支，旧的 useEffect 写法是 `if (!sessionId) return` 直接早返回，
+    // 导致 messages 仍是上一个会话的历史，页面看着像「+ 号根本没切」。
+    if (controllerRef.current) {
+      // 取消可能还在跑的流，避免上一个 session 的尾流落到新视图里
+      controllerRef.current.abort();
+    }
+    setMessages([]);
+    setHistoryLoaded(false);
+    setStatusSafe('idle');
+
     if (!sessionId) return;
     let cancelled = false;
-
-    setHistoryLoaded(false);
-    setMessages([]);
 
     apiGet<{ messages: SerializedMsg[] }>(`/api/sessions/${sessionId}/history`)
       .then((data) => {
@@ -803,7 +815,14 @@ export function useChatStream(sessionId: string) {
   );
 
   const abort = useCallback(() => {
+    // 1) 阻止 fetch / 流继续
     controllerRef.current?.abort();
+    // 关键：清掉 controllerRef，让下一次 send() 一定拿到一个全新的 controller。
+    // 否则 race 下 catch 块异步写 'aborted' 时，setStatusSafe 仍同步设过一次，
+    // 但 controller 已被 abort 的 ctrl 仍挂在 ref 上，下一次流会被瞬间 abort。
+    // 清掉能确保 abort → send 重新建立的链路干净。
+    controllerRef.current = null;
+    // 2) 切状态（在 status='aborted' 时 Composer 的 isStreaming=false，textarea 解禁）
     setStatusSafe('aborted');
   }, []);
 

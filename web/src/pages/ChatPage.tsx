@@ -80,6 +80,19 @@ export function ChatPage() {
     }
   }, [status, queryClient]);
 
+  // 「懒创建」完成 / 被中止的兜底：
+  // handleSend 走懒创建分支时 setCreating(true)，但无论 POST /api/sessions 成功还是
+  // 失败，creating 必须最终被释放。否则在这段窗口里，Composer 的 prop status 永远是
+  // 'submitting'（看下方 <Composer status={creating ? 'submitting' : status} />），
+  // 即使用 useChatStream 的 status 已经变 'aborted' / 'error'，textarea 仍永久 disabled，
+  // 「点停止后无法输入」的卡死就是这么来的。
+  useEffect(() => {
+    if (!creating) return;
+    if (status === 'aborted' || status === 'error') {
+      setCreating(false);
+    }
+  }, [creating, status]);
+
   // Set default model once active provider is loaded
   useEffect(() => {
     if (activeProvider?.defaultModel && !selectedModel) {
@@ -316,7 +329,15 @@ export function ChatPage() {
       )}
 
       <MessageList messages={messages} status={status} />
+      {/*
+        Composer 的 `key` 跟随 sessionId：会话切换时强制重挂载，
+        让输入框文本也跟着重置。否则从 /chat/:a → /chat（点 ➕），
+        上一会话里没发出去的草稿文字会粘连到新会话里。
+        与 useChatStream 的「sessionId 变化先清空 messages」配合，
+        保证「点 ➕ 进入空白对话页面」的语义完整覆盖 messages + input。
+      */}
       <Composer
+        key={sessionId ?? '__blank__'}
         onSend={handleSend}
         onAbort={abort}
         status={creating ? 'submitting' : status}

@@ -46,7 +46,17 @@
       "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent config user.name)",
       "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent config user.email)",
       "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent commit -m 'fix\\(web\\): 修两处 tsc 错误导致前端无法 build' -m '- logger.ts: import.meta 改用 unknown 双层 cast 拿到 env.DEV *)",
-      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent show --stat f0a3450)"
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent show --stat f0a3450)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent config --get-all core.hooksPath)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent config --list)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent config core.hooksPath)",
+      "Bash(git update-index *)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent add manage.sh)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent diff --cached --stat)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent commit -m 'chore\\(manage\\): start/restart 启动前自动确保前端 dist 是最新的' -m '- 新增 ensure_frontend_built\\(\\)： *)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent log --oneline -5)",
+      "Bash(git -c user.email=noreply@anthropic.com -c user.name=Claude commit -m ' *)",
+      "Bash(echo \"exit=$?\")"
     ],
     "ask": [
       "EnterWorktree"

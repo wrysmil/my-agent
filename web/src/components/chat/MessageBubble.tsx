@@ -59,7 +59,7 @@ export function MessageBubble({ message, isStreaming }: {
       <div
         className={`max-w-[80%] min-w-0 rounded-lg px-4 py-2 ${
           role === 'user'
-            ? 'bg-surface-hover text-text'
+            ? 'bg-blue-500 text-white'
             : 'bg-surface border border-border'
         }`}
       >
