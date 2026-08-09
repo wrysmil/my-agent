@@ -109,6 +109,45 @@ kill_hard() {
   fi
 }
 
+# ── 前端构建保证 ──
+# 后端 serve 的是 web/dist 下的静态资源；如果只改 web/src 不 build，
+# 浏览器拿到的就是旧代码。每次 start/restart 之前先确保 dist 已是最新。
+
+ensure_frontend_built() {
+  local web_dir="$PROJECT_DIR/web"
+  local dist_html="$web_dir/dist/index.html"
+
+  # 0) web 子项目依赖缺失 → 先装
+  if [ ! -d "$web_dir/node_modules" ]; then
+    echo "📦 首次启动，安装 web 依赖..."
+    (cd "$web_dir" && npm install) || {
+      echo "❌ web 依赖安装失败"
+      return 1
+    }
+  fi
+
+  # 1) dist 缺失 → 必 build
+  if [ ! -f "$dist_html" ]; then
+    echo "📦 dist 缺失，构建前端..."
+    (cd "$web_dir" && npm run build) || {
+      echo "❌ 前端构建失败"
+      return 1
+    }
+    echo "✅ 前端构建完成"
+    return 0
+  fi
+
+  # 2) src 比 dist 新 → rebuild
+  if [ -n "$(find "$web_dir/src" -type f -newer "$dist_html" 2>/dev/null | head -1)" ]; then
+    echo "📦 前端源码比 dist 新，重新构建..."
+    (cd "$web_dir" && npm run build) || {
+      echo "❌ 前端构建失败"
+      return 1
+    }
+    echo "✅ 前端构建完成"
+  fi
+}
+
 # ── 子命令 ──
 
 start() {
@@ -125,6 +164,9 @@ start() {
     echo "🧹 清理残留进程: $stale"
     kill_hard
   fi
+
+  # 启动前确保前端 dist 是最新的
+  ensure_frontend_built || exit 1
 
   echo "🚀 启动后端服务..."
   cd "$PROJECT_DIR"
@@ -213,6 +255,9 @@ restart() {
     echo "❌ 端口 $PORT 仍被占用，启动失败"
     exit 1
   fi
+
+  # 启动前确保前端 dist 是最新的
+  ensure_frontend_built || exit 1
 
   cd "$PROJECT_DIR"
   rm -f "$PID_FILE"
