@@ -9,7 +9,7 @@ import { MessageList } from '@/components/chat/MessageList';
 import { apiGet, apiPost } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { logger } from '@/lib/logger';
-import { ChevronDown, Brain, RefreshCw, Sparkles, Check } from 'lucide-react';
+import { ChevronDown, RefreshCw, Sparkles, Brain } from 'lucide-react';
 
 interface ModelInfo {
   id: string;
@@ -21,14 +21,14 @@ interface ModelInfo {
   supportsStreaming: boolean;
 }
 
-const EFFORT_LABELS: Record<string, string> = {
-  off: '关闭思考',
-  low: '低',
-  medium: '中',
-  high: '高',
+type Effort = 'off' | 'low' | 'medium' | 'high';
+const EFFORT_VALUES: Effort[] = ['off', 'low', 'medium', 'high'];
+const EFFORT_LEVELS_SHORT: Record<Effort, string> = {
+  off: 'OFF',
+  low: 'LOW',
+  medium: 'MED',
+  high: 'HIGH',
 };
-
-const EFFORT_VALUES = ['off', 'low', 'medium', 'high'] as const;
 
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
@@ -39,7 +39,7 @@ export function ChatPage() {
 
   // Model & effort state
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [thinkingLevel, setThinkingLevel] = useState<'off' | 'low' | 'medium' | 'high'>('medium');
+  const [thinkingLevel, setThinkingLevel] = useState<Effort>('medium');
   const [showModelMenu, setShowModelMenu] = useState(false);
 
   // Fetch available models from API
@@ -140,41 +140,37 @@ export function ChatPage() {
   // Model selector UI (moved to Composer area)
   const modelSelector = (
     <>
-      {/* Model selector — prominent pill with gradient icon + check for selected */}
+      {/* Model selector — prominent pill with gradient icon, check mark for selected */}
       <div className="relative">
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); setShowModelMenu(v => !v); }}
-          className={`group flex items-center gap-2 rounded-full border bg-surface pl-1 pr-2.5 py-1 text-xs transition-all shadow-sm hover:shadow-md ${
+          className={`group flex items-center gap-2 h-7 pl-1 pr-2.5 rounded-full border bg-surface text-xs transition-all shadow-sm hover:shadow-md ${
             showModelMenu
               ? 'border-primary ring-2 ring-primary/20'
               : 'border-border hover:border-primary/50'
           }`}
         >
-          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-primary to-primary/60 text-primary-fg shrink-0">
-            <Sparkles className="w-3.5 h-3.5" />
+          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-fg shrink-0 shadow-inner">
+            <Sparkles className="w-3 h-3" />
           </span>
-          <div className="flex flex-col items-start leading-none min-w-0">
-            <span className="font-semibold text-text truncate max-w-[140px]">
-              {selectedModelInfo?.model ?? t('chat.model.placeholder')}
-            </span>
-            {selectedModelInfo && (
-              <span className="text-[10px] text-text-muted mt-0.5 truncate max-w-[140px]">
-                {(selectedModelInfo.contextWindow / 1024).toFixed(0)}k ctx · {selectedModelInfo.provider}
-              </span>
-            )}
-          </div>
-          <ChevronDown className={`w-3.5 h-3.5 text-text-muted/70 transition-transform shrink-0 ${showModelMenu ? 'rotate-180 text-primary' : ''}`} />
+          <span className="font-semibold text-text truncate max-w-[140px]">
+            {selectedModelInfo?.model ?? t('chat.model.placeholder')}
+          </span>
+          <ChevronDown className={`w-3 h-3 text-text-muted/70 shrink-0 transition-transform ${
+            showModelMenu ? 'rotate-180 text-primary' : ''
+          }`} />
         </button>
         {showModelMenu && (
           <div
-            className="absolute bottom-full left-0 mb-2 z-50 rounded-xl border border-border bg-surface shadow-2xl py-1.5 min-w-[280px] max-h-72 overflow-y-auto"
+            className="absolute bottom-full left-0 mb-2 z-50 rounded-xl border border-border bg-surface shadow-2xl py-1.5 min-w-[280px] max-h-80 overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-muted/70 border-b border-border/60">
+            <div className="flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-text-muted/70">
               <Sparkles className="w-3 h-3" />
               {t('chat.model.label')}
             </div>
+            <div className="border-t border-border/60" />
             {availableModels.length === 0 ? (
               <div className="px-3 py-3 text-xs text-text-muted">{t('chat.model.empty')}</div>
             ) : (
@@ -185,28 +181,28 @@ export function ChatPage() {
                     key={m.id}
                     type="button"
                     onClick={() => { setSelectedModel(m.id); setShowModelMenu(false); }}
-                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-surface-hover transition-colors ${
+                    className={`w-full flex items-center gap-2.5 pl-3 pr-3 py-2 text-xs hover:bg-surface-hover transition-colors text-left ${
                       isSelected ? 'bg-primary/8' : ''
                     }`}
                   >
-                    <span className={`flex items-center justify-center w-7 h-7 rounded-lg shrink-0 ${
+                    <span className={`flex items-center justify-center w-6 h-6 rounded-lg shrink-0 transition-colors ${
                       isSelected
-                        ? 'bg-primary text-primary-fg'
+                        ? 'bg-primary text-primary-fg shadow-sm'
                         : 'bg-surface-hover text-text-muted'
                     }`}>
-                      {isSelected ? <Check className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      <Sparkles className="w-3 h-3" />
                     </span>
-                    <div className="flex flex-col items-start min-w-0 flex-1">
+                    <div className="flex flex-col min-w-0 flex-1">
                       <span className={`truncate w-full ${isSelected ? 'text-primary font-semibold' : 'text-text font-medium'}`}>
                         {m.model}
                       </span>
                       <span className="text-[10px] text-text-muted/70 mt-0.5">
-                        {(m.contextWindow / 1024).toFixed(0)}k ctx
+                        {(m.contextWindow / 1024).toFixed(0)}k ctx · {m.provider}
                       </span>
                     </div>
-                    <span className="shrink-0 rounded-full bg-surface-hover px-2 py-0.5 text-[10px] font-medium text-text-muted">
-                      {m.provider}
-                    </span>
+                    {isSelected && (
+                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-primary" />
+                    )}
                   </button>
                 );
               })
@@ -215,21 +211,40 @@ export function ChatPage() {
         )}
       </div>
 
-      {/* Thinking effort slider — prominent track with filled progress, large white thumb */}
-      <div className="flex items-center gap-2.5 rounded-full border border-border bg-surface px-3 py-1.5 shadow-sm hover:border-primary/50 transition-colors">
-        <Brain className={`w-3.5 h-3.5 shrink-0 ${thinkingLevel !== 'off' ? 'text-accent' : 'text-text-muted'}`} />
-        <span className="text-xs font-semibold text-text shrink-0">
-          {t('chat.thinking.label')} ({EFFORT_LABELS[thinkingLevel]})
+      {/* Thinking effort — prominent slider with thick filled track, large white thumb, tiered labels */}
+      <div className="flex items-center gap-2.5 h-7 px-3 rounded-full border border-border bg-surface shadow-sm hover:border-primary/40 transition-colors">
+        <Brain className={`w-3.5 h-3.5 shrink-0 ${thinkingLevel !== 'off' ? 'text-primary' : 'text-text-muted'}`} />
+        <span className="text-[11px] font-semibold text-text shrink-0">
+          {t('chat.thinking.label')}
         </span>
-        <div className="relative flex items-center" style={{ width: 88 }}>
-          {/* Filled track background (segments between dots) */}
-          <div className="pointer-events-none absolute inset-0 flex items-center px-[10px]">
-            <div className="w-full h-1 rounded-full bg-border overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-accent to-accent/70 transition-all duration-200"
-                style={{ width: `${(EFFORT_VALUES.indexOf(thinkingLevel) / 3) * 100}%` }}
-              />
-            </div>
+        <span className={`text-[11px] font-bold uppercase tracking-wide shrink-0 ${
+          thinkingLevel !== 'off' ? 'text-primary' : 'text-text-muted/60'
+        }`}>
+          {EFFORT_LEVELS_SHORT[thinkingLevel]}
+        </span>
+        <div className="relative flex items-center select-none" style={{ width: 96 }}>
+          {/* Filled progress background */}
+          <div className="pointer-events-none absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1.5 rounded-full bg-surface-hover overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-[width] duration-200 ease-out"
+              style={{ width: `${(EFFORT_VALUES.indexOf(thinkingLevel) / 3) * 100}%` }}
+            />
+          </div>
+          {/* Stop dots overlay (on top of track, below thumb) */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-[7px] z-[1]">
+            {[0, 1, 2, 3].map((i) => {
+              const passed = i <= EFFORT_VALUES.indexOf(thinkingLevel);
+              return (
+                <span
+                  key={i}
+                  className={`block rounded-full transition-all duration-200 ${
+                    passed
+                      ? 'w-1.5 h-1.5 bg-white shadow-[0_0_0_2px_var(--color-primary,#6c5ce7)]'
+                      : 'w-1.5 h-1.5 bg-text-muted/30'
+                  }`}
+                />
+              );
+            })}
           </div>
           <input
             type="range"
@@ -237,26 +252,10 @@ export function ChatPage() {
             max="3"
             step="1"
             value={EFFORT_VALUES.indexOf(thinkingLevel)}
-            onChange={(e) => setThinkingLevel(EFFORT_VALUES[parseInt(e.target.value)] as typeof thinkingLevel)}
-            className="thinking-slider w-full appearance-none cursor-pointer relative"
+            onChange={(e) => setThinkingLevel(EFFORT_VALUES[parseInt(e.target.value)])}
             aria-label={t('chat.thinking.label')}
+            className="thinking-slider relative w-full appearance-none cursor-pointer z-[2]"
           />
-          {/* 4 stop dots overlay */}
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-[6px]">
-            {[0, 1, 2, 3].map((i) => {
-              const active = i <= EFFORT_VALUES.indexOf(thinkingLevel);
-              return (
-                <span
-                  key={i}
-                  className={`block rounded-full transition-all ${
-                    active
-                      ? 'w-1 h-1 bg-white shadow-[0_0_0_2px_var(--color-accent,#7c3aed)]'
-                      : 'w-1.5 h-1.5 bg-surface-hover border border-border'
-                  }`}
-                />
-              );
-            })}
-          </div>
         </div>
       </div>
     </>

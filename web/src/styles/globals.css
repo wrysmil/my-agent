@@ -398,3 +398,69 @@ details.stream-process-body {
   max-height: 300px;
   overflow-y: auto;
 }
+
+/* ── Thinking Effort Slider (prominent) ── */
+.thinking-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+  height: 22px;
+  background: transparent;
+}
+.thinking-slider::-webkit-slider-runnable-track {
+  height: 22px;
+  background: transparent;
+  border: none;
+}
+.thinking-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  border: 3px solid var(--color-primary, #6c5ce7);
+  box-shadow:
+    0 2px 8px rgba(108, 92, 231, 0.4),
+    0 0 0 5px color-mix(in srgb, var(--color-primary, #6c5ce7) 20%, transparent),
+    inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-top: 0;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.thinking-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.12);
+  box-shadow:
+    0 3px 10px rgba(108, 92, 231, 0.5),
+    0 0 0 6px color-mix(in srgb, var(--color-primary, #6c5ce7) 28%, transparent);
+}
+.thinking-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.18);
+  box-shadow:
+    0 4px 12px rgba(108, 92, 231, 0.6),
+    0 0 0 7px color-mix(in srgb, var(--color-primary, #6c5ce7) 35%, transparent);
+}
+.thinking-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: grab;
+  border: 3px solid var(--color-primary, #6c5ce7);
+  box-shadow:
+    0 2px 8px rgba(108, 92, 231, 0.4),
+    0 0 0 5px color-mix(in srgb, var(--color-primary, #6c5ce7) 20%, transparent);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.thinking-slider::-moz-range-thumb:hover {
+  transform: scale(1.12);
+}
+.thinking-slider::-moz-range-track {
+  height: 22px;
+  background: transparent;
+  border: none;
+}
+.thinking-slider::-moz-range-progress {
+  background: transparent;
+}

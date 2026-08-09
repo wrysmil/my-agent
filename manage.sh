@@ -262,6 +262,94 @@ logs() {
   fi
 }
 
+# ── 前端 Vite dev server 管理 ──
+# 用法: dev-start | dev-stop | dev-restart | dev-status | dev-logs
+
+WEB_DIR="$PROJECT_DIR/web"
+DEV_PORT=5173
+DEV_LOG="/tmp/vite-dev.log"
+
+is_dev_running() {
+  lsof -ti:"$DEV_PORT" >/dev/null 2>&1
+}
+
+find_dev_pids() {
+  lsof -ti:"$DEV_PORT" 2>/dev/null | sort -u || true
+}
+
+dev_start() {
+  if is_dev_running; then
+    echo "❌ 前端 dev server 已在运行（端口 $DEV_PORT 被占用）"
+    exit 1
+  fi
+  echo "🚀 启动前端 Vite dev server..."
+  cd "$WEB_DIR"
+  launch_detached "npm run dev > '$DEV_LOG' 2>&1" >/dev/null
+
+  local waited=0
+  while ! is_dev_running; do
+    if [ "$waited" -ge 15 ]; then
+      echo "❌ 前端启动失败（15s 超时），查看日志: $DEV_LOG"
+      tail -20 "$DEV_LOG" 2>/dev/null || true
+      exit 1
+    fi
+    sleep 1
+    waited=$((waited + 1))
+  done
+  echo "✅ 前端已启动: http://localhost:$DEV_PORT"
+}
+
+dev_stop() {
+  if ! is_dev_running; then
+    echo "⚠️  前端 dev server 未运行"
+    return
+  fi
+  echo "🛑 停止前端 dev server..."
+  local pids
+  pids=$(find_dev_pids)
+  if [ -n "$pids" ]; then
+    for pid in $pids; do
+      kill -TERM "$pid" 2>/dev/null || true
+    done
+    sleep 1
+    pids=$(find_dev_pids)
+    if [ -n "$pids" ]; then
+      for pid in $pids; do
+        kill -KILL "$pid" 2>/dev/null || true
+      done
+    fi
+  fi
+  echo "✅ 前端已停止"
+}
+
+dev_restart() {
+  echo "🔄 重启前端 dev server..."
+  if is_dev_running; then dev_stop; fi
+  sleep 1
+  dev_start
+}
+
+dev_status() {
+  if is_dev_running; then
+    local pid
+    pid=$(lsof -ti:"$DEV_PORT" 2>/dev/null | head -1)
+    echo "✅ 前端运行中"
+    echo "   端口: $DEV_PORT"
+    echo "   PID:  ${pid:-"未知"}"
+    echo "   URL:  http://localhost:$DEV_PORT"
+  else
+    echo "⚠️  前端未运行"
+  fi
+}
+
+dev_logs() {
+  if [ -f "$DEV_LOG" ]; then
+    tail -f "$DEV_LOG"
+  else
+    echo "暂无日志文件"
+  fi
+}
+
 # ── 入口 ──
 
 case "${1:-}" in
@@ -270,14 +358,27 @@ case "${1:-}" in
   restart) restart ;;
   status)  status ;;
   logs)    logs ;;
+  dev-start)   dev_start ;;
+  dev-stop)    dev_stop ;;
+  dev-restart) dev_restart ;;
+  dev-status)  dev_status ;;
+  dev-logs)    dev_logs ;;
   *)
-    echo "用法: sh manage.sh {start|stop|restart|status|logs}"
+    echo "用法: sh manage.sh {start|stop|restart|status|logs|dev-start|dev-stop|dev-restart|dev-status|dev-logs}"
     echo ""
+    echo "后端 (端口 $PORT):"
     echo "  start   — 启动后端服务"
     echo "  stop    — 停止后端服务"
     echo "  restart — 彻底杀死旧进程后启动新进程"
-    echo "  status  — 查看服务状态"
-    echo "  logs    — 查看实时日志"
+    echo "  status  — 查看后端状态"
+    echo "  logs    — 查看后端实时日志"
+    echo ""
+    echo "前端 (端口 $DEV_PORT):"
+    echo "  dev-start   — 启动前端 Vite dev server"
+    echo "  dev-stop    — 停止前端 Vite dev server"
+    echo "  dev-restart — 重启前端 Vite dev server"
+    echo "  dev-status  — 查看前端状态"
+    echo "  dev-logs    — 查看前端实时日志"
     exit 1
     ;;
 esac
