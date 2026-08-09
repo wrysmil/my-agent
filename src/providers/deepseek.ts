@@ -1,4 +1,4 @@
-import type { CompletionParams } from "./base.js";
+import type { CompletionParams, CompletionResult } from "./base.js";
 import { AbstractLLMProvider } from "./base.js";
 import type { StreamEvent, Message, MessageContent, StopReason } from "../shared/types.js";
 import { AuthError, RateLimitError, ProviderError, formatError } from "../shared/errors.js";
@@ -328,12 +328,7 @@ export class DeepSeekProvider extends AbstractLLMProvider {
   // 非流式 Completion
   // ==========================================================
 
-  async complete(params: CompletionParams): Promise<{
-    content: MessageContent[];
-    stopReason: StopReason;
-    usage: { inputTokens: number; outputTokens: number; totalTokens: number };
-    model: string;
-  }> {
+  async complete(params: CompletionParams): Promise<CompletionResult> {
     const body = { ...(this.buildRequestBody(params) as Record<string, unknown>), stream: false };
     const response = await this.fetchWithErrorHandling(
       `${this.baseUrl}/chat/completions`,
@@ -353,6 +348,8 @@ export class DeepSeekProvider extends AbstractLLMProvider {
     const message = choice?.message ?? {};
 
     const content: MessageContent[] = [];
+    const thinking = this.thinkingAdapter.extractFromResponse(message);
+    if (thinking) content.push(thinking);
     if (message.content) {
       content.push({ type: "text", text: message.content });
     }

@@ -7,7 +7,7 @@ export type ModelCapabilities = {
   streaming: boolean;
 };
 
-export type ReasoningLevel = "off" | "low" | "medium" | "high";
+export type ReasoningLevel = "off" | "minimal" | "low" | "medium" | "high";
 
 export type ReasoningConfig = {
   level: ReasoningLevel;

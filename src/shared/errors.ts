@@ -211,6 +211,7 @@ export function classifyRetryableError(err: unknown): RetryableErrorKind | null 
 
   if (
     err instanceof AuthError ||
+    err instanceof CapabilityUnsupportedError ||
     err instanceof ContextOverflowError ||
     err instanceof OutputLimitError
   ) return null;
