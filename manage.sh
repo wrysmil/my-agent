@@ -11,7 +11,8 @@
 set -e
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PID_FILE="$PROJECT_DIR/.server.pid"
+# PID 文件放 /tmp，避免被误提交；LOG 文件留在项目目录便于调试（已在 .gitignore）
+PID_FILE="/tmp/my-agent.pid"
 LOG_FILE="$PROJECT_DIR/.server.log"
 PORT=4321
 

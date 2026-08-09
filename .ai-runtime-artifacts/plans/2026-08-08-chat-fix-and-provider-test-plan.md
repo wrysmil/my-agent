@@ -550,8 +550,8 @@ curl -s http://localhost:4321/ | head -5
 
 1. **重启服务器**：
    ```bash
-   # 终止现有进程
-   kill $(cat .server.pid 2>/dev/null) 2>/dev/null
+   # 终止现有进程（PID 文件在 /tmp，不在项目目录）
+   kill $(cat /tmp/my-agent.pid 2>/dev/null) 2>/dev/null
    # 重新构建前端（如有修改）
    cd web && npm run build && cd ..
    # 启动
