@@ -31,6 +31,18 @@ const TYPE_DEFAULTS: Record<string, { baseUrl: string; defaultModel: string; api
   xai: { baseUrl: 'https://api.x.ai/v1', defaultModel: 'grok-2', apiKeyEnv: 'XAI_API_KEY' },
 };
 
+/** 视觉元数据 — 与 ProvidersPage 网格一致 */
+const TYPE_META: Record<string, { short: string; gradient: string; logoText: string }> = {
+  deepseek: { short: 'DeepSeek', gradient: 'from-blue-500 to-cyan-400', logoText: 'DS' },
+  anthropic: { short: 'Claude', gradient: 'from-orange-500 to-amber-400', logoText: 'A' },
+  openai: { short: 'GPT', gradient: 'from-emerald-500 to-teal-400', logoText: 'O' },
+  google: { short: 'Gemini', gradient: 'from-sky-500 to-blue-400', logoText: 'G' },
+  moonshot: { short: 'Kimi', gradient: 'from-purple-500 to-pink-400', logoText: 'M' },
+  qwen: { short: 'Qwen', gradient: 'from-rose-500 to-orange-400', logoText: 'Q' },
+  mistral: { short: 'Mistral', gradient: 'from-amber-500 to-yellow-400', logoText: 'Mi' },
+  xai: { short: 'Grok', gradient: 'from-slate-700 to-slate-500', logoText: 'X' },
+};
+
 const providerSchema = z.object({
   id: z.string().min(1, 'Provider ID is required').max(64),
   name: z.string().min(1, 'Display name is required').max(128),
@@ -198,24 +210,66 @@ export function ProviderForm({
         )}
       </div>
 
-      {/* Type (支持全部 8 种厂商) */}
+      {/* Type — 厂商卡片选择器（与 ProvidersPage 网格视觉一致） */}
       <div>
-        <label htmlFor="provider-type" className="block text-sm font-medium mb-1">
-          Type
-        </label>
-        <select
-          id="provider-type"
-          {...form.register('type')}
-          className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm"
-          disabled={isSubmitting}
-        >
-          {PROVIDER_TYPES.map((t) => (
-            <option key={t} value={t}>{TYPE_LABELS[t]}</option>
-          ))}
-        </select>
-        <p className="text-xs text-text-muted mt-1">
-          选择厂商类型会自动填充默认 Base URL 和默认模型
-        </p>
+        <div className="flex items-center justify-between mb-2">
+          <label className="block text-sm font-medium">厂商类型</label>
+          <span className="text-xs text-text-muted">
+            选中后自动填充 Base URL 与默认模型
+          </span>
+        </div>
+        <input type="hidden" {...form.register('type')} />
+        <div className="grid grid-cols-4 gap-2" role="radiogroup" aria-label="厂商类型">
+          {PROVIDER_TYPES.map((t) => {
+            const isSelected = selectedType === t;
+            const meta = TYPE_META[t];
+            return (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={isSelected}
+                onClick={() => form.setValue('type', t, { shouldDirty: true })}
+                disabled={isSubmitting}
+                className={`group relative overflow-hidden rounded-lg border-2 p-2.5 text-left transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  isSelected
+                    ? 'border-primary shadow-md ring-2 ring-primary/20'
+                    : 'border-border bg-surface hover:border-primary/40 hover:shadow-sm'
+                }`}
+              >
+                {/* hover 渐变背景 */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${meta.gradient} opacity-0 ${
+                    isSelected ? 'opacity-15' : 'group-hover:opacity-[0.06]'
+                  } transition-opacity`}
+                />
+                {/* 选中标记 */}
+                {isSelected && (
+                  <div className="absolute top-1 right-1 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                    <svg className="w-2.5 h-2.5 text-primary-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                )}
+                <div className="relative flex items-center gap-2">
+                  <div
+                    className={`w-8 h-8 rounded-md bg-gradient-to-br ${meta.gradient} flex items-center justify-center text-white font-bold text-xs flex-shrink-0`}
+                  >
+                    {meta.logoText}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-semibold truncate ${isSelected ? 'text-primary' : ''}`}>
+                      {meta.short}
+                    </p>
+                    <p className="text-[10px] text-text-muted truncate">
+                      {meta.defaultModel}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
         {form.formState.errors.type && (
           <p className="text-sm text-danger mt-1">
             {form.formState.errors.type.message}
