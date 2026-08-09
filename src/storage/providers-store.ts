@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { z } from "zod";
 import { atomicWrite, ensureDir } from "./jsonl.js";
 import { providersFile } from "./paths.js";
+import { PROVIDER_TYPES, PROVIDER_META, type ProviderType } from "../providers/provider-metadata.js";
 
 // ============================================================================
 // Schema
@@ -11,7 +12,7 @@ import { providersFile } from "./paths.js";
 export const ProviderConfigEntrySchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
-  type: z.literal("deepseek"),
+  type: z.enum(PROVIDER_TYPES),
   apiKey: z.string(),
   baseUrl: z.string().url(),
   defaultModel: z.string().min(1),
@@ -130,10 +131,11 @@ export class ProvidersStore {
     return undefined;
   }
 
-  /** 若 apiKey 为空，从环境变量 fallback */
+  /** 若 apiKey 为空，从环境变量 fallback（按 type 查找对应 env var） */
   private resolveEnvApiKey(p: ProviderConfigEntry): ProviderConfigEntry {
     if (p.apiKey) return p;
-    const envKey = process.env.DEEPSEEK_API_KEY;
+    const meta = PROVIDER_META[p.type as ProviderType];
+    const envKey = meta ? process.env[meta.envKey] : undefined;
     if (envKey) {
       return { ...p, apiKey: envKey };
     }

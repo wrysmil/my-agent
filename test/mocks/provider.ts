@@ -1,4 +1,4 @@
-import type { LLMProvider, CompletionParams, CompletionResult } from "../../src/providers/base.js";
+import { AbstractLLMProvider, type LLMProvider, type CompletionParams, type CompletionResult } from "../../src/providers/base.js";
 import type { StreamEvent, StopReason, MessageContent } from "../../src/shared/types.js";
 import { defineTool } from "../../src/tools/base.js";
 
@@ -24,7 +24,7 @@ export type StreamRecord = {
   response: MockResponse;
 };
 
-export class MockProvider implements LLMProvider {
+export class MockProvider extends AbstractLLMProvider implements LLMProvider {
   readonly id = "mock";
   readonly name = "Mock Provider";
 
@@ -146,6 +146,20 @@ export class MockProvider implements LLMProvider {
       content,
       model: params.model,
     };
+  }
+
+  // ---- AbstractLLMProvider 抽象方法实现 ----
+
+  protected buildRequestBody(_params: CompletionParams): unknown {
+    return {};
+  }
+
+  protected async *parseStreamChunk(_chunk: string): AsyncIterable<StreamEvent> {
+    // Mock provider 的 stream() 完全自行实现，不使用 parseStreamChunk 逐块解析
+  }
+
+  protected classifyError(err: unknown): Error {
+    return err instanceof Error ? err : new Error(String(err));
   }
 
   // ---- 内部辅助 ----

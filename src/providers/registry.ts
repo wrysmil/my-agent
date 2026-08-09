@@ -75,6 +75,18 @@ export class ProviderRegistry {
       const provider = this.get("google");
       if (provider) return { provider, modelId: model };
     }
+    if (model.startsWith("deepseek-")) {
+      const provider = this.get("deepseek");
+      if (provider) return { provider, modelId: model };
+    }
+    if (model.startsWith("moonshot-")) {
+      const provider = this.get("moonshot");
+      if (provider) return { provider, modelId: model };
+    }
+    if (model.startsWith("qwen-")) {
+      const provider = this.get("qwen");
+      if (provider) return { provider, modelId: model };
+    }
     if (model.startsWith("mistral-") || model.startsWith("codestral")) {
       const provider = this.get("mistral");
       if (provider) return { provider, modelId: model };

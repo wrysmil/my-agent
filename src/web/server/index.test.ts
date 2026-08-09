@@ -127,9 +127,9 @@ describe("createServer — 路由占位 (404)", () => {
 // ============================================================
 
 describe("ROUTES 占位表", () => {
-  it("导出 24 条路由（Provider 9 + Session 6 + Chat 2 + Models 1 + Agent 2 + Skill 5）", () => {
-    // Provider 域含 9 条（含 POST test 联通测试路由）；Skills 域含 5 条 CRUD 路由（GET/POST/PUT/DELETE）
-    expect(ROUTES.length).toBe(24);
+  it("导出 26 条路由（Provider 9 + Session 6 + Chat 2 + Models 1 + Agent 2 + Skill 5 + Tools 2）", () => {
+    // Provider 域含 9 条（含 POST test 联通测试路由）；Skills 域含 5 条 CRUD 路由；Tools 域含 2 条
+    expect(ROUTES.length).toBe(26);
   });
 
   it("matchRoute 能匹配 + 提取 :id 参数", () => {

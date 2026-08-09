@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xxd /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/src/providers/codecs/openai-completions.ts)",
+      "Bash(npm audit *)",
+      "Bash(npx tsx *)",
+      "Bash(pnpm install *)",
+      "Bash(git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)",
+      "Bash(git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent log --oneline -3)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent status --short)",
+      "Bash(/usr/bin/git --git-dir=/Users/mima0000/Documents/学习-001/do-project/my-agent/.git --work-tree=/Users/mima0000/Documents/学习-001/do-project/my-agent branch --show-current)",
+      "Bash(git cherry-pick *)",
+      "Bash(git -C /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1 diff --name-only main..HEAD)",
+      "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/features/providers/ProviderForm.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/features/providers/ProviderForm.tsx && echo \"ProviderForm copied\")",
+      "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/pages/ProvidersPage.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/pages/ProvidersPage.tsx && echo \"ProvidersPage copied\")",
+      "Bash(tar -cf /tmp/wt-files.tar -T -)",
+      "Bash(tar -tf /tmp/wt-files.tar)",
+      "Bash(grep -vE \"^web/|^tsconfig\\\\.tsbuildinfo$\" /tmp/changed-files.txt)",
+      "Bash(tar -xf /tmp/wt-files.tar -C /Users/mima0000/Documents/学习-001/do-project/my-agent)",
+      "Bash(kill 49072)",
+      "Bash(nohup npm run web)",
+      "Bash(disown)",
+      "Bash(echo \"Started PID $!\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://127.0.0.1:4321/)",
+      "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/features/providers/ProviderForm.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/features/providers/ProviderForm.tsx && echo \"ProviderForm synced\")",
+      "Bash(kill 49935)",
+      "Bash(cp /Users/mima0000/Documents/学习-001/do-project/my-agent/.claude/worktrees/wt-2026-08-09-multi-provider-phase1/web/src/pages/ProvidersPage.tsx /Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/pages/ProvidersPage.tsx && echo \"synced\")",
+      "Bash(kill 50653)"
+    ],
+    "additionalDirectories": [
+      "/Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/features/providers",
+      "/Users/mima0000/Documents/学习-001/do-project/my-agent/web/src/pages"
+    ]
+  }
+}

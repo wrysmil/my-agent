@@ -41,6 +41,8 @@ export type ThinkingContent = {
   type: "thinking";
   thinking: string;
   thinkingSignature?: string;
+  /** 标识思考内容来源的 Provider API 形态。 */
+  api?: "openai-completions" | "openai-responses" | "anthropic-messages" | "google-generative-ai" | "custom";
 };
 
 /** 所有内容块的联合类型。 */
@@ -67,6 +69,8 @@ export type Message = {
 export type Usage = {
   inputTokens: number;
   outputTokens: number;
+  /** 推理模型产生的思考 token 数（部分 provider 单独上报）。 */
+  reasoningTokens?: number;
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
   totalTokens: number;
@@ -79,7 +83,10 @@ export type StopReason =
   | "end_turn"
   | "tool_use"
   | "max_tokens"
-  | "stop_sequence";
+  | "stop_sequence"
+  | "content_filter"
+  | "refusal"
+  | "safety";
 
 // ============================================================
 // 流式事件（Provider → Runner 的事件流）
@@ -112,6 +119,8 @@ export type StreamEvent =
       content?: MessageContent[];
       model?: string;
     }
+  // ---- 思考完成 ----
+  | { type: "thinking_complete"; text: string; durationMs: number }
   // ---- 终止 ----
   | { type: "done"; result?: unknown }
   | { type: "error"; error: Error };

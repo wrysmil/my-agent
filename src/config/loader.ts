@@ -33,6 +33,11 @@ export async function loadConfig(configPath?: string): Promise<CoreAgentConfig> 
     deepseek: "DEEPSEEK_API_KEY",
     anthropic: "ANTHROPIC_API_KEY",
     openai: "OPENAI_API_KEY",
+    google: "GOOGLE_API_KEY",
+    moonshot: "MOONSHOT_API_KEY",
+    qwen: "QWEN_API_KEY",
+    mistral: "MISTRAL_API_KEY",
+    xai: "XAI_API_KEY",
   };
   for (const [providerId, provider] of Object.entries(config.models.providers)) {
     if (!provider.apiKey) {

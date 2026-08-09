@@ -15,6 +15,7 @@ import { z } from "zod";
 
 import { ApiError, ApiErrorCode } from "../errors.js";
 import type { ApiErrorCodeValue } from "../errors.js";
+import { PROVIDER_TYPES } from "../../../providers/provider-metadata.js";
 
 // ============================================================
 // Zod schemas（4 个）
@@ -38,7 +39,7 @@ export const ProviderUpsertSchema = z
   .object({
     id: z.string().min(1, "id is required").max(64),
     name: z.string().min(1, "name is required").max(128),
-    type: z.literal("deepseek"),
+    type: z.enum(PROVIDER_TYPES),
     apiKey: z.string(),
     baseUrl: z.string().url("baseUrl must be a valid URL"),
     defaultModel: z.string().min(1, "defaultModel is required").max(128),
