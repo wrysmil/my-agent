@@ -18,8 +18,9 @@ source:
   - harness-kit/core/routing.md § WU 编排硬触发
   - web/src/components/chat/*、web/src/features/chat/types.ts
 created_at: 2026-08-10
-status: draft
-approved: false
+status: approved
+approved: true
+approved_by: 用户（2026-08-10）：选择「就按这个执行图开始实现」
 tier: 2
 ---
 

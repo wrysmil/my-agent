@@ -12,8 +12,9 @@ source:
   - web/src/components/chat/ToolResultBlock.tsx（formatDuration）
   - web/src/components/chat/ActivityStrip.tsx（状态文案）
 created_at: 2026-08-10
-status: draft
-approved: false
+status: approved
+approved: true
+approved_by: 用户（2026-08-10）：选择「就按这个执行图开始实现」；收尾时 Leader 标契约 approved
 ---
 
 # Run Trace 模块接口契约
@@ -122,6 +123,7 @@ export function hasTraceSteps(vm: RunTraceViewModel): boolean;
 | `isStreaming` 且存在 `status === 'streaming'` 的工具步骤 | `正在执行 {actionLabel}` |
 | `isStreaming` 且 `streamState === 'generating'` | `正在整理回答` |
 | `isStreaming` 且无 step | `正在准备` |
+| `isStreaming` 且以上均未命中（回落） | 末步为工具 → `正在执行 {actionLabel}`；否则 `正在思考`。**禁止**流式中出现「已完成…」 |
 | `aborted` | `已停止 · 保留 {steps.length} 个步骤` |
 | `errorCount > 0` | `完成，但有 {errorCount} 个步骤失败` |
 | 其他 | `已完成 {steps.length} 个步骤 · {toolCount} 个工具` |

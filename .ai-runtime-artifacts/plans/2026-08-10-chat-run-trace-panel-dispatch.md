@@ -13,6 +13,8 @@ source:
   - harness-kit/project.git.md § Harness 执行沙箱
   - .ai-runtime-artifacts/contracts/2026-08-10-contract-run-trace.md
 created_at: 2026-08-10
+approved: true
+approved_by: 用户（2026-08-10）：选择「就按这个执行图开始实现」
 ---
 
 # Chat Run Trace 过程面板 — Harness 执行图
@@ -37,7 +39,7 @@ GROUP-1:
   WU-01: 实现 runTrace 派生层与单元测试（buildRunTrace / hasTraceSteps / toolActionLabel / formatDuration / formatInputPreview 迁移） | 标题: Run Trace 派生层 | 文件: web/src/features/chat/runTrace.ts, web/tests/features/chat/runTrace.test.ts | 依赖: 无 | wu_type: feature | agent_role: coder | workspace_scope: wu | worktree_path: d:\studyspace\project\.harness-worktrees\my-agent\wt-2026-08-10-chat-run-trace-panel | branch: harness/wt-2026-08-10-chat-run-trace-panel | wu_skills: auto
 
 GROUP-2:
-  WU-02: 实现 RunTracePanel 组件族（摘要行 + timeline + 两类步骤行 + 自动展开策略）与组件测试 | 标题: Run Trace 面板组件 | 文件: web/src/components/chat/RunTracePanel.tsx, web/tests/features/chat/run-trace-panel.test.tsx | 依赖: WU-01 | wu_type: feature | agent_role: coder | workspace_scope: wu | worktree_path: 同上 | branch: 同上 | wu_skills: auto
+  WU-02: 实现 RunTracePanel 组件族（摘要行 + timeline + 两类步骤行 + 自动展开策略）与组件测试 | 标题: Run Trace 面板组件 | 文件: web/src/components/chat/RunTracePanel.tsx, web/tests/features/chat/run-trace-panel.test.tsx | 依赖: WU-01 | wu_type: ui | agent_role: coder | workspace_scope: wu | worktree_path: 同上 | branch: 同上 | wu_skills: auto
   WU-03: 新增 timeline 视觉基础类并纳入 prefers-reduced-motion 与 focus-visible | 标题: timeline 视觉与 a11y 基础 | 文件: web/src/styles/globals.css | 依赖: 无 | wu_type: chore | agent_role: implementer | workspace_scope: wu | worktree_path: 同上 | branch: 同上 | wu_skills: auto
 
 GROUP-3:
