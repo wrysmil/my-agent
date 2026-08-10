@@ -8,7 +8,7 @@ Output: D:/studyspace/project/.harness-worktrees/my-agent/wt-chat-session-stream
 Error: none
 Next: 派发 GROUP-1
 WorktreeId: wt-chat-session-stream-isolation-fix | WorktreePath: D:/studyspace/project/.harness-worktrees/my-agent/wt-chat-session-stream-isolation-fix | Branch: harness/wt-chat-session-stream-isolation-fix | Base: 0aaf9cc
-Closeout: collective-test=pending verdict=n/a | code-review=pending verdict=n/a | status=pending
+Closeout: collective-test=completed verdict=PASS | code-review=completed verdict=APPROVE | status=merged
 
 [2026-08-10 13:32] DISPATCH-GROUP-1 | Leader | Status: started
 Detail: 并行派发后端身份贯通与前端 overlay/lifecycle 修复。
@@ -36,3 +36,20 @@ Output: .ai-runtime-artifacts/reviews/2026-08-10-chat-session-stream-isolation-f
 Error: verdict BLOCK
 Next: 派发 WU-03/WU-04 review-fix
 GROUP: 1 | WU: WU-01,WU-02 | ITER: 1 | STEP: code-review
+
+[2026-08-10 15:45] CLOSEOUT-GROUP-1 | Leader | Status: completed
+Detail: 九轮 review-fix 后目标矩阵 145/145；第九个独立 reviewer APPROVE，无 Critical/Important。
+Sub-agents: 2 implementers + 9 independent reviewers
+Context: final
+Output: .ai-runtime-artifacts/verifications/2026-08-10-chat-session-stream-isolation-fix-collective-test.md; .ai-runtime-artifacts/reviews/2026-08-10-chat-session-stream-isolation-fix-code-review.md
+Error: root/web full suites retain documented baseline failures
+Next: merged to main at 287816d
+GROUP: 1 | WU: WU-01..WU-14 | ITER: 9 | STEP: closeout
+
+[2026-08-10 15:47] WORKTREE-CLOSE | Leader | Status: completed
+Detail: 修复提交 d50e47c 已通过 merge commit 287816d 合入 main；原 main 重叠改动保存在 stash@{0}，未跟踪 chatRuntimeStore.test.ts 已恢复。
+Sub-agents: 0
+Context: final
+Output: main
+Error: none
+Next: remove worktree and merged branch
