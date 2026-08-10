@@ -280,4 +280,49 @@ describe('RunTracePanel', () => {
     );
     expect(withForbidden).toHaveLength(0);
   });
+
+  it('流式 thinking：行内不挂 reasoning 预览，避免 CoT 被 live region 播报', () => {
+    const secret = 'SECRET_CHAIN_OF_THOUGHT_TOKEN_STREAM';
+    const trace = vm({
+      status: 'running',
+      summaryLabel: '正在思考',
+      steps: [
+        thinking({
+          id: 't-stream',
+          status: 'streaming',
+          label: '正在思考',
+          detail: secret,
+        }),
+      ],
+      toolCount: 0,
+      completedCount: 0,
+    });
+
+    render(<RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />);
+
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument();
+    expect(screen.queryByText(secret)).not.toBeInTheDocument();
+    expect(screen.getAllByText('正在思考').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('完成态 thinking 预览对 AT 隐藏（aria-hidden），仅二次展开暴露全文', async () => {
+    const user = userEvent.setup();
+    const detail = 'completed reasoning body for AT gate';
+    const trace = vm({
+      steps: [thinking({ id: 't1', status: 'done', detail, label: '思考已完成' })],
+      toolCount: 0,
+      completedCount: 1,
+      summaryLabel: '已完成 1 个步骤 · 0 个工具',
+    });
+
+    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+    await user.click(screen.getByRole('button', { name: /已完成 1 个步骤/ }));
+
+    const preview = screen.getByText(/completed reasoning body/);
+    expect(preview).toHaveAttribute('aria-hidden', 'true');
+
+    await user.click(screen.getByRole('button', { name: '查看思考过程' }));
+    expect(screen.getByText(detail)).toBeInTheDocument();
+    expect(screen.getByText(detail).tagName).toBe('PRE');
+  });
 });

@@ -93,8 +93,9 @@ export function formatInputPreview(
     const entries = Object.entries(input).slice(0, 3);
     return entries
       .map(([k, v]) => {
-        const val =
-          typeof v === 'string' ? (v.length > 60 ? v.slice(0, 60) + '…' : v) : JSON.stringify(v);
+        const raw =
+          typeof v === 'string' ? v : JSON.stringify(v);
+        const val = raw.length > 60 ? raw.slice(0, 60) + '…' : raw;
         return `${k}: ${val}`;
       })
       .join(', ');

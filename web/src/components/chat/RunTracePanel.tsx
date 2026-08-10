@@ -112,16 +112,20 @@ export function RunTracePanel({
         hidden={!expanded}
         className="border-t border-border/80 px-2 pb-2.5 pt-1.5"
       >
-          <ol className="m-0 list-none p-0 [&>li:first-child>[data-trace-line]]:top-[18px] [&>li:last-child>[data-trace-line]]:bottom-[calc(100%-18px)]">
-            {trace.steps.map((step) => (
-              <TraceStepRow
-                key={step.id}
-                step={step}
-                detailOpen={openStepIds.has(step.id)}
-                onToggleDetail={() => toggleStep(step.id)}
-              />
-            ))}
-          </ol>
+        {/*
+          步骤正文不对父级/历史 live region 增量播报：reasoning 预览默认 aria-hidden，
+          完整详情仅在用户二次展开后暴露（按钮本身仍可键盘聚焦）。
+        */}
+        <ol className="m-0 list-none p-0 [&>li:first-child>[data-trace-line]]:top-[18px] [&>li:last-child>[data-trace-line]]:bottom-[calc(100%-18px)]">
+          {trace.steps.map((step) => (
+            <TraceStepRow
+              key={step.id}
+              step={step}
+              detailOpen={openStepIds.has(step.id)}
+              onToggleDetail={() => toggleStep(step.id)}
+            />
+          ))}
+        </ol>
       </div>
     </div>
   );
@@ -253,11 +257,20 @@ function ThinkingStepRow({
   onToggleDetail: () => void;
 }) {
   const hasDetail = Boolean(step.detail);
+  // 流式中不在行内挂 reasoning 预览，避免 CoT 被意外播报；完成后可截断预览（对 AT 隐藏）
+  const showPreview =
+    hasDetail &&
+    !detailOpen &&
+    step.status !== 'streaming' &&
+    step.status !== 'pending';
   const row = (
     <>
       <span className="shrink-0 text-[13px] text-text-muted">{step.label}</span>
-      <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
-        {hasDetail && !detailOpen
+      <span
+        className="min-w-0 flex-1 truncate text-xs text-text-muted/60"
+        aria-hidden={showPreview || undefined}
+      >
+        {showPreview
           ? step.detail!.replace(/\s+/g, ' ').trim().slice(0, 80)
           : null}
       </span>

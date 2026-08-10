@@ -390,15 +390,6 @@
   margin: 0.4em 0;
 }
 
-/* ============================================================
-   Process Tracker 内部滚动
-   ============================================================ */
-
-details.stream-process-body {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
 /* ── Thinking Effort Slider (prominent) ── */
 .thinking-slider {
   -webkit-appearance: none;

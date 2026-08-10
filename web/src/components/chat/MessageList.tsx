@@ -87,7 +87,6 @@ export function MessageList({
       ref={containerRef}
       className="flex-1 overflow-y-auto overflow-x-hidden px-5 pt-6 pb-4"
       role="log"
-      aria-live="polite"
     >
       <div className="space-y-5">
         {messages.map((m) => {
