@@ -55,11 +55,13 @@ export type SseEventType = (typeof SSE_EVENT_TYPES)[number];
  * 设计：
  * - `controller` 用于 `/abort` 路由触发 `runner.runStream({ signal })` 中止；
  * - `cid` 用于 `listLiveStreamsForCid` 反查（in-flight 并发保护 § 3.4.6）；
+ * - `runId`（P0+）用于按 run 精确 abort 和状态追踪；
  * - `closed` 标记避免 `abort()` 重复调用副作用。
  */
 type LiveStream = {
   controller: AbortController;
   cid: string;
+  runId: string;
   closed: boolean;
 };
 
@@ -73,11 +75,41 @@ export class SseHub {
   private readonly _map = new Map<string, LiveStream>();
 
   /** 注册一条新流，返回 streamId。 */
-  register(cid: string): { streamId: string; controller: AbortController } {
+  register(cid: string, runId?: string): { streamId: string; controller: AbortController } {
     const streamId = randomUUID();
     const controller = new AbortController();
-    this._map.set(streamId, { controller, cid, closed: false });
+    const effectiveRunId = runId ?? streamId; // P0 兼容：无 runId 时用 streamId
+    this._map.set(streamId, { controller, cid, runId: effectiveRunId, closed: false });
     return { streamId, controller };
+  }
+
+  /** 检查指定 session 是否有在飞的（非终态）run（P0+ 并发保护）。 */
+  hasActiveRun(cid: string): boolean {
+    for (const entry of this._map.values()) {
+      if (entry.cid === cid && !entry.closed) return true;
+    }
+    return false;
+  }
+
+  /** 按 runId 查找流（P0+）。 */
+  getByRunId(runId: string): LiveStream | undefined {
+    for (const entry of this._map.values()) {
+      if (entry.runId === runId && !entry.closed) return entry;
+    }
+    return undefined;
+  }
+
+  /** 按 runId 触发 abort（P0+）。返回 true 表示找到并 abort 成功。 */
+  abortByRunId(runId: string): boolean {
+    for (const [id, entry] of this._map) {
+      if (entry.runId === runId && !entry.closed) {
+        entry.closed = true;
+        try { entry.controller.abort(); } catch { /* ignore */ }
+        this._map.delete(id);
+        return true;
+      }
+    }
+    return false;
   }
 
   /** 主动关闭流（路由结束时调用，幂等）。 */

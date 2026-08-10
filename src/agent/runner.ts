@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type {
   Message,
   MessageContent,
@@ -1577,6 +1577,8 @@ export class AgentRunner {
     maxToolLoops: number,
   ): AsyncIterable<AgentRunEvent> {
     // ---- Phase 1: 初始化 ----
+    // WU-09：run 级标识 —— 同一次发送的 user + assistant 消息共享
+    const runId = randomUUID();
     const userContent: MessageContent[] = [{ type: "text", text: params.message }];
     if (params.images) {
       for (const img of params.images) {
@@ -1584,7 +1586,7 @@ export class AgentRunner {
       }
     }
 
-    const turnId = await this.session.beginUserTurn(userContent);
+    const turnId = await this.session.beginUserTurn(userContent, { runId });
     for (const resource of params.historyResources ?? []) {
       this.session.addHistoryResource({
         ...resource,
@@ -1789,7 +1791,21 @@ export class AgentRunner {
         if (streamThinking && !finalContent.some((c) => c.type === "thinking")) {
           finalContent = [{ type: "thinking", thinking: streamThinking }, ...finalContent];
         }
-        await this.session.addAssistantMessage(finalContent);
+        // WU-09：为 assistant 消息生成稳定 id / runId，并为内容块补充稳定 id
+        // text/thinking: `{messageId}:{index}`；tool_use: 保留其已有 id；tool_result: `result:{toolUseId}`
+        const assistantMessageId = randomUUID();
+        finalContent = finalContent.map((block, index) => {
+          if (block.type === "tool_use") return block;
+          if (block.type === "tool_result") {
+            return { ...block, id: `result:${block.toolUseId}` };
+          }
+          if (block.type === "image") return block; // image 无 id 字段
+          return { ...block, id: `${assistantMessageId}:${index}` };
+        });
+        await this.session.addAssistantMessage(finalContent, {
+          id: assistantMessageId,
+          runId,
+        });
 
         const turnText = textFromContent(finalContent);
 

@@ -1,20 +1,22 @@
 /**
- * my-agent Web 前端 — Chat 流 2 条 SSE 路由单测（WU-02b / B3）。
+ * my-agent Web 前端 — Chat 流 2 条 SSE 路由单测（WU-02b / B3 + P0 会话流隔离）。
  *
- * 覆盖 done criteria #7 + contract § 4：
+ * 覆盖 done criteria #7 + contract § 4 + P0 spec（2026-08-10-chat-session-stream-isolation）：
  * ① stream happy path 至少 3 个 event（mock runner 发 text_delta / message_end）
+ *    + 每条 SSE 事件携带统一 envelope（sessionId / runId / streamId / seq / event / data）
  * ② stream AbortController 中途取消 → 触发 aborted 事件 + hub 流清理
  * ③ Last-Event-ID 去重（lastEventLru 跳过重复 seq）
  * ④ heartbeat 触发（fake timers，验证 sseResponse 集成）
- * ⑤ done 事件必发
- * ⑥ error 事件形态（runner 抛错时）
+ * ⑤ done 事件必发 + 携带 persistedRevision / messageId
+ * ⑥ error 事件形态（runner 抛错时，envelope 内层）
  * ⑦ 13 event 类型断言（mock runner 触发 ≥8 种 → 验证全部出现在响应流）
- * ⑧ 并发 stream 限速：同 cid 第二次 stream → 409 STREAM_ALREADY_RUNNING
- * ⑨ abort 端点：指定 streamId → 200；不存在 streamId → 404 STREAM_NOT_FOUND
+ * ⑧ P0 并发保护：同 session 已有活跃 run → 409 RUN_ALREADY_ACTIVE（不再静默 abort 旧流）
+ * ⑨ abort 端点：指定 streamId / runId → 200；不存在 → 404 STREAM_NOT_FOUND
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { EventEmitter } from "node:events";
+import { randomUUID } from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -124,6 +126,20 @@ type ParsedSse = {
   event: string;
   data: unknown;
   id?: number;
+};
+
+/**
+ * P0 SSE envelope（contract § 4.3 / spec § 4.3）。
+ *
+ * 每个物理 frame 的 `data` 均为该结构：外层带身份字段，业务 payload 在 `data.data`。
+ */
+type SseEnvelope = {
+  sessionId: string;
+  runId: string;
+  streamId: string;
+  seq: number;
+  event: string;
+  data: { [k: string]: unknown };
 };
 
 /** 找 stream 路由（POST /api/sessions/:id/messages/stream）。 */
@@ -279,6 +295,40 @@ describe("POST /api/sessions/:id/messages/stream — happy path", () => {
     // 必发至少 1 个 content_block_delta（含 "你好" 或 "世界"）
     const deltas = parsed.filter((e) => e.event === "content_block_delta");
     expect(deltas.length).toBeGreaterThanOrEqual(1);
+
+    // ---- P0: 每条 SSE 事件携带统一 envelope（contract § 4.3）----
+    for (const frame of parsed) {
+      const env = frame.data as SseEnvelope;
+      expect(env.sessionId).toBe(session.sessionId);
+      expect(env.runId).toBeTruthy();
+      expect(env.streamId).toBeTruthy();
+      expect(typeof env.seq).toBe("number");
+      expect(env.event).toBe(frame.event);
+      expect(env.data).toBeDefined();
+      // seq 唯一、严格递增，且与 `id:` 行一致
+      expect(frame.id).toBe(env.seq);
+    }
+    const seqs = parsed.map((e) => (e.data as SseEnvelope).seq);
+    expect(new Set(seqs).size).toBe(parsed.length); // 唯一
+    expect([...seqs].sort((a, b) => a - b)).toEqual(seqs); // 严格递增
+
+    // ---- P0: message_start 必须含 run_id / stream_id / messageId ----
+    const msEnv = messageStart!.data as SseEnvelope;
+    const msMsg = msEnv.data.message as {
+      id: string;
+      run_id: string;
+      stream_id: string;
+    };
+    expect(msMsg.run_id).toBeTruthy();
+    expect(msMsg.run_id).toBe(msEnv.runId);
+    expect(msMsg.stream_id).toBe(msEnv.streamId);
+    expect(msMsg.id).toBeTruthy();
+
+    // ---- P0: done 事件携带 persistedRevision + messageId ----
+    const doneEnv = doneEvent!.data as SseEnvelope;
+    expect(typeof doneEnv.data.persistedRevision).toBe("number");
+    expect(doneEnv.data.messageId).toBeTruthy();
+    expect(doneEnv.data.messageId).toBe(msMsg.id);
   });
 });
 
@@ -352,8 +402,9 @@ describe("POST .../stream — AbortController 中途取消", () => {
       runnerFactory: makeMockRunnerFactory([]),
     });
 
-    // 手动注册一条流到 hub
-    const { streamId } = hub.register(session.sessionId);
+    // 手动注册一条流到 hub（P0 新签名 register(cid, runId)）
+    const runId = randomUUID();
+    const { streamId } = hub.register(session.sessionId, runId);
 
     const { req, res } = {
       req: makeMockReq({
@@ -371,6 +422,43 @@ describe("POST .../stream — AbortController 中途取消", () => {
     const body = JSON.parse(res.body);
     expect(body.ok).toBe(true);
     expect(body.data.aborted).toContain(streamId);
+  });
+
+  it("abort 端点指定 runId → 200，精确中止该 run", async () => {
+    const session = sessionStore.create("gconv");
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory([]),
+    });
+
+    // 手动注册一条在飞 run（P0 新签名 register(cid, runId)）
+    const runId = randomUUID();
+    const { streamId } = hub.register(session.sessionId, runId);
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/abort`,
+        body: JSON.stringify({ runId }),
+      }),
+      res: makeMockRes(),
+    };
+
+    const route = findAbortRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.ok).toBe(true);
+    expect(body.data.aborted).toContain(runId);
+
+    // 流已被 abortByRunId 从 hub 移除 → 按 streamId 再 abort 应返回 false
+    expect(hub.abort(streamId)).toBe(false);
+    expect(hub.hasActiveRun(session.sessionId)).toBe(false);
   });
 
   it("abort 端点 streamId 不存在 → 404 STREAM_NOT_FOUND", async () => {
@@ -629,12 +717,15 @@ describe("error 事件形态", () => {
     const parsed = parseSse(res.body);
     const errorEvent = parsed.find((e) => e.event === "error");
     expect(errorEvent).toBeDefined();
-    expect((errorEvent!.data as { error: { code: string; message: string } }).error.code).toBe(
-      "CHAT_RUNNER_ERROR",
-    );
-    expect((errorEvent!.data as { error: { code: string; message: string } }).error.message).toContain(
-      "boom",
-    );
+    // P0 envelope：错误详情位于 envelope 的 data 内层
+    const errorEnv = errorEvent!.data as SseEnvelope;
+    expect(errorEnv.event).toBe("error");
+    const inner = errorEnv.data as {
+      ok: boolean;
+      error: { code: string; message: string };
+    };
+    expect(inner.error.code).toBe("CHAT_RUNNER_ERROR");
+    expect(inner.error.message).toContain("boom");
   });
 });
 
@@ -706,11 +797,11 @@ describe("13 event 类型覆盖", () => {
 });
 
 // ============================================================
-// ⑧ 并发 stream 处理：同 cid 已有流 → 自动 abort 旧流，新流继续
+// ⑧ 并发 stream 处理：同 session 已有活跃 run → 409 RUN_ALREADY_ACTIVE
 // ============================================================
 
 describe("并发 stream 处理", () => {
-  it("同 cid 上已有流 → 自动 abort 旧流，新流正常返回 200", async () => {
+  it("同 session 已有活跃 run → 409 RUN_ALREADY_ACTIVE（旧流不被自动 abort）", async () => {
     const session = sessionStore.create("gconv");
     installMessageRoutes({
       sessionStore,
@@ -723,8 +814,9 @@ describe("并发 stream 处理", () => {
       ]),
     });
 
-    // 手动注册一条在飞流
-    const { streamId: oldStreamId } = hub.register(session.sessionId);
+    // 手动注册一条在飞 run（P0 新签名 register(cid, runId)）
+    const runId = randomUUID();
+    const { streamId: oldStreamId } = hub.register(session.sessionId, runId);
 
     const { req, res } = {
       req: makeMockReq({
@@ -738,11 +830,15 @@ describe("并发 stream 处理", () => {
     const route = findStreamRoute();
     await route!.handler(req, res, { id: session.sessionId });
 
-    // 新行为：自动 abort 旧流，新流正常执行 → 200
-    expect(res.statusCode).toBe(200);
-    // 旧流已被 abort（不再出现在该 cid 的在飞流列表中）
+    // P0 新行为：409 RUN_ALREADY_ACTIVE，不再静默 replace 旧流
+    expect(res.statusCode).toBe(409);
+    const body = JSON.parse(res.body);
+    expect(body.error.code).toBe("RUN_ALREADY_ACTIVE");
+
+    // 旧流未被 abort，仍在该 cid 的在飞列表中；session 仍处于活跃 run 状态
     const remainingLive = hub.listForCid(session.sessionId);
-    expect(remainingLive.includes(oldStreamId)).toBe(false);
+    expect(remainingLive.includes(oldStreamId)).toBe(true);
+    expect(hub.hasActiveRun(session.sessionId)).toBe(true);
   });
 
   it("第一流结束后第二流可成功（释放 in-flight 锁）", async () => {

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type { Message, MessageContent } from "../shared/types.js";
 
 // ============================================================
@@ -220,9 +221,18 @@ export class Session {
    *   也可包含图片块 `{ type: "image", data, mediaType }`
    * @returns 新轮次的 turnId（自增序号）
    */
-  async beginUserTurn(content: MessageContent[]): Promise<number> {
+  async beginUserTurn(
+    content: MessageContent[],
+    meta?: { id?: string; runId?: string },
+  ): Promise<number> {
     this.turnId++;
-    this.messages.push({ role: "user", content, turnId: this.turnId });
+    this.messages.push({
+      role: "user",
+      content,
+      turnId: this.turnId,
+      id: meta?.id ?? randomUUID(),
+      runId: meta?.runId,
+    });
     return this.turnId;
   }
 
@@ -233,8 +243,17 @@ export class Session {
    *
    * @param content — assistant 消息的内容块数组，通常包含 text 和/或 tool_use 块
    */
-  async addAssistantMessage(content: MessageContent[]): Promise<void> {
-    this.messages.push({ role: "assistant", content, turnId: this.turnId });
+  async addAssistantMessage(
+    content: MessageContent[],
+    meta?: { id?: string; runId?: string },
+  ): Promise<void> {
+    this.messages.push({
+      role: "assistant",
+      content,
+      turnId: this.turnId,
+      id: meta?.id ?? randomUUID(),
+      runId: meta?.runId,
+    });
   }
 
   /**
@@ -253,7 +272,13 @@ export class Session {
   ): Promise<void> {
     this.messages.push({
       role: "user",
-      content: [{ type: "tool_result" as const, toolUseId, content, isError }],
+      content: [{
+        type: "tool_result" as const,
+        toolUseId,
+        content,
+        isError,
+        id: `result:${toolUseId}`,
+      }],
       turnId: this.turnId,
     });
   }
@@ -270,7 +295,7 @@ export class Session {
     role: "user" | "assistant",
     content: MessageContent[],
   ): Promise<void> {
-    this.messages.push({ role, content, turnId: this.turnId });
+    this.messages.push({ role, content, turnId: this.turnId, id: randomUUID() });
   }
 
   /**

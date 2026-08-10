@@ -15,6 +15,8 @@ export interface ContentBlock {
   id: string;
   type: 'text' | 'thinking' | 'tool_call' | 'tool_result';
   status: BlockStatus;
+  /** 服务端生成的稳定 block ID（P0+）。 */
+  blockId?: string;
 }
 
 // ============================================================
@@ -76,6 +78,12 @@ export interface ChatMessage {
   blocks: Block[];
   /** 用户消息保留 text 快捷字段 */
   text?: string;
+  /** 浏览器生成的用户消息 UUID（P0+）。同一次重试必须复用。 */
+  clientMessageId?: string;
+  /** 服务端生成的稳定消息 ID（P0+）。 */
+  messageId?: string;
+  /** 所属 run ID（P0+）。同一次发送的 user + assistant 消息共享。 */
+  runId?: string;
   /** 流式过程中的状态提示 */
   streamState?: 'thinking' | 'generating' | 'tool_executing' | 'done';
   /** 当前活动的工具调用计数 */
@@ -250,3 +258,38 @@ export type SseEventData =
   | SseErrorData
   | SsePingData
   | Record<string, unknown>;
+
+// ============================================================
+// P0 ChatStreamEnvelope — 所有 SSE 事件的统一外层
+// ============================================================
+
+/**
+ * SSE 事件统一 envelope（P0+）。
+ *
+ * 每条 SSE 事件从 P0 开始均携带此结构，用于前端按 (sessionId, runId) 做身份校验和 seq 去重。
+ */
+export interface ChatStreamEnvelope {
+  /** 数据属于哪个会话 */
+  sessionId: string;
+  /** 属于该会话的哪次发送 */
+  runId: string;
+  /** 本次 SSE 连接的 UUID（P0 首次连接时创建；P1 重连会创建新 streamId） */
+  streamId: string;
+  /** run 内每个物理 SSE frame 的唯一严格递增序号 */
+  seq: number;
+  /** SSE 事件名 */
+  event: string;
+  /** 事件载荷 */
+  data: Record<string, unknown>;
+}
+
+// ============================================================
+// SessionHistoryResponse — history API 返回格式（P0+）
+// ============================================================
+
+export interface SessionHistoryResponse {
+  sessionId: string;
+  /** 当前 JSONL 有效记录数；每成功 append 一条递增 */
+  revision: number;
+  messages: ChatMessage[];
+}

@@ -426,7 +426,7 @@ export function ChatPage() {
         // 加上中间 wrapper 没设 flex，会让 MessageList 的滚动失效。
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-fade-in">
           <div className="flex-1 min-h-0 max-w-[860px] mx-auto w-full">
-            <MessageList messages={messages} status={status} />
+            <MessageList key={sessionId} messages={messages} status={status} />
           </div>
         </div>
       )}

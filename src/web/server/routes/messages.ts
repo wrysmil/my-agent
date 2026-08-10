@@ -34,6 +34,7 @@
  */
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { randomUUID } from "node:crypto";
 import type { CoreAgentConfig } from "../../../config/schema.js";
 import type { ProviderRegistry } from "../../../providers/registry.js";
 import type { SessionStore } from "../../../storage/session-store.js";
@@ -177,60 +178,73 @@ async function postMessageStream(
     return;
   }
 
-  // 3) 并发保护：同 cid 上已有流 → 自动 abort 旧流，让新流继续
-  const liveIds = hub.listForCid(sessionId);
-  if (liveIds.length > 0) {
-    logger?.warn("检测到重复请求，自动取消上一个对话流", {
-      sessionId,
-      previousStreamIds: liveIds,
-    });
-    for (const id of liveIds) {
-      hub.abort(id);
-    }
+  // 3) P0 并发保护：同 session 已有非终态 run → 409
+  if (hub.hasActiveRun(sessionId)) {
+    sendJsonError(res, 409, "RUN_ALREADY_ACTIVE", `Session "${sessionId}" already has an active run`);
+    return;
   }
 
-  // 4) 注册 hub 流（生成 streamId + AbortController）
-  const { streamId, controller } = hub.register(sessionId);
+  // 4) P0 生成稳定 runId + assistantMessageId
+  const runId = randomUUID();
+  const assistantMessageId = randomUUID();
+
+  // 5) 注册 hub 流（生成 streamId + AbortController）
+  const { streamId, controller } = hub.register(sessionId, runId);
 
   // SSE stream 开始日志（用户输入截取前80字避免日志膨胀）
   const sseStartTime = Date.now();
   const userInputPreview = body.text.length > 80 ? body.text.slice(0, 80) + "..." : body.text;
-  logger?.info(`💬 对话开始 [${sessionId}] 用户: "${userInputPreview}"`, { sessionId, streamId, model: body.model });
+  logger?.info(`💬 对话开始 [${sessionId}] run:${runId} 用户: "${userInputPreview}"`, { sessionId, runId, streamId, model: body.model });
 
-  // 5) 读取 Last-Event-ID（spec § 6.1：客户端重连去重）
+  // 6) 读取 Last-Event-ID
   const lastEventId = parseLastEventId(req.headers["last-event-id"]);
 
-  // 6) 起 SSE 响应
+  // 7) 起 SSE 响应
   const sse = sseResponse(res, {
     streamId,
     onClientGone: () => hub.close(streamId),
   });
 
-  try {
-    // 6a) 首条 message_start（spec § 6.1 — 13 event 之首）
-    sse.seq = sse.seq + 1;
+  // P0: 每个物理 SSE frame 唯一 seq（不再用 sse.seq 的共享递增）
+  let frameSeq = 0;
+  const nextSeq = (): number => { frameSeq += 1; return frameSeq; };
+
+  /** 写一条带 P0 envelope 的 SSE 事件 */
+  const emit = (event: string, data: Record<string, unknown>) => {
+    const seq = nextSeq();
     writeEvent(res, {
-      id: sse.seq,
-      event: "message_start",
+      id: seq,
+      event,
       data: {
-        type: "message_start",
-        message: {
-          id: streamId,
-          role: "assistant",
-          stream_id: streamId,
-          cid: sessionId,
-          seq: 0,
-        },
+        sessionId,
+        runId,
+        streamId,
+        seq,
+        event,
+        data,
+      },
+    });
+  };
+
+  try {
+    // 7a) 首条 message_start（含 runId/streamId/messageId）
+    emit("message_start", {
+      type: "message_start",
+      message: {
+        id: assistantMessageId,
+        role: "assistant",
+        stream_id: streamId,
+        run_id: runId,
+        cid: sessionId,
       },
     });
 
-    // 6b) 适配 AgentRunner.runStream → 13 种 SSE event
+    // 7b) 适配 AgentRunner.runStream → SSE events（带 envelope）
     let aborted = false;
     let endedNormally = false;
     let nextBlockIndex = 0;
     const openTextBlocks = new Set<number>();
 
-    // 注册 abort 回调：当 controller.abort() 被调用时标记
     controller.signal.addEventListener("abort", () => {
       aborted = true;
     });
@@ -238,7 +252,6 @@ async function postMessageStream(
     try {
       const runner = runnerFactory({ session });
 
-      // 构造 runner params
       const params: AgentRunParams = {
         message: body.text,
         ...(body.systemPrompt !== undefined
@@ -253,77 +266,57 @@ async function postMessageStream(
         signal: controller.signal,
       };
 
-      // 是否为客户端重连（带了 Last-Event-ID）
       const isReconnect = lastEventId >= 0;
 
       for await (const ev of runner.runStream(params)) {
         if (sse.clientGone) break;
-        // Last-Event-ID 去重：如果客户端声明已收到 ≥ seq，跳过
-        if (isReconnect && sse.seq <= lastEventId) continue;
-
-        sse.seq = sse.seq + 1;
-        // LRU 去重仅在重连场景生效（避免不同 stream 的 seq 在全局 LRU 中碰撞导致事件丢失）
+        // P0: Last-Event-ID 去重（按 frameSeq）
+        if (isReconnect && frameSeq <= lastEventId) continue;
         if (isReconnect) {
-          if (lastEventLru.has(sse.seq)) continue;
-          lastEventLru.record(sse.seq);
+          if (lastEventLru.has(frameSeq + 1)) continue;
+          lastEventLru.record(frameSeq + 1);
         }
 
-        await adaptStreamEvent(res, ev, sse, () => nextBlockIndex++, openTextBlocks);
+        await adaptStreamEventWithEnvelope(
+          res, ev, emit, () => nextBlockIndex++, openTextBlocks,
+        );
 
         if (ev.type === "message_end" || ev.type === "error" || (ev.type as string) === "done") {
-          // 终止类事件：不再 yield 后续
           if (ev.type === "message_end") endedNormally = true;
           break;
         }
       }
     } catch (err) {
-      // runner 抛错 → 发 error 事件
       if (!sse.clientGone) {
-        sse.seq = sse.seq + 1;
-        writeEvent(res, {
-          id: sse.seq,
-          event: "error",
-          data: {
-            ok: false,
-            error: {
-              code: "CHAT_RUNNER_ERROR",
-              message: err instanceof Error ? err.message : String(err),
-            },
+        emit("error", {
+          ok: false,
+          error: {
+            code: "CHAT_RUNNER_ERROR",
+            message: err instanceof Error ? err.message : String(err),
           },
         });
       }
     }
 
-    // 6c) 终止事件
+    // 7c) 终止事件（携带 persistedRevision + messageId）
     if (!sse.clientGone) {
+      const revision = (session as PersistentSession).getAllMessages?.().length ?? 0;
+
       if (aborted) {
-        sse.seq = sse.seq + 1;
-        writeEvent(res, {
-          id: sse.seq,
-          event: "aborted",
-          data: { ok: false, streamId, reason: "client_abort" },
-        });
-      } else if (!endedNormally) {
-        // 流异常断开（runner 没正常终止）→ 发 done + 标记
-        sse.seq = sse.seq + 1;
-        writeEvent(res, {
-          id: sse.seq,
-          event: "done",
-          data: { ok: true, streamId },
+        emit("aborted", {
+          ok: false, streamId, runId, reason: "client_abort",
+          persistedRevision: revision, messageId: assistantMessageId,
         });
       } else {
-        // 正常 message_end：补 done 事件
-        sse.seq = sse.seq + 1;
-        writeEvent(res, {
-          id: sse.seq,
-          event: "done",
-          data: { ok: true, streamId },
+        emit("done", {
+          ok: true, streamId, runId,
+          persistedRevision: revision, messageId: assistantMessageId,
         });
       }
     }
   } finally {
     const sseDuration = Date.now() - sseStartTime;
-    logger?.info(`💬 对话结束 [${sessionId}] 耗时:${sseDuration}ms`, { sessionId, streamId, durationMs: sseDuration });
+    logger?.info(`💬 对话结束 [${sessionId}] run:${runId} 耗时:${sseDuration}ms`, { sessionId, runId, streamId, durationMs: sseDuration });
     hub.close(streamId);
     try {
       res.end();
@@ -374,9 +367,11 @@ async function abortMessage(
     input = {};
   }
 
-  // 3) 找目标 streamId
+  // 3) 找目标（优先 runId → streamId → 全 cid 兜底）
   let targetStreamId: string | undefined = input.streamId;
-  if (!targetStreamId) {
+  const targetRunId: string | undefined = input.runId;
+
+  if (!targetStreamId && !targetRunId) {
     // 退化：abort 该 cid 上**所有**在飞流（兜底）
     const liveIds = hub.listForCid(sessionId);
     if (liveIds.length === 0) {
@@ -390,20 +385,255 @@ async function abortMessage(
     return;
   }
 
-  // 4) abort 指定 streamId
-  const ok = hub.abort(targetStreamId);
+  // 4) abort：优先 runId → streamId
+  let ok: boolean;
+  if (targetRunId) {
+    ok = hub.abortByRunId(targetRunId);
+  } else {
+    ok = hub.abort(targetStreamId!);
+  }
   if (!ok) {
-    sendJsonError(res, 404, "STREAM_NOT_FOUND", `Stream "${targetStreamId}" not found`);
+    sendJsonError(res, 404, "STREAM_NOT_FOUND", `Stream not found`);
     return;
   }
 
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.end(JSON.stringify({ ok: true, data: { aborted: [targetStreamId] } }));
+  res.end(JSON.stringify({ ok: true, data: { aborted: [targetRunId ?? targetStreamId] } }));
 }
 
 // ============================================================
-// StreamEvent → SSE event 适配器
+// P0 StreamEvent → SSE event 适配器（含 envelope）
+// ============================================================
+
+/**
+ * P0 版适配器：与 `adaptStreamEvent` 逻辑相同，但通过 `emit` 回调统一封 envelope。
+ *
+ * `emit(event, data)` 自动包装 { sessionId, runId, streamId, seq, event, data }。
+ */
+async function adaptStreamEventWithEnvelope(
+  res: ServerResponse,
+  ev: StreamEvent,
+  emit: (event: string, data: Record<string, unknown>) => void,
+  allocBlockIndex: () => number,
+  openTextBlocks: Set<number>,
+): Promise<void> {
+  switch (ev.type) {
+    case "message_start": {
+      if (ev.usage) {
+        emit("usage", { type: "usage", usage: normalizeUsage(ev.usage) });
+      }
+      return;
+    }
+
+    case "message_end": {
+      for (const idx of openTextBlocks) {
+        emit("content_block_stop", { type: "content_block_stop", index: idx });
+      }
+      openTextBlocks.clear();
+      emit("message_delta", {
+        type: "message_delta",
+        stop_reason: ev.stopReason,
+        ...(ev.model !== undefined ? { model: ev.model } : {}),
+      });
+      emit("message_stop", { type: "message_stop", stop_reason: ev.stopReason });
+      if (ev.usage) {
+        emit("usage", { type: "usage", usage: normalizeUsage(ev.usage) });
+      }
+      return;
+    }
+
+    case "error": {
+      emit("error", {
+        ok: false,
+        error: {
+          code: "CHAT_RUNNER_ERROR",
+          message: ev.error instanceof Error ? ev.error.message : String(ev.error),
+        },
+      });
+      return;
+    }
+
+    case "text_delta": {
+      let idx: number;
+      if (openTextBlocks.size === 0) {
+        idx = allocBlockIndex();
+        openTextBlocks.add(idx);
+        emit("content_block_start", {
+          type: "content_block_start",
+          index: idx,
+          content_block: { type: "text", text: "" },
+        });
+      } else {
+        idx = openTextBlocks.values().next().value as number;
+      }
+      emit("content_block_delta", {
+        type: "content_block_delta",
+        index: idx,
+        delta: { type: "text_delta", text: ev.text },
+      });
+      return;
+    }
+
+    case "thinking_delta": {
+      emit("thinking_delta", {
+        type: "thinking_delta",
+        thinking: ev.thinking,
+      });
+      return;
+    }
+
+    case "tool_use_start": {
+      const idx = allocBlockIndex();
+      emit("tool_use", {
+        type: "tool_use",
+        id: ev.id,
+        name: ev.name,
+        input: {},
+        index: idx,
+      });
+      return;
+    }
+
+    case "tool_use_delta": {
+      emit("tool_use", {
+        type: "tool_use",
+        id: ev.id,
+        input: ev.input,
+        partial: true,
+      });
+      return;
+    }
+
+    case "tool_use_end": {
+      return; // 防御性代码，不做 SSE 写入
+    }
+
+    case "tool_delta": {
+      emit("tool_use", {
+        type: "tool_use",
+        id: ev.id,
+        ...(ev.name ? { name: ev.name } : {}),
+        input: ev.inputDelta,
+        partial: true,
+      });
+      return;
+    }
+
+    case "tool_start": {
+      const idx = allocBlockIndex();
+      emit("tool_use", {
+        type: "tool_use",
+        id: ev.id,
+        name: ev.name,
+        input: ev.input,
+        index: idx,
+      });
+      emit("tool_progress", {
+        type: "tool_progress",
+        tool_id: ev.id,
+        tool_name: ev.name,
+        phase: "start",
+        message: `执行工具: ${ev.name}`,
+      });
+      return;
+    }
+
+    case "tool_progress": {
+      emit("tool_progress", {
+        type: "tool_progress",
+        tool_id: ev.id,
+        tool_name: ev.name,
+        phase: ev.phase ?? "progress",
+        message: ev.message,
+        ...(ev.data ? { data: ev.data } : {}),
+      });
+      return;
+    }
+
+    case "tool_end": {
+      emit("tool_result", {
+        type: "tool_result",
+        tool_use_id: ev.id,
+        tool_name: ev.name,
+        content: ev.result,
+        is_error: ev.isError ?? false,
+        ...(ev.durationMs !== undefined ? { duration_ms: ev.durationMs } : {}),
+      });
+      return;
+    }
+
+    case "compaction": {
+      emit("compaction", {
+        type: "compaction",
+        tokens_before: ev.tokensBefore,
+        tokens_after: ev.tokensAfter,
+        ...(ev.summary ? { summary: ev.summary } : {}),
+        ...(ev.durationMs !== undefined ? { duration_ms: ev.durationMs } : {}),
+      });
+      return;
+    }
+
+    case "context_status": {
+      emit("context_status", {
+        type: "context_status",
+        phase: ev.phase,
+        message: ev.message,
+        ...(ev.data ? { data: ev.data } : {}),
+      });
+      return;
+    }
+
+    case "retry": {
+      emit("retry", {
+        type: "retry",
+        attempt: ev.attempt,
+        reason: ev.reason,
+        ...(ev.waitMs !== undefined ? { wait_ms: ev.waitMs } : {}),
+      });
+      return;
+    }
+
+    case "provider_fallback": {
+      emit("provider_fallback", {
+        type: "provider_fallback",
+        reason: ev.reason,
+        provider_id: ev.providerId,
+      });
+      return;
+    }
+
+    case "done": {
+      const doneEv = ev as unknown as {
+        type: "done";
+        result?: { meta?: { error?: { kind?: string; message: string } } };
+      };
+      if (doneEv.result?.meta?.error) {
+        emit("error", {
+          ok: false,
+          error: {
+            code:
+              doneEv.result.meta.error.kind === "auth"
+                ? "AUTH_ERROR"
+                : "CHAT_RUNNER_ERROR",
+            message: doneEv.result.meta.error.message,
+          },
+        });
+      } else {
+        emit("done", { ok: true });
+      }
+      return;
+    }
+
+    default: {
+      emit("ping", { type: "ping", ts: Date.now() });
+      return;
+    }
+  }
+}
+
+// ============================================================
+// StreamEvent → SSE event 适配器（旧版，保留用于测试兼容）
 // ============================================================
 
 /**

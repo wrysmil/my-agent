@@ -35,6 +35,10 @@ export type SerializedMessage = {
   turnId?: number;
   /** Unix 毫秒时间戳 */
   ts: number;
+  /** 稳定消息 ID（P0+）。新写入必含；旧数据由加载时派生。 */
+  id?: string;
+  /** 所属 run ID（P0+）。 */
+  runId?: string;
 };
 
 // ============================================================
@@ -99,6 +103,8 @@ export function messageToSerialized(msg: Message): SerializedMessage {
     content: msg.content,
     turnId: msg.turnId,
     ts: Date.now(),
+    id: msg.id,
+    runId: msg.runId,
   };
 }
 
@@ -112,6 +118,8 @@ export function serializedToMessage(sm: SerializedMessage): Message {
     role: sm.role,
     content: sm.content,
     turnId: sm.turnId,
+    id: sm.id,
+    runId: sm.runId,
   };
 }
 

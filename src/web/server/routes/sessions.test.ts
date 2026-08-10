@@ -325,9 +325,12 @@ describe("GET /api/sessions/:id/history", () => {
     await route![2](req, res, { id: session.sessionId });
 
     expect(res.statusCode).toBe(200);
-    const body = parseJson<{ ok: boolean; data: { messages: unknown[] } }>(res.body);
-    expect(body.ok).toBe(true);
-    expect(body.data.messages).toEqual([]);
+    const body = parseJson<{ sessionId: string; revision: number; messages: unknown[] }>(
+      res.body,
+    );
+    expect(body.sessionId).toBe(session.sessionId);
+    expect(body.revision).toBe(0);
+    expect(body.messages).toEqual([]);
   });
 
   it("不存在的会话 → 404 SESSION_NOT_FOUND", async () => {

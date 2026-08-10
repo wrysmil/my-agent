@@ -372,8 +372,11 @@ export class PersistentSession extends Session {
   // ============================================================
 
   /** @override */
-  override async beginUserTurn(content: MessageContent[]): Promise<number> {
-    const tid = await super.beginUserTurn(content);
+  override async beginUserTurn(
+    content: MessageContent[],
+    meta?: { id?: string; runId?: string },
+  ): Promise<number> {
+    const tid = await super.beginUserTurn(content, meta);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
       await appendJsonLineAtomic<SerializedMessage>(
@@ -386,8 +389,11 @@ export class PersistentSession extends Session {
   }
 
   /** @override */
-  override async addAssistantMessage(content: MessageContent[]): Promise<void> {
-    await super.addAssistantMessage(content);
+  override async addAssistantMessage(
+    content: MessageContent[],
+    meta?: { id?: string; runId?: string },
+  ): Promise<void> {
+    await super.addAssistantMessage(content, meta);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
       await appendJsonLineAtomic<SerializedMessage>(
@@ -573,8 +579,9 @@ export class PersistentSession extends Session {
 
       const summaryMessage: Message = {
         role: "assistant",
-        content: [{ type: "text", text: opts.summary }],
+        content: [{ type: "text", text: opts.summary, id: `${summaryMessageId}:0` }],
         turnId: this.turnId,
+        id: summaryMessageId,
       };
 
       // 替换 messages：原列表清空 + push 单条 summary

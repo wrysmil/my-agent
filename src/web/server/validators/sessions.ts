@@ -65,6 +65,8 @@ export const StreamMessageSchema = z.object({
   systemPrompt: z.string().max(8_000).optional(),
   model: z.string().min(1).max(256).optional(),
   thinkingLevel: z.enum(["off", "low", "medium", "high"]).optional(),
+  /** P0：浏览器生成的用户消息 UUID（幂等键）。 */
+  clientMessageId: z.string().uuid().optional(),
 });
 
 export type StreamMessageInput = z.infer<typeof StreamMessageSchema>;
@@ -86,6 +88,11 @@ export const AbortStreamSchema = z.object({
   streamId: z
     .string()
     .regex(UUID_RE, "streamId must be a UUID")
+    .optional(),
+  /** P0：按 runId 精确 abort（优先于 streamId）。 */
+  runId: z
+    .string()
+    .regex(UUID_RE, "runId must be a UUID")
     .optional(),
 });
 

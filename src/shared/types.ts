@@ -11,6 +11,8 @@ export type MessageRole = "user" | "assistant" | "tool";
 export type TextContent = {
   type: "text";
   text: string;
+  /** 稳定 block ID（P0+）。服务端生成 UUID；旧数据派生为 `{messageId}:{blockIndex}`。 */
+  id?: string;
 };
 
 /** 视觉模型的图像输入。 */
@@ -34,6 +36,8 @@ export type ToolResultContent = {
   toolUseId: string;
   content: string;
   isError?: boolean;
+  /** 稳定 block ID（P0+）。格式为 `result:{toolUseId}`。 */
+  id?: string;
 };
 
 /** 推理模型的 chain-of-thought。必须在下一轮原样回传。 */
@@ -43,6 +47,8 @@ export type ThinkingContent = {
   thinkingSignature?: string;
   /** 标识思考内容来源的 Provider API 形态。 */
   api?: "openai-completions" | "openai-responses" | "anthropic-messages" | "google-generative-ai" | "custom";
+  /** 稳定 block ID（P0+）。服务端生成 UUID；旧数据派生为 `{messageId}:{blockIndex}`。 */
+  id?: string;
 };
 
 /** 所有内容块的联合类型。 */
@@ -61,6 +67,10 @@ export type Message = {
   content: MessageContent[];
   /** UI 轮次身份。由 Session 分配，从面向 provider 的投影中剥离。 */
   turnId?: number;
+  /** 稳定消息 ID（P0+）。服务端生成 UUID；旧数据派生为 `legacy:{sha256}`。 */
+  id?: string;
+  /** 所属 run ID（P0+）。同一次发送的 user + assistant 消息共享。 */
+  runId?: string;
 };
 
 // ============================================================

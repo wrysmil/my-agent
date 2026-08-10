@@ -26,11 +26,14 @@
  * - 7 条路由共享 `installSessionRoutes({ sessionStore, agentRunner })`，通过 closure 注入
  */
 
+import { createHash } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
+import type { MessageContent } from "../../../shared/types.js";
 import { assertPathSegment } from "../../../storage/paths.js";
 import { SessionStore } from "../../../storage/session-store.js";
 import { ROUTES } from "../router.js";
+import { hub } from "../sse.js";
 import type { Handler, Route } from "../router.js";
 import { SerializedMessage } from "../../../agent/session-serde.js";
 import { messageToSerialized } from "../../../agent/session-serde.js";
@@ -360,9 +363,47 @@ async function getHistory(
     return;
   }
 
+  // WU-06：补充稳定 id —— 新数据自带 id；旧数据派生 legacy id + 内容块 id
+  messages = messages.map((sm, index) => ensureSerializedIds(safeId, sm, index));
+
   res.statusCode = 200;
   res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.end(JSON.stringify({ ok: true, data: { messages } }));
+  res.end(
+    JSON.stringify({
+      sessionId: safeId,
+      revision: messages.length,
+      messages,
+    }),
+  );
+}
+
+/**
+ * WU-06：为 SerializedMessage 及其内容块补充稳定 id。
+ *
+ * - 消息缺失 id → `legacy:{sha256(sessionId|index|role|turnId)}` 前 16 字符
+ * - 内容块缺失 id → `{messageId}:{blockIndex}`
+ *   （tool_use 块 id 必填直接保留；image 块类型无 id 字段，跳过）
+ */
+function ensureSerializedIds(
+  sessionId: string,
+  sm: SerializedMessage,
+  index: number,
+): SerializedMessage {
+  const messageId =
+    sm.id ??
+    `legacy:${createHash("sha256")
+      .update(`${sessionId}|${index}|${sm.role}|${sm.turnId ?? ""}`, "utf-8")
+      .digest("hex")
+      .slice(0, 16)}`;
+
+  const content = sm.content.map((block, blockIndex): MessageContent => {
+    if (block.type === "tool_use") return block;
+    if (block.type === "image") return block;
+    if (block.id) return block;
+    return { ...block, id: `${messageId}:${blockIndex}` };
+  });
+
+  return { ...sm, id: messageId, content };
 }
 
 /**
@@ -389,9 +430,15 @@ async function deleteSession(
     return;
   }
 
+  // P0: 先 abort 该 session 的所有 active streams，再删除
+  const liveIds = hub.listForCid(safeId);
+  for (const sid of liveIds) {
+    hub.abort(sid);
+  }
+
   const existed = sessionStore.delete(safeId);
   if (existed) {
-    logger?.info(`🗑️ 删除会话: ${safeId}`);
+    logger?.info(`🗑️ 删除会话: ${safeId}`, { safeId });
   }
 
   // spec § 3.4.7：DELETE 幂等 —— 不存在也回 204

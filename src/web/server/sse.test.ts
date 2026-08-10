@@ -273,6 +273,73 @@ describe("SseHub — 流生命周期管理", () => {
 });
 
 // ============================================================
+// ④b SseHub — P0 runId 关联（register runId / hasActiveRun / abortByRunId）
+// ============================================================
+
+describe("SseHub — P0 runId 关联", () => {
+  beforeEach(() => {
+    _resetHub();
+  });
+
+  it("register 支持可选的 runId 参数，缺省时以 streamId 作为有效 runId", () => {
+    const h = new SseHub();
+    // 显式 runId
+    const { streamId: s1 } = h.register("cid-a", "run-1");
+    expect(h.getByRunId("run-1")?.runId).toBe("run-1");
+    expect(h.listForCid("cid-a")).toEqual([s1]);
+
+    // 缺省 runId → 使用 streamId 兜底（P0 兼容旧调用）
+    const { streamId: s2 } = h.register("cid-b");
+    expect(h.getByRunId(s2)).toBeDefined();
+    expect(h.size()).toBe(2);
+  });
+
+  it("hasActiveRun 正确检测同 cid 的活跃 run", () => {
+    const h = new SseHub();
+    expect(h.hasActiveRun("cid-x")).toBe(false);
+
+    const { streamId } = h.register("cid-x", "run-2");
+    expect(h.hasActiveRun("cid-x")).toBe(true);
+    // 其他 cid 不受影响
+    expect(h.hasActiveRun("cid-y")).toBe(false);
+
+    // 关闭后不再视为活跃
+    h.close(streamId);
+    expect(h.hasActiveRun("cid-x")).toBe(false);
+  });
+
+  it("abortByRunId 按 runId 精确中止对应流并返回 true", () => {
+    const h = new SseHub();
+    const { controller } = h.register("cid-y", "run-3");
+    const abortSpy = vi.spyOn(controller, "abort");
+
+    expect(h.abortByRunId("run-3")).toBe(true);
+    expect(abortSpy).toHaveBeenCalledTimes(1);
+    expect(h.size()).toBe(0);
+    expect(h.hasActiveRun("cid-y")).toBe(false);
+
+    // 幂等：重复 abort 返回 false
+    expect(h.abortByRunId("run-3")).toBe(false);
+  });
+
+  it("abortByRunId 对不存在的 runId 返回 false", () => {
+    const h = new SseHub();
+    expect(h.abortByRunId("no-such-run")).toBe(false);
+  });
+
+  it("abortByRunId 只中止目标 run，不影响同 cid 其他流", () => {
+    const h = new SseHub();
+    const { streamId: keepId } = h.register("cid-z", "run-a");
+    h.register("cid-z", "run-b");
+
+    expect(h.abortByRunId("run-b")).toBe(true);
+    // run-a 仍在飞
+    expect(h.listForCid("cid-z")).toEqual([keepId]);
+    expect(h.hasActiveRun("cid-z")).toBe(true);
+  });
+});
+
+// ============================================================
 // ⑤ LastEventIdLru — cap=100 驱逐策略
 // ============================================================
 
