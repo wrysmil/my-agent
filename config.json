@@ -1,6 +1,6 @@
 {
   "agent": {
-    "defaultModel": "deepseek-chat",
+    "defaultModel": "deepseek-v4-pro",
     "defaultProvider": "deepseek",
     "maxRetries": 2,
     "maxToolLoops": 20,
@@ -14,20 +14,12 @@
       }
     },
     "catalog": {
-      "deepseek-chat": {
+      "deepseek-v4-pro": {
         "provider": "deepseek",
-        "model": "deepseek-chat",
+        "model": "deepseek-v4-pro",
         "contextWindow": 65536,
         "maxOutputTokens": 100000,
         "supportsTools": true,
-        "supportsStreaming": true
-      },
-      "deepseek-reasoner": {
-        "provider": "deepseek",
-        "model": "deepseek-reasoner",
-        "contextWindow": 65536,
-        "maxOutputTokens": 8192,
-        "supportsTools": false,
         "supportsStreaming": true
       }
     }

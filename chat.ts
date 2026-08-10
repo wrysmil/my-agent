@@ -23,6 +23,14 @@ import { loadConfig } from "./src/config/loader.js";
 import type { CoreAgentConfig } from "./src/config/schema.js";
 import { AgentRunner } from "./src/agent/runner.js";
 import { DeepSeekProvider } from "./src/providers/deepseek.js";
+import { AnthropicProvider } from "./src/providers/anthropic.js";
+import { OpenAIProvider } from "./src/providers/openai.js";
+import { GoogleProvider } from "./src/providers/google.js";
+import { MoonshotProvider } from "./src/providers/moonshot.js";
+import { QwenProvider } from "./src/providers/qwen.js";
+import { MistralProvider } from "./src/providers/mistral.js";
+import { GrokProvider } from "./src/providers/grok.js";
+import type { LLMProvider } from "./src/providers/base.js";
 import { ProviderRegistry } from "./src/providers/registry.js";
 import { defineTool, type AgentTool } from "./src/tools/base.js";
 import { BUILTIN_TOOLS } from "./src/tools/builtin.js";
@@ -208,11 +216,30 @@ function buildProviderRegistry(store: ProvidersStore): ProviderRegistry {
   if (!active) {
     throw new Error("没有可用的 provider；请先在设置菜单中新建一个");
   }
-  if (active.type === "deepseek") {
-    const dp = new DeepSeekProvider({ apiKey: active.apiKey, baseUrl: active.baseUrl });
-    registry.registerFactory(active.id, () => dp);
+
+  const provider = createProviderByType(active.type, {
+    apiKey: active.apiKey,
+    baseUrl: active.baseUrl,
+  });
+  if (!provider) {
+    throw new Error(`不支持的 provider 类型: ${active.type}`);
   }
+  registry.registerFactory(active.id, () => provider);
   return registry;
+}
+
+function createProviderByType(type: string, opts: { apiKey: string; baseUrl: string }): LLMProvider | null {
+  switch (type) {
+    case "deepseek": return new DeepSeekProvider(opts);
+    case "anthropic": return new AnthropicProvider(opts);
+    case "openai": return new OpenAIProvider(opts);
+    case "google": return new GoogleProvider(opts);
+    case "moonshot": return new MoonshotProvider(opts);
+    case "qwen": return new QwenProvider(opts);
+    case "mistral": return new MistralProvider(opts);
+    case "xai": return new GrokProvider(opts);
+    default: return null;
+  }
 }
 
 // ============================================================================

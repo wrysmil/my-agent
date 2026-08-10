@@ -70,6 +70,22 @@ describe("共享类型定义", () => {
       expect(c.thinkingSignature).toBe("sig_abc");
     });
 
+    it("构造 ThinkingContent（含 api 字段）", () => {
+      const withApi: ThinkingContent = {
+        type: "thinking",
+        thinking: "reasoning...",
+        api: "anthropic-messages",
+      };
+      expect(withApi.api).toBe("anthropic-messages");
+
+      // 可省略
+      const withoutApi: ThinkingContent = {
+        type: "thinking",
+        thinking: "reasoning...",
+      };
+      expect(withoutApi.api).toBeUndefined();
+    });
+
     it("MessageContent 联合类型接受所有子类型", () => {
       // 编译时验证：这些赋值必须通过类型检查
       const items: MessageContent[] = [
@@ -150,17 +166,38 @@ describe("共享类型定义", () => {
       };
       expect(u.cacheReadTokens).toBeUndefined();
     });
+
+    it("Usage 含 reasoningTokens（可选字段）", () => {
+      const u: Usage = {
+        inputTokens: 1500,
+        outputTokens: 300,
+        reasoningTokens: 800,
+        totalTokens: 2600,
+      };
+      expect(u.reasoningTokens).toBe(800);
+
+      // 可省略
+      const u2: Usage = {
+        inputTokens: 100,
+        outputTokens: 50,
+        totalTokens: 150,
+      };
+      expect(u2.reasoningTokens).toBeUndefined();
+    });
   });
 
   describe("StopReason — 停止原因", () => {
-    it("包含四种停止原因", () => {
+    it("包含七种停止原因", () => {
       const reasons: StopReason[] = [
         "end_turn",
         "tool_use",
         "max_tokens",
         "stop_sequence",
+        "content_filter",
+        "refusal",
+        "safety",
       ];
-      expect(reasons).toHaveLength(4);
+      expect(reasons).toHaveLength(7);
     });
   });
 
@@ -209,6 +246,17 @@ describe("共享类型定义", () => {
       expect(e.type).toBe("message_end");
       expect(e.stopReason).toBe("end_turn");
       expect(e.model).toBe("claude-sonnet-4-5");
+    });
+
+    it("thinking_complete 事件", () => {
+      const e: StreamEvent = {
+        type: "thinking_complete",
+        text: "full chain-of-thought text",
+        durationMs: 3420,
+      };
+      expect(e.type).toBe("thinking_complete");
+      expect(e.text).toBe("full chain-of-thought text");
+      expect(e.durationMs).toBe(3420);
     });
 
     it("error 事件", () => {

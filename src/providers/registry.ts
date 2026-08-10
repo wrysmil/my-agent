@@ -75,6 +75,18 @@ export class ProviderRegistry {
       const provider = this.get("google");
       if (provider) return { provider, modelId: model };
     }
+    if (model.startsWith("deepseek-")) {
+      const provider = this.get("deepseek");
+      if (provider) return { provider, modelId: model };
+    }
+    if (model.startsWith("moonshot-")) {
+      const provider = this.get("moonshot");
+      if (provider) return { provider, modelId: model };
+    }
+    if (model.startsWith("qwen-")) {
+      const provider = this.get("qwen");
+      if (provider) return { provider, modelId: model };
+    }
     if (model.startsWith("mistral-") || model.startsWith("codestral")) {
       const provider = this.get("mistral");
       if (provider) return { provider, modelId: model };
@@ -95,6 +107,11 @@ export class ProviderRegistry {
   /** 列出所有可用 provider ID。 */
   list(): string[] {
     return [...new Set([...this.providers.keys(), ...this.factories.keys()])];
+  }
+
+  /** 直接注入一个已创建的 provider 实例（用于从外部 store 同步）。 */
+  setProvider(id: string, provider: LLMProvider): void {
+    this.providers.set(id, provider);
   }
 
   private createProvider(

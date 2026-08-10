@@ -27,6 +27,11 @@ import type {
   AgentRunTimings,
 } from "./types.js";
 import { Session } from "./session.js";
+import { PersistentSession } from "./persistent-session.js";
+import type {
+  CompactEstimate,
+  CompactResult,
+} from "./persistent-session.js";
 import {
   buildSystemPrompt,
   buildDefaultSystemPrompt as buildFallbackPrompt,
@@ -46,6 +51,21 @@ import {
 } from "../tools/execution-plan.js";
 import { createViewSkillTool } from "../tools/view-skill.js";
 import { SkillLoader } from "../skills/loader.js";
+import { ApiError, ApiErrorCode } from "../web/server/errors.js";
+import type { Logger } from "../shared/logger.js";
+
+// ============================================================
+// 压缩类型导出（contract § B8 / WU-06a）
+// ============================================================
+
+/**
+ * 压缩估算（`POST /api/sessions/:cid/compact/preview` 响应体）。
+ *
+ * 详见 `PersistentSession.compactPreview()` 注释 —— 此处 re-export
+ * 是为了让 HTTP 路由层（`routes/sessions.ts`）只需 import runner.ts
+ * 即拿到完整契约。
+ */
+export type { CompactEstimate, CompactResult } from "./persistent-session.js";
 
 // ============================================================
 // 重试常量 — 控制 runner 遇到可重试错误时的退避策略
@@ -714,6 +734,7 @@ export class AgentRunner {
   private readonly tools: Map<string, AgentTool> = new Map();
   private readonly session: Session;
   private readonly toolContextState: Record<string, unknown>;
+  private readonly logger: Logger;
 
   /** 5.6 模型回退链（构造器注入；首选模型失败时依次尝试） */
   private readonly fallbackModels: string[];
@@ -745,6 +766,9 @@ export class AgentRunner {
    *   所有工具通过 `ToolContext.state` 可读写此对象。
    *   用于在工具间共享跨 run 的持久状态（如缓存、账本）。
    *
+   * @param opts.logger — 可选的结构化日志实例。
+   *   不传则使用静默 logger（无输出）。
+   *
    * @example
    * ```ts
    * // 多轮对话：复用 session 保持上下文
@@ -770,6 +794,7 @@ export class AgentRunner {
     skillLoader?: SkillLoader;
     /** 5.6 首选模型失败（rate-limit 等）时依次尝试的回退模型 ID 列表 */
     fallbackModels?: string[];
+    logger?: Logger;
   }) {
     this.config = opts.config;
     this.providers = opts.providers ?? new ProviderRegistry(opts.config);
@@ -786,6 +811,14 @@ export class AgentRunner {
       maxEpochs: 0,
       maxAttempts: 0,
       limitLogged: false,
+    };
+
+    this.logger = opts.logger ?? {
+      debug: () => {},
+      info: () => {},
+      warn: () => {},
+      error: () => {},
+      child: () => this.logger,
     };
 
     // 注册工具
@@ -856,6 +889,134 @@ export class AgentRunner {
    */
   addTool(tool: AgentTool): void {
     this.tools.set(tool.name, tool);
+  }
+
+  // ==========================================================
+  // 上下文压缩（contract § B8 / WU-06a）
+  // ==========================================================
+
+  /**
+   * 主动触发上下文压缩（API 入口 = `POST /api/sessions/:cid/compact`）。
+   *
+   * **流程：**
+   * 1. 调 `session.compactPreview()` 拿 token 估算（不动状态）
+   * 2. `dryRun=true` → 直接返回估算结果，不写 session
+   * 3. 否则：解析 provider → 调 `provider.complete()` 让模型生成 summary
+   *    → 调 `session.compactNow({ summary })` 完成替换
+   *
+   * **串行化：** `session.compactNow()` 内部用 `cidMutex.runExclusive()`
+   * 串行化；并发第二个调用会在预检阶段抛 `CHAT_SESSION_BUSY`
+   * （contract § 6.5 R-22 race 防护）。
+   *
+   * **错误码映射（contract § 3 实际枚举，无 COMPACT_* 自创 code）：**
+   * - provider 不可用 / `complete()` 不支持 → `INTERNAL` (500)
+   * - provider 调用失败 / 返回空 summary → `INTERNAL` (500)
+   * - session 已有压缩在飞 → `CHAT_SESSION_BUSY` (429)
+   *
+   * @param opts.session — 目标 PersistentSession（必须已加载）
+   * @param opts.dryRun  — `true` 时只返回估算，不实际压缩（默认 `false`）
+   * @param opts.model   — 覆盖默认模型（默认 `config.agent.defaultModel`）
+   * @returns `{ ok: true, data: CompactResult }`；抛 `ApiError` 表示失败
+   */
+  async compactNow(opts: {
+    session: PersistentSession;
+    dryRun?: boolean;
+    model?: string;
+  }): Promise<{ ok: true; data: CompactResult }> {
+    const dryRun = opts.dryRun ?? false;
+
+    // ---- Step 1: Preview（不动 session 状态） ----
+    const preview = await opts.session.compactPreview();
+
+    // ---- Step 2: Dry-run short-circuit ----
+    if (dryRun) {
+      return {
+        ok: true,
+        data: {
+          removedMessages: 0,
+          summaryMessageId: null,
+          beforeTokens: preview.beforeTokens,
+          afterTokens: preview.afterTokens,
+          reductionPct: preview.reductionPct,
+        },
+      };
+    }
+
+    // ---- Step 3: 解析 provider ----
+    const modelId = opts.model ?? this.config.agent.defaultModel;
+    const providerId = this.config.agent.defaultProvider;
+    let resolved = this.providers.resolveForModel(`${providerId}/${modelId}`);
+    if (!resolved) {
+      resolved = this.providers.resolveForModel(modelId) ?? undefined;
+    }
+    if (!resolved) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `No provider found for compaction model: ${modelId}`,
+      );
+    }
+    if (typeof resolved.provider.complete !== "function") {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `Provider "${resolved.provider.id}" does not support non-streaming complete()`,
+      );
+    }
+
+    // ---- Step 4: 空 session 早退（无消息可压缩） ----
+    const messages = opts.session.getAllMessages();
+    if (messages.length === 0) {
+      return {
+        ok: true,
+        data: {
+          removedMessages: 0,
+          summaryMessageId: null,
+          beforeTokens: preview.beforeTokens,
+          afterTokens: preview.beforeTokens,
+          reductionPct: 0,
+        },
+      };
+    }
+
+    // ---- Step 5: 调 provider 非流式 completion ----
+    let summaryText = "";
+    try {
+      const result = await resolved.provider.complete!({
+        model: resolved.modelId,
+        messages,
+        systemPrompt: CONTEXT_COMPACTION_SYSTEM_PROMPT,
+        maxTokens: TOOL_LOOP_LIMIT_SUMMARY_MAX_TOKENS,
+        sessionId: opts.session.sessionId,
+      });
+      for (const c of result.content) {
+        if (c.type === "text") summaryText += c.text;
+      }
+    } catch (err) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        `Compaction provider call failed: ${formatError(err)}`,
+      );
+    }
+
+    if (!summaryText.trim()) {
+      throw new ApiError(
+        ApiErrorCode.INTERNAL,
+        "Provider returned empty compaction summary",
+      );
+    }
+
+    // ---- Step 6: 落盘（session.compactNow 内部用 cidMutex 串行化） ----
+    const sessionResult = await opts.session.compactNow({ summary: summaryText });
+
+    return {
+      ok: true,
+      data: {
+        removedMessages: sessionResult.removedMessages,
+        summaryMessageId: sessionResult.summaryMessageId,
+        beforeTokens: preview.beforeTokens,
+        afterTokens: sessionResult.afterTokens,
+        reductionPct: preview.reductionPct,
+      },
+    };
   }
 
   // ==========================================================
@@ -934,6 +1095,14 @@ export class AgentRunner {
     const providerId = params.provider ?? agentConfig.defaultProvider;
     const maxRetries = agentConfig.maxRetries;
     const maxToolLoops = agentConfig.maxToolLoops;
+
+    this.logger.info(`🤖 开始执行 [模型:${model}] 消息长度:${params.message.length}字 工具:${this.tools.size}个`, {
+      model,
+      provider: providerId,
+      maxRetries,
+      maxToolLoops,
+      messageLength: params.message.length,
+    });
 
     let resolved = this.providers.resolveForModel(`${providerId}/${model}`);
     if (!resolved) {
@@ -1529,7 +1698,7 @@ export class AgentRunner {
           maxTokens: this.config.models.catalog[modelId]?.maxOutputTokens,
           signal: params.signal,
           sessionId: this.session.getSessionId(),
-          reasoning: params.thinkingLevel as "off" | "low" | "high" | undefined,
+          reasoning: params.thinkingLevel as "off" | "low" | "medium" | "high" | undefined,
           cacheRetention: params.cacheRetention,
         };
 
@@ -1550,6 +1719,7 @@ export class AgentRunner {
 
         // 2e. 消费流事件
         let streamText = "";
+        let streamThinking = "";
         let streamContent: MessageContent[] | undefined;
         let streamStopReason: import("../shared/types.js").StopReason = "end_turn";
         let streamUsage: Usage = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
@@ -1560,6 +1730,10 @@ export class AgentRunner {
             case "text_delta":
               streamText += ev.text;
               yield { type: "text_delta", text: ev.text };
+              break;
+            case "thinking_delta":
+              streamThinking += ev.thinking;
+              yield { type: "thinking_delta", thinking: ev.thinking };
               break;
             case "tool_use_start":
               yield { type: "tool_delta", id: ev.id, name: ev.name, inputDelta: "", inputBytes: 0 };
@@ -1585,7 +1759,17 @@ export class AgentRunner {
           }
         }
         timings.providerMs += Math.max(0, Date.now() - activeProviderStartedAt);
+        const llmDuration = Math.max(0, Date.now() - (activeProviderStartedAt ?? Date.now()));
         activeProviderStartedAt = undefined;
+
+        this.logger.info(`✅ 模型响应完成 [tokens:${streamUsage.totalTokens} 耗时:${llmDuration}ms 原因:${streamStopReason}]`, {
+          model: streamModel,
+          tokens: streamUsage.totalTokens,
+          inputTokens: streamUsage.inputTokens,
+          outputTokens: streamUsage.outputTokens,
+          stopReason: streamStopReason,
+          durationMs: llmDuration,
+        });
 
         // 2f. 累积 token 用量
         lastUsageRef.value = mergeUsage(lastUsageRef.value, streamUsage);
@@ -1599,8 +1783,12 @@ export class AgentRunner {
         }
 
         // 2h. 持久化 assistant 消息
-        const finalContent: MessageContent[] =
+        let finalContent: MessageContent[] =
           streamContent ?? (streamText ? [{ type: "text", text: streamText }] : []);
+        // 如果 provider 的 message_end.content 未包含 thinking，从 streamThinking 补上
+        if (streamThinking && !finalContent.some((c) => c.type === "thinking")) {
+          finalContent = [{ type: "thinking", thinking: streamThinking }, ...finalContent];
+        }
         await this.session.addAssistantMessage(finalContent);
 
         const turnText = textFromContent(finalContent);
@@ -1699,6 +1887,7 @@ export class AgentRunner {
         }
 
         if (err instanceof AuthError) {
+          this.logger.error(`❌ 认证失败: ${err.message}`);
           yield {
             type: "done",
             result: this.errorResult(startTime, modelId, provider.id, {
@@ -1709,6 +1898,7 @@ export class AgentRunner {
         }
 
         if (err instanceof ContextOverflowError) {
+          this.logger.error(`❌ 上下文溢出: ${err.message}`);
           yield {
             type: "done",
             result: this.errorResult(startTime, modelId, provider.id, {
@@ -1720,6 +1910,7 @@ export class AgentRunner {
 
         if (isRetryableError(err) && attempt < maxRetries) {
           const delay = retryDelayMs(err, attempt);
+          this.logger.warn(`🔄 重试第 ${attempt + 1}/${maxRetries} 次 (等待${delay}ms): ${formatError(err)}`);
           yield {
             type: "retry",
             attempt: attempt + 1,
@@ -1732,6 +1923,7 @@ export class AgentRunner {
         }
 
         // 重试耗尽或不可重试
+        this.logger.error(`❌ 模型调用失败 (已重试${attempt}次): ${formatError(err)}`);
         yield {
           type: "done",
           result: this.errorResult(startTime, modelId, provider.id, {
@@ -1968,6 +2160,11 @@ export class AgentRunner {
         yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
         input.toolNamesSet.add(call.name);
 
+        this.logger.debug(`🔧 执行工具: ${call.name}`, {
+          tool: call.name,
+          id: call.id,
+        });
+
         const toolStart = Date.now();
         const outcome = await runToolWithWatchdog({
           call,
@@ -2037,6 +2234,10 @@ export class AgentRunner {
         for (const call of batch) {
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
           input.toolNamesSet.add(call.name);
+          this.logger.debug(`🔧 执行工具: ${call.name}`, {
+            tool: call.name,
+            id: call.id,
+          });
         }
 
         const cap = parallelToolCap();

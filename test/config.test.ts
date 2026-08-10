@@ -1,4 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import {
   CoreAgentConfigSchema,
   AgentConfigSchema,
@@ -185,14 +188,93 @@ describe("配置加载器", () => {
 
   // ─── loadConfig ───────────────────────────────
   describe("loadConfig — 从文件加载", () => {
-    it("无路径返回默认配置", async () => {
+    it("无路径时自动加载项目根 config.json", async () => {
       const config = await loadConfig();
-      expect(config.agent.defaultModel).toBe("claude-opus-4-8");
+      // 项目根有 config.json → 应加载其内容而非 Zod 默认值
+      expect(config.agent.defaultModel).toBe("deepseek-chat");
+      expect(config.models.catalog["deepseek-chat"]).toBeDefined();
+      expect(config.models.catalog["deepseek-reasoner"]).toBeDefined();
     });
 
     it("不存在的文件返回默认配置", async () => {
       const config = await loadConfig("/tmp/nonexistent-config.json");
       expect(config.agent.maxRetries).toBe(3);
+    });
+  });
+
+  // ─── loadConfig apiKey env fallback ────────────
+  describe("loadConfig apiKey env fallback", () => {
+    const originalEnv = { ...process.env };
+    let tmpDir: string;
+
+    beforeEach(async () => {
+      tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "my-agent-test-"));
+    });
+
+    afterEach(async () => {
+      process.env = { ...originalEnv };
+      await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    });
+
+    it("provider 无 apiKey 时从环境变量 fallback", async () => {
+      process.env.DEEPSEEK_API_KEY = "sk-test-env-key";
+      const configPath = path.join(tmpDir, "config.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({
+          models: {
+            providers: {
+              deepseek: { baseUrl: "https://api.deepseek.com/v1" },
+            },
+          },
+        }),
+        "utf-8",
+      );
+      const config = await loadConfig(configPath);
+      expect(config.models.providers["deepseek"]?.apiKey).toBe(
+        "sk-test-env-key",
+      );
+    });
+
+    it("显式 apiKey 不被环境变量覆盖", async () => {
+      process.env.DEEPSEEK_API_KEY = "sk-test-env-key";
+      const configPath = path.join(tmpDir, "config.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({
+          models: {
+            providers: {
+              deepseek: {
+                apiKey: "sk-explicit",
+                baseUrl: "https://api.deepseek.com/v1",
+              },
+            },
+          },
+        }),
+        "utf-8",
+      );
+      const config = await loadConfig(configPath);
+      expect(config.models.providers["deepseek"]?.apiKey).toBe("sk-explicit");
+    });
+
+    it("无环境变量且无 apiKey 时保持为空", async () => {
+      delete process.env.DEEPSEEK_API_KEY;
+      const configPath = path.join(tmpDir, "config.json");
+      await fs.writeFile(
+        configPath,
+        JSON.stringify({
+          models: {
+            providers: {
+              deepseek: { baseUrl: "https://api.deepseek.com/v1" },
+            },
+          },
+        }),
+        "utf-8",
+      );
+      const config = await loadConfig(configPath);
+      expect(
+        config.models.providers["deepseek"]?.apiKey || "",
+      ).toBe("");
     });
   });
 

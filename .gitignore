@@ -1,6 +1,22 @@
+# 依赖与构建产物
 node_modules/
 dist/
-.env
-*.log
-.DS_Store
 
+# 运行时配置与密钥
+.env
+.claude/settings.local.json
+
+# 日志与运行时 PID/构建缓存
+*.log
+.server.pid
+.server.log
+*.tsbuildinfo
+
+# 系统与编辑器
+.DS_Store
+.vscode/
+.idea/
+
+# Harness 内部工作树（不入仓）
+.claude/worktrees/
+tsconfig.tsbuildinfo

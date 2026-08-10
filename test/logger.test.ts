@@ -20,7 +20,11 @@ describe("日志系统", () => {
       const spy = vi.spyOn(console, "info").mockImplementation(() => {});
 
       log.info("hello");
-      expect(spy).toHaveBeenCalledWith("[my-module]", "hello");
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining("[my-module]"),
+        "hello",
+        "",
+      );
     });
 
     it("默认级别为 info 时，debug 不输出", () => {
@@ -51,7 +55,11 @@ describe("日志系统", () => {
       const spy = vi.spyOn(console, "debug").mockImplementation(() => {});
 
       log.debug("debug msg");
-      expect(spy).toHaveBeenCalledWith("[test]", "debug msg");
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining("[test]"),
+        "debug msg",
+        "",
+      );
     });
 
     it("error 级别只输出 error", () => {
@@ -74,10 +82,11 @@ describe("日志系统", () => {
       const spy = vi.spyOn(console, "info").mockImplementation(() => {});
 
       log.info("request", { method: "GET", url: "/api" });
-      expect(spy).toHaveBeenCalledWith("[test]", "request", {
-        method: "GET",
-        url: "/api",
-      });
+      expect(spy).toHaveBeenCalledWith(
+        expect.stringContaining("[test]"),
+        "request",
+        expect.stringContaining('"method":"GET"'),
+      );
     });
   });
 
