@@ -84,6 +84,11 @@ export interface ChatMessage {
   messageId?: string;
   /** 所属 run ID（P0+）。同一次发送的 user + assistant 消息共享。 */
   runId?: string;
+  /**
+   * 本地 overlay 等待 history 收敛的最低 revision。
+   * 即使 session 级索引因 TTL/cap 淘汰，也用于阻止旧 history 覆盖当前内容。
+   */
+  pendingPersistenceRevision?: number;
   /** 流式过程中的状态提示 */
   streamState?: 'thinking' | 'generating' | 'tool_executing' | 'done';
   /** 当前活动的工具调用计数 */
@@ -224,6 +229,10 @@ export interface SseUsageData {
 export interface SseDoneData {
   ok: boolean;
   streamId?: string;
+  runId?: string;
+  messageId?: string;
+  persistedRevision?: number;
+  deduplicated?: boolean;
 }
 
 export interface SseErrorData {

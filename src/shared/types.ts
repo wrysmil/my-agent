@@ -71,6 +71,11 @@ export type Message = {
   id?: string;
   /** 所属 run ID（P0+）。同一次发送的 user + assistant 消息共享。 */
   runId?: string;
+  /**
+   * 压缩后仅用于保留 clientMessageId 与原始 payload 的身份锚点。
+   * 身份锚点继续参与幂等校验，但不会投影给 provider 或计入上下文 token。
+   */
+  compactionIdentityAnchor?: boolean;
 };
 
 // ============================================================

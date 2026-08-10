@@ -39,6 +39,8 @@ export type SerializedMessage = {
   id?: string;
   /** 所属 run ID（P0+）。 */
   runId?: string;
+  /** 压缩后保留 clientMessageId/payload 的身份锚点，不进入模型上下文。 */
+  compactionIdentityAnchor?: boolean;
 };
 
 // ============================================================
@@ -105,6 +107,7 @@ export function messageToSerialized(msg: Message): SerializedMessage {
     ts: Date.now(),
     id: msg.id,
     runId: msg.runId,
+    compactionIdentityAnchor: msg.compactionIdentityAnchor,
   };
 }
 
@@ -120,6 +123,7 @@ export function serializedToMessage(sm: SerializedMessage): Message {
     turnId: sm.turnId,
     id: sm.id,
     runId: sm.runId,
+    compactionIdentityAnchor: sm.compactionIdentityAnchor,
   };
 }
 

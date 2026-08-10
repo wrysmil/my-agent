@@ -67,6 +67,8 @@ export const StreamMessageSchema = z.object({
   thinkingLevel: z.enum(["off", "low", "medium", "high"]).optional(),
   /** P0：浏览器生成的用户消息 UUID（幂等键）。 */
   clientMessageId: z.string().uuid().optional(),
+  /** P0：浏览器生成的 run UUID，用于前后端 SSE 事件身份校验对齐。 */
+  runId: z.string().uuid().optional(),
 });
 
 export type StreamMessageInput = z.infer<typeof StreamMessageSchema>;

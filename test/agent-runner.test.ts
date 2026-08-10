@@ -1,6 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 import { AgentRunner } from "../src/agent/runner.js";
 import { Session } from "../src/agent/session.js";
+import { PersistentSession } from "../src/agent/persistent-session.js";
 import { ProviderRegistry } from "../src/providers/registry.js";
 import { createConfig } from "../src/config/loader.js";
 import { defineTool } from "../src/tools/base.js";
@@ -84,6 +88,71 @@ describe("AgentRunner", () => {
       expect(result.meta.stopReason).toBe("end_turn");
       expect(result.meta.toolLoops).toBe(0);
       expect(result.meta.error).toBeUndefined();
+    });
+
+    it("调用方传入的 run/user/assistant ID 贯通到 session history", async () => {
+      const session = new Session();
+      const { runner, mockProvider } = createRunner({ session });
+      mockProvider.program({ kind: "text", text: "已收到" });
+      const runId = "11111111-1111-4111-8111-111111111111";
+      const clientMessageId = "22222222-2222-4222-8222-222222222222";
+      const assistantMessageId = "33333333-3333-4333-8333-333333333333";
+
+      await collectEvents(
+        runner.runStream({
+          message: "保持身份",
+          runId,
+          clientMessageId,
+          assistantMessageId,
+        }),
+      );
+
+      const messages = session.getAllMessages();
+      expect(messages).toHaveLength(2);
+      expect(messages[0]).toMatchObject({
+        role: "user",
+        id: clientMessageId,
+        runId,
+      });
+      expect(messages[1]).toMatchObject({
+        role: "assistant",
+        id: assistantMessageId,
+        runId,
+      });
+      expect(messages[1].content[0]).toMatchObject({
+        id: `${assistantMessageId}:0`,
+      });
+    });
+
+    it("completion nudge 多阶段持久化使用唯一 assistant ID，并在 done 返回实际终态 ID", async () => {
+      const session = new Session();
+      session.updateExecutionPlan({
+        steps: [{ step: "仍需验证", status: "pending" }],
+      });
+      const { runner, mockProvider } = createRunner({ session });
+      mockProvider.program(
+        { kind: "text", text: "先尝试结束" },
+        { kind: "text", text: "验证后结束" },
+      );
+      const assistantMessageId = "33333333-3333-4333-8333-333333333333";
+
+      const events = await collectEvents(
+        runner.runStream({
+          message: "完成计划",
+          assistantMessageId,
+        }),
+      );
+
+      const assistantMessages = session
+        .getAllMessages()
+        .filter((message) => message.role === "assistant");
+      expect(assistantMessages).toHaveLength(2);
+      expect(new Set(assistantMessages.map((message) => message.id)).size).toBe(2);
+      expect(assistantMessages[1].id).toBe(assistantMessageId);
+      expect(events.at(-1)).toMatchObject({
+        type: "done",
+        messageId: assistantMessageId,
+      });
     });
 
     it("多段文本通过 text_delta 事件流式输出", async () => {
@@ -590,8 +659,10 @@ describe("AgentRunner", () => {
         execute: async () => ({ content: "不应该看到这个" }),
       });
 
+      const session = new Session();
       const { runner, mockProvider } = createRunner({
         tools: [finishTool, extraTool],
+        session,
       });
 
       // 模型同时调用 finish（终止型）和 extra
@@ -618,6 +689,15 @@ describe("AgentRunner", () => {
       }
 
       expect(result.meta.error).toBeUndefined();
+      const finalPersistedAssistant = session
+        .getAllMessages()
+        .filter((message) => message.role === "assistant")
+        .at(-1);
+      expect(finalPersistedAssistant?.id).toBeTruthy();
+      expect(events.at(-1)).toMatchObject({
+        type: "done",
+        messageId: finalPersistedAssistant?.id,
+      });
     });
   });
 
@@ -792,6 +872,150 @@ describe("AgentRunner", () => {
       });
 
       expect(result.text).toBe("看到图片了");
+    });
+  });
+
+  describe("旧 turn 重试的自动压缩作用域", () => {
+    it("12k history 阈值不把目标旧 turn 当作可归档历史，重载后仍可按 client ID dedup", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "runner-history-target-turn-"));
+      try {
+        const session = PersistentSession.create(tmpDir);
+        const sessionId = session.sessionId;
+        const clientMessageId = "client-history-turn-1";
+        const largeTurn1Text = "H".repeat(52_000);
+        const turn1 = await session.beginUserTurn(
+          [{ type: "text", text: largeTurn1Text }],
+          { id: clientMessageId, runId: "run-history-initial" },
+        );
+        const turn2 = await session.beginUserTurn(
+          [{ type: "text", text: "turn 2 succeeds" }],
+          { id: "client-history-turn-2", runId: "run-history-turn-2" },
+        );
+        await session.addAssistantMessage(
+          [{ type: "text", text: "turn 2 answer" }],
+          { id: "assistant-history-turn-2", runId: "run-history-turn-2", turnId: turn2 },
+        );
+        session.completeActiveTurn("completed", turn2);
+        const turn2Before = session.getAllMessages().filter((message) => message.turnId === turn2);
+
+        const { runner, mockProvider } = createRunner({
+          session,
+          configOverrides: { maxRetries: 0 },
+        });
+        mockProvider.program(
+          { kind: "text", text: "S".repeat(6_000) },
+          { kind: "text", text: "turn 1 retry answer" },
+        );
+
+        const events = await collectEvents(runner.runStream({
+          message: largeTurn1Text,
+          clientMessageId,
+          runId: "run-history-retry",
+          assistantMessageId: "assistant-history-turn-1-final",
+        }));
+
+        expect(mockProvider.completeCalls).toHaveLength(0);
+        expect(events.filter((event) => event.type === "compaction")).toHaveLength(0);
+        expect(session.getAllMessages().filter((message) => message.turnId === turn2)).toEqual(turn2Before);
+        expect(
+          session.getAllMessages().some(
+            (message) => message.turnId === turn1 && message.id === clientMessageId,
+          ),
+        ).toBe(true);
+        expect(session.getCompletedTurnFinalAssistant(turn1)?.id)
+          .toBe("assistant-history-turn-1-final");
+        expect(new Set(session.getAllMessages().map((message) => message.id)).size)
+          .toBe(session.getAllMessages().length);
+
+        session.close();
+        const reloaded = PersistentSession.load(sessionId, tmpDir);
+        expect(reloaded?.checkUserTurnIdentity(
+          clientMessageId,
+          [{ type: "text", text: largeTurn1Text }],
+        )).toMatchObject({ status: "duplicate", turnId: turn1 });
+        expect(reloaded?.getCompletedTurnFinalAssistant(turn1)?.id)
+          .toBe("assistant-history-turn-1-final");
+        expect(reloaded?.getCompletedTurnFinalAssistant(turn2)?.id)
+          .toBe("assistant-history-turn-2");
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it("18k active checkpoint 仅压缩目标旧 turn，保留 client ID 与后续 turn completion", async () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "runner-checkpoint-target-turn-"));
+      try {
+        const session = PersistentSession.create(tmpDir);
+        const sessionId = session.sessionId;
+        const clientMessageId = "client-checkpoint-turn-1";
+        const largeTurn1Text = "A".repeat(76_000);
+        const turn1 = await session.beginUserTurn(
+          [{ type: "text", text: largeTurn1Text }],
+          { id: clientMessageId, runId: "run-checkpoint-initial" },
+        );
+        const turn2 = await session.beginUserTurn(
+          [{ type: "text", text: "turn 2 remains intact" }],
+          { id: "client-checkpoint-turn-2", runId: "run-checkpoint-turn-2" },
+        );
+        await session.addAssistantMessage(
+          [{ type: "text", text: "turn 2 answer" }],
+          { id: "assistant-checkpoint-turn-2", runId: "run-checkpoint-turn-2", turnId: turn2 },
+        );
+        session.completeActiveTurn("completed", turn2);
+        const turn2Before = session.getAllMessages().filter((message) => message.turnId === turn2);
+
+        const { runner, mockProvider } = createRunner({
+          session,
+          configOverrides: { maxRetries: 0 },
+        });
+        mockProvider.program(
+          { kind: "text", text: "checkpoint summary for turn 1" },
+          { kind: "text", text: "turn 1 retry answer" },
+        );
+
+        const events = await collectEvents(runner.runStream({
+          message: largeTurn1Text,
+          clientMessageId,
+          runId: "run-checkpoint-retry",
+          assistantMessageId: "assistant-checkpoint-turn-1-final",
+        }));
+
+        expect(events.filter((event) => event.type === "compaction")).toHaveLength(1);
+        expect(session.getAllMessages().filter((message) => message.turnId === turn2)).toEqual(turn2Before);
+        expect(
+          session.getAllMessages().some(
+            (message) => message.turnId === turn1 && message.id === clientMessageId,
+          ),
+        ).toBe(true);
+        expect(
+          session.getAllMessages().some(
+            (message) =>
+              message.turnId === turn1 &&
+              message.content.some(
+                (block) =>
+                  block.type === "text" &&
+                  block.text.includes("[Active checkpoint summary"),
+              ),
+          ),
+        ).toBe(true);
+        expect(session.getCompletedTurnFinalAssistant(turn1)?.id)
+          .toBe("assistant-checkpoint-turn-1-final");
+        expect(new Set(session.getAllMessages().map((message) => message.id)).size)
+          .toBe(session.getAllMessages().length);
+
+        session.close();
+        const reloaded = PersistentSession.load(sessionId, tmpDir);
+        expect(reloaded?.checkUserTurnIdentity(
+          clientMessageId,
+          [{ type: "text", text: largeTurn1Text }],
+        )).toMatchObject({ status: "duplicate", turnId: turn1 });
+        expect(reloaded?.getCompletedTurnFinalAssistant(turn1)?.id)
+          .toBe("assistant-checkpoint-turn-1-final");
+        expect(reloaded?.getCompletedTurnFinalAssistant(turn2)?.id)
+          .toBe("assistant-checkpoint-turn-2");
+      } finally {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
     });
   });
 

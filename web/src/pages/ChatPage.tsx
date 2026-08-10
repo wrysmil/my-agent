@@ -421,11 +421,10 @@ export function ChatPage() {
           </div>
         </div>
       ) : (
-        // ⚠️ min-h-0 + flex flex-col 让 MessageList（flex-1 overflow-y-auto）
-        // 真正撑满剩余高度并可滚动；否则外层 flex-1 overflow-hidden
-        // 加上中间 wrapper 没设 flex，会让 MessageList 的滚动失效。
+        // MessageList 需要被 flex 容器约束高度才能 overflow-y-auto 滚动；
+        // 中间 wrapper 必须也是 flex flex-col min-h-0。
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden animate-fade-in">
-          <div className="flex-1 min-h-0 max-w-[860px] mx-auto w-full">
+          <div className="flex-1 min-h-0 flex flex-col max-w-[860px] mx-auto w-full">
             <MessageList key={sessionId} messages={messages} status={status} />
           </div>
         </div>

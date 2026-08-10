@@ -99,6 +99,125 @@ describe("PersistentSession", () => {
     expect(lines[2]).toContain("call_1");
   });
 
+  it("同一 clientMessageId 与相同 payload 重复 begin 只写一条用户 JSONL", async () => {
+    const session = PersistentSession.create(dir);
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    const content = [{ type: "text" as const, text: "idempotent payload" }];
+
+    const firstTurnId = await session.beginUserTurn(content, {
+      id: clientMessageId,
+      runId: "22222222-2222-4222-8222-222222222222",
+    });
+    const duplicateTurnId = await session.beginUserTurn(content, {
+      id: clientMessageId,
+      runId: "33333333-3333-4333-8333-333333333333",
+    });
+
+    const records = fs
+      .readFileSync(path.join(dir, `${session.sessionId}.jsonl`), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id?: string; role: string });
+    expect(duplicateTurnId).toBe(firstTurnId);
+    expect(records.filter((record) => record.id === clientMessageId)).toHaveLength(1);
+  });
+
+  it("同一 clientMessageId 与不同文本或附件 payload 明确拒绝", async () => {
+    const session = PersistentSession.create(dir);
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    await session.beginUserTurn([
+      { type: "text", text: "same text" },
+      {
+        type: "image",
+        data: "first-image",
+        mediaType: "image/png",
+      },
+    ], { id: clientMessageId });
+
+    await expect(session.beginUserTurn([
+      { type: "text", text: "same text" },
+      {
+        type: "image",
+        data: "different-image",
+        mediaType: "image/png",
+      },
+    ], { id: clientMessageId })).rejects.toThrow(/clientMessageId.*conflict/i);
+
+    expect(session.getAllMessages().filter((message) => message.id === clientMessageId))
+      .toHaveLength(1);
+  });
+
+  it("不同 session 可以复用同一 clientMessageId", async () => {
+    const first = PersistentSession.create(dir);
+    const second = PersistentSession.create(dir);
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    const content = [{ type: "text" as const, text: "same payload" }];
+
+    await first.beginUserTurn(content, { id: clientMessageId });
+    await second.beginUserTurn(content, { id: clientMessageId });
+
+    expect(first.getAllMessages().filter((message) => message.id === clientMessageId))
+      .toHaveLength(1);
+    expect(second.getAllMessages().filter((message) => message.id === clientMessageId))
+      .toHaveLength(1);
+  });
+
+  it("重载 JSONL 后仍按 clientMessageId 幂等", async () => {
+    const created = PersistentSession.create(dir);
+    const sessionId = created.sessionId;
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    const content = [{ type: "text" as const, text: "persisted idempotency" }];
+    const firstTurnId = await created.beginUserTurn(content, { id: clientMessageId });
+    created.close();
+
+    const reloaded = PersistentSession.load(sessionId, dir)!;
+    const duplicateTurnId = await reloaded.beginUserTurn(content, {
+      id: clientMessageId,
+    });
+    const records = fs
+      .readFileSync(path.join(dir, `${sessionId}.jsonl`), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id?: string });
+
+    expect(duplicateTurnId).toBe(firstTurnId);
+    expect(records.filter((record) => record.id === clientMessageId)).toHaveLength(1);
+  });
+
+  it("旧调用方未传 clientMessageId 时相同 payload 仍创建两个轮次", async () => {
+    const session = PersistentSession.create(dir);
+    const content = [{ type: "text" as const, text: "legacy caller" }];
+
+    const firstTurnId = await session.beginUserTurn(content);
+    const secondTurnId = await session.beginUserTurn(content);
+    const userMessages = session.getAllMessages().filter(
+      (message) => message.role === "user",
+    );
+
+    expect(secondTurnId).toBe(firstTurnId + 1);
+    expect(userMessages).toHaveLength(2);
+    expect(userMessages[0].id).not.toBe(userMessages[1].id);
+  });
+
+  it("failed turn 即使有部分 assistant 也不能作为 completed dedup 结果", async () => {
+    const session = PersistentSession.create(dir);
+    const sessionId = session.sessionId;
+    const turnId = await session.beginUserTurn(
+      [{ type: "text", text: "failed request" }],
+      { id: "11111111-1111-4111-8111-111111111111" },
+    );
+    await session.addAssistantMessage(
+      [{ type: "text", text: "partial response" }],
+      { id: "22222222-2222-4222-8222-222222222222" },
+    );
+    session.completeActiveTurn("failed");
+
+    expect(session.getCompletedTurnFinalAssistant(turnId)).toBeUndefined();
+    session.close();
+    const reloaded = PersistentSession.load(sessionId, dir)!;
+    expect(reloaded.getCompletedTurnFinalAssistant(turnId)).toBeUndefined();
+  });
+
   // ============================================================
   // 加载和恢复
   // ============================================================

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { apiGet, apiPost } from '../../src/lib/api';
+import { useChatRuntimeStore } from '../../src/features/chat/chatRuntimeStore';
 
 describe('api', () => {
   it('GET /api/sessions returns unwrapped data', async () => {
@@ -28,6 +29,11 @@ describe('api', () => {
 describe('useChatStream history reload on sessionId change', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    useChatRuntimeStore.setState({
+      sessions: {},
+      runs: {},
+      _accessOrder: [],
+    });
   });
 
   it('should reset historyLoaded and reload when sessionId changes', async () => {
@@ -59,7 +65,7 @@ describe('useChatStream history reload on sessionId change', () => {
     await waitFor(() => expect(result.current.historyLoaded).toBe(true));
     expect(fetchSpy).toHaveBeenCalledWith(
       '/api/sessions/session-2/history',
-      expect.objectContaining({ credentials: 'same-origin' })
+      expect.objectContaining({ method: 'GET' })
     );
   });
 });

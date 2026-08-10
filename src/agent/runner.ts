@@ -1286,6 +1286,7 @@ export class AgentRunner {
     provider: LLMProvider,
     modelId: string,
     _cacheRetention: string | undefined,
+    targetTurnId: number,
     compactionControl: CompactionControl,
     recordUsage: (usage: Usage) => void,
     incrementCompactionCount: () => void,
@@ -1294,7 +1295,7 @@ export class AgentRunner {
     const ACTIVE_THRESHOLD = 18000;
 
     // 第一层：历史摘要
-    const historyCandidate = this.session.getPendingHistoryArchive();
+    const historyCandidate = this.session.getPendingHistoryArchive(targetTurnId);
     if (historyCandidate && historyCandidate.rawTokens > HISTORY_THRESHOLD) {
       const fp = `history:${historyCandidate.turnIds.join(",")}`;
       if (!compactionControl.attemptedFingerprints.has(fp)) {
@@ -1323,9 +1324,9 @@ export class AgentRunner {
     }
 
     // 第二层：活动检查点
-    const activeCandidate = this.session.getPendingActiveCheckpoint();
+    const activeCandidate = this.session.getPendingActiveCheckpoint(targetTurnId);
     if (activeCandidate && activeCandidate.rawTokens > ACTIVE_THRESHOLD) {
-      const fp = `active:${compactionControl.epochs}`;
+      const fp = `active:${targetTurnId}:${compactionControl.epochs}`;
       if (!compactionControl.attemptedFingerprints.has(fp)) {
         compactionControl.attemptedFingerprints.add(fp);
         const summary = await this.summarizeContextMessages(
@@ -1334,7 +1335,11 @@ export class AgentRunner {
           activeCandidate,
         );
         if (summary) {
-          this.session.applyActiveCheckpointSummary(summary.text, compactionControl.epochs);
+          this.session.applyActiveCheckpointSummary(
+            summary.text,
+            compactionControl.epochs,
+            targetTurnId,
+          );
           recordUsage(summary.usage);
           incrementCompactionCount();
           compactionControl.epochs++;
@@ -1370,6 +1375,7 @@ export class AgentRunner {
     const turnIdSet = new Set(candidate.turnIds);
     const messages = this.session
       .getAllMessages()
+      .filter((message) => !message.compactionIdentityAnchor)
       .filter((m) => m.turnId !== undefined && turnIdSet.has(m.turnId))
       .map((m) => ({
         role: m.role,
@@ -1578,7 +1584,8 @@ export class AgentRunner {
   ): AsyncIterable<AgentRunEvent> {
     // ---- Phase 1: 初始化 ----
     // WU-09：run 级标识 —— 同一次发送的 user + assistant 消息共享
-    const runId = randomUUID();
+    const runId = params.runId ?? randomUUID();
+    const assistantMessageId = params.assistantMessageId ?? randomUUID();
     const userContent: MessageContent[] = [{ type: "text", text: params.message }];
     if (params.images) {
       for (const img of params.images) {
@@ -1586,11 +1593,14 @@ export class AgentRunner {
       }
     }
 
-    const turnId = await this.session.beginUserTurn(userContent, { runId });
+    const targetTurnId = await this.session.beginUserTurn(userContent, {
+      id: params.clientMessageId,
+      runId,
+    });
     for (const resource of params.historyResources ?? []) {
       this.session.addHistoryResource({
         ...resource,
-        sourceTurnId: resource.sourceTurnId ?? turnId,
+        sourceTurnId: resource.sourceTurnId ?? targetTurnId,
       });
     }
 
@@ -1657,6 +1667,7 @@ export class AgentRunner {
         const compactionStart = Date.now();
         yield* this.prepareContextBeforeModelCall(
           provider, modelId, params.cacheRetention,
+          targetTurnId,
           compactionControl,
           (usage) => { lastUsageRef.value = mergeUsage(lastUsageRef.value, usage); },
           () => { compactionCountRef.current++; },
@@ -1689,9 +1700,12 @@ export class AgentRunner {
           model: modelId,
           messages: withRequestScopedControls(
             this.session.getMessagesForModel(
-              effectiveTurnEphemeral
-                ? { turnContext: effectiveTurnEphemeral }
-                : undefined,
+              {
+                ...(effectiveTurnEphemeral
+                  ? { turnContext: effectiveTurnEphemeral }
+                  : {}),
+                turnId: targetTurnId,
+              },
             ),
             requestControls,
           ),
@@ -1791,48 +1805,60 @@ export class AgentRunner {
         if (streamThinking && !finalContent.some((c) => c.type === "thinking")) {
           finalContent = [{ type: "thinking", thinking: streamThinking }, ...finalContent];
         }
-        // WU-09：为 assistant 消息生成稳定 id / runId，并为内容块补充稳定 id
+        // WU-09：最终 assistant 使用调用方传入的稳定 ID；工具中间消息使用独立 ID。
         // text/thinking: `{messageId}:{index}`；tool_use: 保留其已有 id；tool_result: `result:{toolUseId}`
-        const assistantMessageId = randomUUID();
+        const toolCalls = finalContent.filter(
+          (c): c is ToolUseContent => c.type === "tool_use",
+        );
+        const turnText = textFromContent(finalContent);
+        let terminalSteer: string[] = [];
+        let unfinished: string[] = [];
+        let shouldSendCompletionNudge = false;
+        if (toolCalls.length === 0) {
+          terminalSteer = this.drainSteer(params);
+          if (terminalSteer.length === 0) {
+            unfinished = unfinishedExecutionPlanStepLabels(
+              this.session.getExecutionPlan(),
+            );
+            shouldSendCompletionNudge =
+              unfinished.length > 0 &&
+              !hasExplicitTerminalBoundary(turnText) &&
+              !terminalCompletionNudgeSentRef.value;
+          }
+        }
+        const isTerminalAssistant =
+          toolCalls.length === 0 &&
+          terminalSteer.length === 0 &&
+          !shouldSendCompletionNudge;
+        const persistedAssistantMessageId =
+          isTerminalAssistant ? assistantMessageId : randomUUID();
         finalContent = finalContent.map((block, index) => {
           if (block.type === "tool_use") return block;
           if (block.type === "tool_result") {
             return { ...block, id: `result:${block.toolUseId}` };
           }
           if (block.type === "image") return block; // image 无 id 字段
-          return { ...block, id: `${assistantMessageId}:${index}` };
+          return { ...block, id: `${persistedAssistantMessageId}:${index}` };
         });
         await this.session.addAssistantMessage(finalContent, {
-          id: assistantMessageId,
+          id: persistedAssistantMessageId,
           runId,
+          turnId: targetTurnId,
         });
 
-        const turnText = textFromContent(finalContent);
-
         // 2i. 提取 tool_use 调用
-        const toolCalls = finalContent.filter(
-          (c): c is ToolUseContent => c.type === "tool_use",
-        );
-
         // 2j. 无 tool_calls → 检查是否真的完成
         if (toolCalls.length === 0) {
           // Interrupt-Steer：排空排队的用户消息
-          const terminalSteer = this.drainSteer(params);
           if (terminalSteer.length > 0) {
-            this.session.completeActiveTurn();
+            this.session.completeActiveTurn(undefined, targetTurnId);
             await this.appendSteerMessages(terminalSteer, true);
             attempt = -1;
             continue;
           }
 
           // 提前完成拒绝
-          const plan = this.session.getExecutionPlan();
-          const unfinished = unfinishedExecutionPlanStepLabels(plan);
-          if (
-            unfinished.length > 0 &&
-            !hasExplicitTerminalBoundary(turnText) &&
-            !terminalCompletionNudgeSentRef.value
-          ) {
+          if (shouldSendCompletionNudge) {
             terminalCompletionNudgeSentRef.value = true;
             pendingRequestControls.push(
               `You indicated completion but ${unfinished.length} plan step(s) remain: ` +
@@ -1853,8 +1879,12 @@ export class AgentRunner {
             transientToolErrors: transientToolErrorsRef.value,
             permanentToolErrors: permanentToolErrorsRef.value,
           });
-          this.session.completeActiveTurn();
-          yield { type: "done", result: final };
+          this.session.completeActiveTurn(undefined, targetTurnId);
+          yield {
+            type: "done",
+            result: final,
+            messageId: persistedAssistantMessageId,
+          };
           return;
         }
 
@@ -1879,6 +1909,10 @@ export class AgentRunner {
           terminalCompletionNudgeSentRef,
           terminalRef,
           startTime, turnText, streamModel,
+          persistedAssistantMessageId,
+          terminalAssistantMessageId: assistantMessageId,
+          runId,
+          targetTurnId,
         });
 
         // 成功完成工具循环 → 重置重试计数（除非 executeToolLoop 已终止）
@@ -2026,6 +2060,10 @@ export class AgentRunner {
     startTime: number;
     turnText: string;
     streamModel: string;
+    persistedAssistantMessageId: string;
+    terminalAssistantMessageId: string;
+    runId: string;
+    targetTurnId: number;
   }): AsyncIterable<AgentRunEvent> {
     const { toolCalls, params, provider, modelId, systemPrompt } = input;
 
@@ -2096,9 +2134,13 @@ export class AgentRunner {
         transientToolErrors: input.transientToolErrorsRef.value,
         permanentToolErrors: input.permanentToolErrorsRef.value,
       });
-      this.session.completeActiveTurn();
+      this.session.completeActiveTurn(undefined, input.targetTurnId);
       input.terminalRef.value = true;
-      yield { type: "done", result: final };
+      yield {
+        type: "done",
+        result: final,
+        messageId: input.persistedAssistantMessageId,
+      };
       return;
     }
 
@@ -2116,7 +2158,10 @@ export class AgentRunner {
         `Tool loop round limit (${input.maxToolLoops}) reached. ` +
         "No further tool calls will be executed in this turn.";
       for (const call of toolCalls) {
-        await this.session.addToolResult(call.id, skippedMessage, true);
+        await this.session.addToolResult(call.id, skippedMessage, true, {
+          turnId: input.targetTurnId,
+          runId: input.runId,
+        });
       }
 
       // 最终无工具 LLM 调用生成摘要
@@ -2128,6 +2173,9 @@ export class AgentRunner {
         params: input.params,
         maxToolLoops: input.maxToolLoops,
         toolLoops: input.toolLoopsRef.current,
+        messageId: input.terminalAssistantMessageId,
+        runId: input.runId,
+        targetTurnId: input.targetTurnId,
       });
       return;
     }
@@ -2141,6 +2189,7 @@ export class AgentRunner {
     // ---- 5e. 执行工具 ----
     let endTurnRequested = false;
     let terminalBatchIndex = -1;
+    let terminalToolResultText: string | undefined;
     const terminalSkipMessage =
       "A prior terminal tool ended this turn before this tool could run.";
 
@@ -2163,7 +2212,10 @@ export class AgentRunner {
         if (!tool) {
           const msg = `Unknown tool: ${call.name}`;
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
-          await this.session.addToolResult(call.id, msg, true);
+          await this.session.addToolResult(call.id, msg, true, {
+            turnId: input.targetTurnId,
+            runId: input.runId,
+          });
           recordToolObservation(input.recentToolObservations, call.name, msg, true);
           input.permanentToolErrorsRef.value++;
           yield {
@@ -2211,7 +2263,10 @@ export class AgentRunner {
 
         // 持久化结果（使用 capToolResult 处理后的内容）
         await this.session.addToolResult(
-          call.id, capped.content, capped.isError,
+          call.id, capped.content, capped.isError, {
+            turnId: input.targetTurnId,
+            runId: input.runId,
+          },
         );
         recordToolObservation(
           input.recentToolObservations,
@@ -2243,6 +2298,7 @@ export class AgentRunner {
         if (!outcome.aborted && !outcome.stalled && !outcome.err && capped.endTurn) {
           endTurnRequested = true;
           terminalBatchIndex = batchIndex;
+          terminalToolResultText = capped.content;
           break;
         }
       } else {
@@ -2315,7 +2371,10 @@ export class AgentRunner {
           // 对 unknown tool（无 capped），直接取 outcome.result
           const result = capped ?? outcome.result;
           await this.session.addToolResult(
-            call.id, result.content, result.isError,
+            call.id, result.content, result.isError, {
+              turnId: input.targetTurnId,
+              runId: input.runId,
+            },
           );
           recordToolObservation(
             input.recentToolObservations,
@@ -2343,6 +2402,7 @@ export class AgentRunner {
 
           if (!outcome.aborted && !outcome.stalled && !outcome.err && result.endTurn) {
             endTurnRequested = true;
+            terminalToolResultText ??= result.content;
           }
         }
 
@@ -2358,7 +2418,10 @@ export class AgentRunner {
       for (let i = terminalBatchIndex + 1; i < batches.length; i++) {
         for (const call of batches[i]) {
           yield { type: "tool_start", name: call.name, id: call.id, input: call.input };
-          await this.session.addToolResult(call.id, terminalSkipMessage, true);
+          await this.session.addToolResult(call.id, terminalSkipMessage, true, {
+            turnId: input.targetTurnId,
+            runId: input.runId,
+          });
           yield {
             type: "tool_end", name: call.name, id: call.id,
             result: terminalSkipMessage, isError: true, durationMs: 0,
@@ -2366,8 +2429,19 @@ export class AgentRunner {
         }
       }
 
+      const terminalContent: MessageContent[] = [{
+        type: "text",
+        text: terminalToolResultText ?? input.turnText,
+        id: `${input.terminalAssistantMessageId}:0`,
+      }];
+      await this.session.addAssistantMessage(terminalContent, {
+        id: input.terminalAssistantMessageId,
+        runId: input.runId,
+        turnId: input.targetTurnId,
+      });
       const final = this.buildResult({
-        text: input.turnText, content: [],
+        text: terminalToolResultText ?? input.turnText,
+        content: terminalContent,
         startTime: input.startTime, modelId: input.streamModel,
         provider: input.provider, stopReason: "end_turn",
         usage: input.lastUsageRef.value, toolLoops: input.toolLoopsRef.current,
@@ -2376,9 +2450,13 @@ export class AgentRunner {
         transientToolErrors: input.transientToolErrorsRef.value,
         permanentToolErrors: input.permanentToolErrorsRef.value,
       });
-      this.session.completeActiveTurn();
+      this.session.completeActiveTurn(undefined, input.targetTurnId);
       input.terminalRef.value = true;
-      yield { type: "done", result: final };
+      yield {
+        type: "done",
+        result: final,
+        messageId: input.terminalAssistantMessageId,
+      };
       return;
     }
 
@@ -2428,11 +2506,14 @@ export class AgentRunner {
     params: AgentRunParams;
     maxToolLoops: number;
     toolLoops: number;
+    messageId: string;
+    runId: string;
+    targetTurnId: number;
   }): AsyncIterable<AgentRunEvent> {
     const finalStream = input.provider.stream({
       model: input.modelId,
       messages: withRequestScopedControls(
-        this.session.getMessagesForModel(),
+        this.session.getMessagesForModel({ turnId: input.targetTurnId }),
         [buildToolLoopLimitSummaryPrompt({
           maxToolLoops: input.maxToolLoops,
           toolLoops: input.toolLoops,
@@ -2454,9 +2535,21 @@ export class AgentRunner {
       }
     }
 
+    const summaryContent: MessageContent[] = [{
+      type: "text",
+      text: summaryText,
+      id: `${input.messageId}:0`,
+    }];
+    await this.session.addAssistantMessage(summaryContent, {
+      id: input.messageId,
+      runId: input.runId,
+      turnId: input.targetTurnId,
+    });
+    this.session.completeActiveTurn(undefined, input.targetTurnId);
+
     const result = this.buildResult({
       text: summaryText,
-      content: [{ type: "text", text: summaryText }],
+      content: summaryContent,
       startTime: Date.now(),
       modelId: input.modelId,
       provider: input.provider,
@@ -2469,7 +2562,7 @@ export class AgentRunner {
       transientToolErrors: 0,
       permanentToolErrors: 0,
     });
-    yield { type: "done", result };
+    yield { type: "done", result, messageId: input.messageId };
   }
 }
 
