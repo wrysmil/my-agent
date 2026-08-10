@@ -481,6 +481,69 @@ describe('chat session stream isolation regressions', () => {
     expect(store.getSession('A')?.messages[0]?.messageId).toBe('newer');
   });
 
+  it('restores one assistant bubble for a persisted tool-loop run', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(historyResponse('A', 4, [
+      {
+        id: 'user-a',
+        role: 'user',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{ id: 'user-a:0', type: 'text', text: 'question' }],
+      },
+      {
+        id: 'assistant-tool-step',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [
+          { id: 'thinking-a', type: 'thinking', thinking: 'researching' },
+          { id: 'tool-a', type: 'tool_use', name: 'web_fetch', input: {} },
+        ],
+      },
+      {
+        id: 'tool-result-row',
+        role: 'user',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{
+          id: 'result:tool-a',
+          type: 'tool_result',
+          toolUseId: 'tool-a',
+          name: 'web_fetch',
+          content: 'result',
+        }],
+      },
+      {
+        id: 'assistant-final',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{ id: 'assistant-final:0', type: 'text', text: 'final answer' }],
+      },
+    ]));
+
+    const { result } = renderHook(() => useChatStream('A'));
+    await waitFor(() => expect(result.current.historyLoaded).toBe(true));
+
+    expect(result.current.messages).toHaveLength(2);
+    expect(result.current.messages[0]).toMatchObject({
+      role: 'user',
+      text: 'question',
+    });
+    expect(result.current.messages[1]).toMatchObject({
+      id: 'hist-assistant-final',
+      role: 'assistant',
+      runId: 'run-a',
+      messageId: 'assistant-final',
+    });
+    expect(result.current.messages[1].blocks.map((block) => block.type)).toEqual([
+      'thinking',
+      'tool_call',
+      'tool_result',
+      'text',
+    ]);
+  });
+
   it('removes orphan runs when a session is removed and bounds terminal run metadata', () => {
     const store = useChatRuntimeStore.getState();
     store.ensureSession('A');

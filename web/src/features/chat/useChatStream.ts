@@ -163,33 +163,71 @@ function parseHistoryBlocks(
 }
 
 function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
-  return rawMessages.map((m) => {
-    const role = m.role === 'user' ? ('user' as const) : ('assistant' as const);
-    if (role === 'user') {
-      const text = Array.isArray(m.content)
-        ? m.content
-            .filter((block) => block.type === 'text')
-            .map((block) => block.text || '')
-            .join('\n')
-        : '';
-      return {
+  const messages: ChatMessage[] = [];
+  const assistantIndexByRun = new Map<string, number>();
+
+  for (const m of rawMessages) {
+    const content = Array.isArray(m.content) ? m.content : [];
+    const isToolResultRow =
+      m.role === 'user' &&
+      content.length > 0 &&
+      content.every((block) => block.type === 'tool_result');
+
+    if (m.role === 'user' && !isToolResultRow) {
+      messages.push({
         id: `hist-${m.id ?? Date.now().toString(36)}`,
-        role,
+        role: 'user',
         blocks: [],
-        text,
+        text: content
+          .filter((block) => block.type === 'text')
+          .map((block) => block.text || '')
+          .join('\n'),
         clientMessageId: m.id,
         messageId: m.id,
         runId: m.runId,
-      };
+      });
+      continue;
     }
-    return {
+
+    // PersistentSession 按模型调用分别保存 assistant/tool_result 行，
+    // UI 则以一次发送为一个气泡。新记录用 runId，旧 JSONL 回退到 turnId。
+    const groupKey = m.runId
+      ? `run:${m.runId}`
+      : m.turnId !== undefined
+        ? `turn:${m.turnId}`
+        : null;
+    const blocks = parseHistoryBlocks(m);
+    const existingIndex =
+      groupKey === null ? undefined : assistantIndexByRun.get(groupKey);
+
+    if (existingIndex !== undefined) {
+      const existing = messages[existingIndex];
+      const isAssistantRow = m.role !== 'user';
+      messages[existingIndex] = {
+        ...existing,
+        ...(isAssistantRow && m.id
+          ? { id: `hist-${m.id}`, messageId: m.id }
+          : {}),
+        runId: m.runId ?? existing.runId,
+        blocks: [...existing.blocks, ...blocks],
+      };
+      continue;
+    }
+
+    const message: ChatMessage = {
       id: `hist-${m.id ?? Date.now().toString(36)}`,
-      role,
-      blocks: parseHistoryBlocks(m),
-      messageId: m.id,
+      role: 'assistant',
+      blocks,
+      messageId: m.role === 'assistant' ? m.id : undefined,
       runId: m.runId,
     };
-  });
+    messages.push(message);
+    if (groupKey !== null) {
+      assistantIndexByRun.set(groupKey, messages.length - 1);
+    }
+  }
+
+  return messages;
 }
 
 /**
