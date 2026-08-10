@@ -1,0 +1,62 @@
+- generic [ref=f3e4]:
+  - complementary [ref=f3e5]:
+    - link "新建会话" [ref=f3e7] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+    - link "新建会话 Ctrl K" [ref=f3e9] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+      - generic [ref=f3e10]:
+        - generic [ref=f3e11]: 新建会话
+        - generic [ref=f3e16]:
+          - generic [ref=f3e17]: Ctrl
+          - generic [ref=f3e18]: K
+    - generic [ref=f3e19]:
+      - region "Primary Navigation" [ref=f3e20]:
+        - generic [ref=f3e21]:
+          - link "插件" [ref=f3e22] [cursor=pointer]:
+            - /url: /plugins
+          - link "定时任务" [ref=f3e30] [cursor=pointer]:
+            - /url: /tasks
+          - link "集群" [ref=f3e42] [cursor=pointer]:
+            - /url: /agent-swarm
+          - link "PPT" [ref=f3e680] [cursor=pointer]:
+            - /url: /slides
+          - link "深度研究" [ref=f3e690] [cursor=pointer]:
+            - /url: /deep-research
+          - button "收起" [expanded] [ref=f3e700] [cursor=pointer]
+        - generic [ref=f3e716]:
+          - link "网站" [ref=f3e717] [cursor=pointer]:
+            - /url: /websites
+          - link "文档" [ref=f3e726] [cursor=pointer]:
+            - /url: /docs
+          - link "表格" [ref=f3e734] [cursor=pointer]:
+            - /url: /sheets
+          - link "设计" [ref=f3e742] [cursor=pointer]:
+            - /url: /design
+          - link "Kimi Work Beta" [ref=f3e752] [cursor=pointer]:
+            - /url: https://www.kimi.com/products/kimi-work
+            - generic [ref=f3e934]:
+              - generic [ref=f3e935]: Kimi Work
+              - generic "Beta" [ref=f3e936]
+          - link "Kimi Code" [ref=f3e937] [cursor=pointer]:
+            - /url: /code?from=kimi_homepage_sidebar
+          - generic [ref=f3e947]:
+            - button "Kimi Claw" [ref=f3e948] [cursor=pointer]
+            - button "添加 Claw"
+      - region [ref=f3e956]:
+        - button "项目" [expanded] [ref=f3e958] [cursor=pointer]
+        - button "新建项目" [ref=f3e966] [cursor=pointer]
+      - region "对话" [ref=f3e973]:
+        - button "登录以同步历史会话" [ref=f3e981] [cursor=pointer]
+    - generic [ref=f3e984]:
+      - button "登录" [ref=f3e985] [cursor=pointer]
+      - button "获取应用程序" [ref=f3e997] [cursor=pointer]
+  - generic [ref=f3e1002]:
+    - generic "展开导航" [ref=f3e1006] [cursor=pointer]
+    - generic [ref=f3e1024]:
+      - generic [ref=f3e1026]:
+        - textbox [active] [ref=f3e1027]:
+          - paragraph [ref=f3e1028]
+        - generic: 尽管问，或做个 Agent 任务...
+      - generic [ref=f3e1030]:
+        - generic [ref=f3e1032] [cursor=pointer]
+        - generic [ref=f3e1035]: 深度研究

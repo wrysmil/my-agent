@@ -1,0 +1,82 @@
+- generic [ref=f9e4]:
+  - complementary [ref=f9e5]:
+    - link "新建会话" [ref=f9e7] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+    - link "新建会话 Ctrl K" [ref=f9e9] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+      - generic [ref=f9e10]:
+        - generic [ref=f9e11]: 新建会话
+        - generic [ref=f9e16]:
+          - generic [ref=f9e17]: Ctrl
+          - generic [ref=f9e18]: K
+    - generic [ref=f9e19]:
+      - region "Primary Navigation" [ref=f9e20]:
+        - generic [ref=f9e21]:
+          - link "插件" [ref=f9e22] [cursor=pointer]:
+            - /url: /plugins
+          - link "定时任务" [ref=f9e30] [cursor=pointer]:
+            - /url: /tasks
+          - link "集群" [ref=f9e42] [cursor=pointer]:
+            - /url: /agent-swarm
+          - link "PPT" [ref=f9e680] [cursor=pointer]:
+            - /url: /slides
+          - link "深度研究" [ref=f9e690] [cursor=pointer]:
+            - /url: /deep-research
+          - button "收起" [expanded] [ref=f9e700] [cursor=pointer]
+        - generic [ref=f9e716]:
+          - link "网站" [ref=f9e717] [cursor=pointer]:
+            - /url: /websites
+          - link "文档" [ref=f9e726] [cursor=pointer]:
+            - /url: /docs
+          - link "表格" [ref=f9e734] [cursor=pointer]:
+            - /url: /sheets
+          - link "设计" [ref=f9e742] [cursor=pointer]:
+            - /url: /design
+          - link "Kimi Work Beta" [ref=f9e752] [cursor=pointer]:
+            - /url: https://www.kimi.com/products/kimi-work
+            - generic [ref=f9e934]:
+              - generic [ref=f9e935]: Kimi Work
+              - generic "Beta" [ref=f9e936]
+          - link "Kimi Code" [ref=f9e937] [cursor=pointer]:
+            - /url: /code?from=kimi_homepage_sidebar
+          - generic [ref=f9e947]:
+            - button "Kimi Claw" [ref=f9e948] [cursor=pointer]
+            - button "添加 Claw"
+      - region [ref=f9e956]:
+        - button "项目" [expanded] [ref=f9e958] [cursor=pointer]
+        - button "新建项目" [ref=f9e966] [cursor=pointer]
+      - region "对话" [ref=f9e973]:
+        - button "登录以同步历史会话" [ref=f9e981] [cursor=pointer]
+    - generic [ref=f9e984]:
+      - button "登录" [ref=f9e985] [cursor=pointer]
+      - button "获取应用程序" [ref=f9e997] [cursor=pointer]
+  - generic [ref=f9e1003]:
+    - generic [ref=f9e1004]:
+      - generic:
+        - generic "展开导航" [ref=f9e1008] [cursor=pointer]
+        - generic [ref=f9e1021]:
+          - generic [ref=f9e1023]:
+            - generic [ref=f9e1025]:
+              - textbox [active] [ref=f9e1026]:
+                - paragraph [ref=f9e1027]
+              - generic: 尽管问，或做个 Agent 任务...
+            - generic [ref=f9e1031] [cursor=pointer]
+          - navigation "发布器快捷入口" [ref=f9e1038]:
+            - generic [ref=f9e1041]:
+              - link "集群" [ref=f9e1042] [cursor=pointer]:
+                - /url: /agent-swarm
+              - link "PPT" [ref=f9e1680] [cursor=pointer]:
+                - /url: /slides
+              - link "深度研究" [ref=f9e1690] [cursor=pointer]:
+                - /url: /deep-research
+              - link "网站" [ref=f9e1700] [cursor=pointer]:
+                - /url: /websites
+              - link "文档" [ref=f9e1709] [cursor=pointer]:
+                - /url: /docs
+              - link "表格" [ref=f9e1717] [cursor=pointer]:
+                - /url: /sheets
+              - link "设计" [ref=f9e1725] [cursor=pointer]:
+                - /url: /design
+    - button "探索灵感 滑动探索" [ref=f9e1744] [cursor=pointer]:
+      - generic [ref=f9e1745]: 探索灵感
+      - generic [ref=f9e1750]: 滑动探索

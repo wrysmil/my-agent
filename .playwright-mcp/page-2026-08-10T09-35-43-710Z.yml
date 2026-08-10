@@ -1,0 +1,111 @@
+- generic [ref=f14e2]:
+  - paragraph [ref=f14e3]: Run Trace 过程面板 · 静态草图
+  - paragraph [ref=f14e4]:
+    - text: 对齐 rev.2 方案与 Kimi 时间线布局；配色取自项目
+    - code [ref=f14e5]: globals.css
+    - text: "token（Inter / primary #6c5ce7）。以下为 4 种状态并列展示，纯静态。"
+  - generic [ref=f14e6]: 状态 A · 运行中（自动展开，显示当前动作与已完成步骤）
+  - generic [ref=f14e7]:
+    - generic [ref=f14e8]: 帮我设计一下旅游页面，平潭
+    - generic [ref=f14e12]:
+      - button "正在搜索网页… 6 步 · 3 个工具 · 00:18" [ref=f14e13] [cursor=pointer]:
+        - generic [ref=f14e15]: 正在搜索网页…
+        - generic [ref=f14e16]: 6 步 · 3 个工具 · 00:18
+      - list [ref=f14e20]:
+        - listitem [ref=f14e21]:
+          - generic [ref=f14e23] [cursor=pointer]:
+            - generic [ref=f14e24]: 分析任务
+            - generic [ref=f14e25]: 拆解页面信息架构与交互
+            - generic [ref=f14e26]: 已完成
+        - listitem [ref=f14e27]:
+          - generic [ref=f14e31] [cursor=pointer]:
+            - generic [ref=f14e32]: 搜索网页
+            - generic [ref=f14e33]: “平潭 旅游攻略 2026 蓝眼泪 景点 美食”
+            - generic [ref=f14e34]: 11 个结果
+        - listitem [ref=f14e37]:
+          - generic [ref=f14e41] [cursor=pointer]:
+            - generic [ref=f14e42]: 获取网页
+            - generic [ref=f14e43]: sspai.com/post/…
+            - generic [ref=f14e44]: 1 个网页
+        - listitem [ref=f14e47]:
+          - generic [ref=f14e49] [cursor=pointer]:
+            - generic [ref=f14e50]: 思考已完成
+            - generic [ref=f14e51]: 整理蓝眼泪观测期与北线景点
+            - generic [ref=f14e52]: 查看
+        - listitem [ref=f14e55]:
+          - generic [ref=f14e58] [cursor=pointer]:
+            - generic [ref=f14e59]: 运行 Python 代码
+            - generic [ref=f14e60]: 生成景点概率图数据
+            - generic [ref=f14e61]: 执行中…
+  - generic [ref=f14e63]: 状态 B · 完成（默认折叠为一行摘要，最终答案在容器外）
+  - generic [ref=f14e66]:
+    - button "已完成研究 12 步 · 5 个工具 · 8 个来源 · 01:42" [ref=f14e68] [cursor=pointer]:
+      - generic [ref=f14e71]: 已完成研究
+      - generic [ref=f14e72]: 12 步 · 5 个工具 · 8 个来源 · 01:42
+    - generic [ref=f14e75]:
+      - heading "平潭岛旅游页面设计建议" [level=3] [ref=f14e76]
+      - paragraph [ref=f14e77]:
+        - text: 建议首屏用一张全宽蓝眼泪夜景做 hero，叠加“最佳观测期 4–8 月”标签；下方按
+        - strong [ref=f14e78]: 北线风光
+        - text: 与
+        - strong [ref=f14e79]: 南线人文
+        - text: 分两个 Tab 组织景点卡片。
+      - paragraph [ref=f14e80]: 正文脱离过程容器，保持最高视觉权重；过程仅为可核验的次要信息。
+      - generic [ref=f14e81]:
+        - button "复制" [ref=f14e82] [cursor=pointer]
+        - button "查看 8 个来源" [ref=f14e83] [cursor=pointer]
+  - generic [ref=f14e85]: 状态 C · 完成且展开（工具行可二次展开看详情，无内部滚动）
+  - generic [ref=f14e88]:
+    - generic [ref=f14e89]:
+      - button "已完成研究 12 步 · 5 个工具 · 01:42" [ref=f14e90] [cursor=pointer]:
+        - generic [ref=f14e93]: 已完成研究
+        - generic [ref=f14e94]: 12 步 · 5 个工具 · 01:42
+      - list [ref=f14e98]:
+        - listitem [ref=f14e99]:
+          - generic [ref=f14e101] [cursor=pointer]:
+            - generic [ref=f14e102]: 分析任务
+            - generic [ref=f14e103]: 明确目标与页面结构
+            - generic [ref=f14e104]: 已完成
+        - listitem [ref=f14e105]:
+          - generic [ref=f14e109] [cursor=pointer]:
+            - generic [ref=f14e110]: 搜索网页
+            - generic [ref=f14e111]: “平潭 蓝眼泪 出现概率 月份”
+            - generic [ref=f14e112]: 11 个结果
+          - generic [ref=f14e115]: "query: 平潭 蓝眼泪 出现概率 月份 maxChars: 8000 命中: 11 · 采用前 3 来源: sspai.com · mafengwo.cn · 平潭文旅"
+        - listitem [ref=f14e116]:
+          - generic [ref=f14e120] [cursor=pointer]:
+            - generic [ref=f14e121]: 获取网页
+            - generic [ref=f14e122]: /app/.agents/skills/kimi-widget/SKILL.md
+            - generic [ref=f14e123]: 1 个网页
+        - listitem [ref=f14e126]:
+          - generic [ref=f14e128] [cursor=pointer]:
+            - generic [ref=f14e129]: 思考已完成
+            - generic [ref=f14e130]: 确定用 CSS 变量映射设计系统
+            - generic [ref=f14e131]: 查看
+        - listitem [ref=f14e134]:
+          - generic [ref=f14e138] [cursor=pointer]:
+            - generic [ref=f14e139]: 运行 Python 代码
+            - generic [ref=f14e140]: 生成蓝眼泪概率条形数据
+            - generic [ref=f14e141]: 已执行
+        - listitem [ref=f14e144]:
+          - generic [ref=f14e146] [cursor=pointer]:
+            - generic [ref=f14e147]: 整理回答
+            - generic [ref=f14e148]: 输出页面结构与组件建议
+            - generic [ref=f14e149]: 已完成
+    - generic [ref=f14e150]:
+      - heading "平潭岛旅游页面设计建议" [level=3] [ref=f14e151]
+      - paragraph [ref=f14e152]: Hero + 蓝眼泪概率图 + 北线/南线 Tab + 景点卡片网格。
+  - generic [ref=f14e154]: 状态 D · 失败与中止（图标+文字双通道，不靠颜色单独表达）
+  - generic [ref=f14e157]:
+    - button "完成，但有 1 个步骤失败 9 步 · 4 个工具 · 已自动重试 1 次" [ref=f14e159] [cursor=pointer]:
+      - generic [ref=f14e163]: 完成，但有 1 个步骤失败
+      - generic [ref=f14e164]: 9 步 · 4 个工具 · 已自动重试 1 次
+    - button "已停止 · 保留 5 个步骤 5 步 · 2 个工具 · 00:07" [ref=f14e168] [cursor=pointer]:
+      - generic [ref=f14e172]: 已停止 · 保留 5 个步骤
+      - generic [ref=f14e173]: 5 步 · 2 个工具 · 00:07
+  - paragraph [ref=f14e176]:
+    - text: 说明：本文件为静态视觉草图，不含真实交互逻辑，也未接入 blocks 数据；实现时由
+    - code [ref=f14e177]: RunTracePanel
+    - text: 从现有
+    - code [ref=f14e178]: message.blocks
+    - text: 派生。

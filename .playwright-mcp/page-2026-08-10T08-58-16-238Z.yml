@@ -1,0 +1,744 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - generic [ref=f5e4]:
+      - link [ref=f5e5] [cursor=pointer]:
+        - /url: /
+        - img "人人都是产品经理" [ref=f5e6]
+      - navigation [ref=f5e7]:
+        - list [ref=f5e8]:
+          - listitem [ref=f5e9]:
+            - link "首页" [ref=f5e10] [cursor=pointer]:
+              - /url: https://www.woshipm.com/
+          - listitem [ref=f5e11]:
+            - link "培训课程" [ref=f5e12] [cursor=pointer]:
+              - /url: javascript:;
+            - text:    hot
+          - listitem [ref=f5e13]:
+            - link "分类浏览" [ref=f5e14] [cursor=pointer]:
+              - /url: javascript:;
+          - listitem [ref=f5e17]:
+            - link "活动讲座" [ref=f5e18] [cursor=pointer]:
+              - /url: /category/active
+          - listitem [ref=f5e19]:
+            - link "问答" [ref=f5e20] [cursor=pointer]:
+              - /url: https://wen.woshipm.com/
+          - listitem [ref=f5e21]:
+            - link "企业培训" [ref=f5e22] [cursor=pointer]:
+              - /url: https://daxue.qidianla.com/
+          - listitem [ref=f5e23]:
+            - link "AI社区" [ref=f5e24] [cursor=pointer]:
+              - /url: https://www.aixq.cc
+          - listitem [ref=f5e25]:
+            - link "摸鱼" [ref=f5e26] [cursor=pointer]:
+              - /url: /fish
+          - listitem [ref=f5e27]:
+            - link "HarmonyOS" [ref=f5e28] [cursor=pointer]:
+              - /url: /harmony
+      - generic [ref=f5e29]:
+        - link "搜索" [ref=f5e30] [cursor=pointer]:
+          - /url: https://api.woshipm.com/search/list.html
+        - generic [ref=f5e33] [cursor=pointer]: APP
+        - generic [ref=f5e36] [cursor=pointer]
+        - generic [ref=f5e38]: 发布
+        - generic [ref=f5e44] [cursor=pointer]: 注册 | 登录
+  - generic [ref=f5e47]:
+    - link [ref=f5e49] [cursor=pointer]:
+      - /url: https://ke.qidianla.com/courses/bcpm
+    - generic [ref=f5e51]:
+      - generic [ref=f5e52]:
+        - generic [ref=f5e53]:
+          - heading "Kimi-Researcher首秀：这一波“深度研究”，打出了王者归来的气势" [level=2] [ref=f5e54]
+          - generic [ref=f5e55]:
+            - link [ref=f5e57] [cursor=pointer]:
+              - /url: https://www.woshipm.com/u/1622361
+            - generic [ref=f5e58]:
+              - generic [ref=f5e59]:
+                - link "Simonlin" [ref=f5e60] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/u/1622361
+                - button "关注" [ref=f5e62] [cursor=pointer]
+              - generic [ref=f5e63]:
+                - time [ref=f5e64]: 2025-06-30
+                - generic [ref=f5e65]:
+                  - text: 0 评论
+                  - generic [ref=f5e66]: ·
+                  - text: 3897 浏览
+                  - generic [ref=f5e67]: ·
+                  - text: 0 收藏
+                  - generic [ref=f5e68]: ·
+                  - generic [ref=f5e69]: 25 分钟
+          - link "一年内持续更新前沿案例，直播答疑+作业点评+项目带练，让你的AI产品学习不再停留在概念和工具体验。" [ref=f5e71] [cursor=pointer]:
+            - /url: https://ke.qidianla.com/courses/aipmtc
+          - generic [ref=f5e72]:
+            - generic [ref=f5e73]:
+              - paragraph [ref=f5e74]
+              - paragraph [ref=f5e76]: 最近有个问题，一直在困扰着我：为什么杭州和北京的AI公司那么多，而其他地方的相对就更少呢？
+              - paragraph [ref=f5e77]: 正好当时我申请内测的Agent通过了，于是我就用它跑了一个深度研究的任务，然后就电脑就挂在那，干别的事情去了。
+              - paragraph [ref=f5e78]: 当我再次点开它的界面之后，任务已经完成了，还为我生成了一份可视化的报告：
+              - paragraph [ref=f5e79]
+              - paragraph [ref=f5e81]: 这是那份报告的头图。
+              - paragraph [ref=f5e82]: 讲真的，看到这张图片的那一刻，我脑中浮现了两个字——
+              - paragraph [ref=f5e83]: “精彩”。
+              - heading "一、Kimi的荣耀与滑铁卢" [level=2] [ref=f5e84]
+              - paragraph [ref=f5e85]: 如果你问我，国产AI这么多，哪一款让我最觉得可惜，我会告诉你，是Kimi。
+              - paragraph [ref=f5e86]: 在早期，这个AI是我使用的最多，也认为是最好用的。
+              - paragraph [ref=f5e87]: 无他，因为它的长文本处理能力，在2024年的国产大模型中，堪称顶流。
+              - paragraph [ref=f5e88]: 2023年10月，Kimi AI首次亮相，它主打的20万字上下文长度在当时已经是一个足够惊艳的数字。之后的几个月里，Kimi AI 的月活跃用户（MAU）持续增长，从50万到298万，从2023年12月到2024年2月，只用了3个月时间。
+              - paragraph [ref=f5e89]: 而它背后的公司——月之暗面，也开始走入人们的视野。
+              - paragraph [ref=f5e90]: 2024年3月，月之暗面宣布Kimi支持200万字的无损上下文输入，引起了一波轰动，在5个月时间内，上下文长度提升10倍，同时也引起了同行在长文本领域的“内卷”，各大互联网厂商纷纷跟进，开启了“军备竞赛”式的竞争,Kimi也及时在B站投流，实现了用户的快速增长。
+              - paragraph [ref=f5e91]: 之后的几个月里，Kimi的月活跃用户持续攀升，到2024年11月，据创始人杨植麟所说，已经达到了3600万。
+              - paragraph [ref=f5e92]: 按理说，如此猛的势头，Kimi应该继续牛逼下去，直到“封神”。
+              - paragraph [ref=f5e93]: 可是，在2025年，Kimi却遭遇了它最为强力的竞争对手。
+              - paragraph [ref=f5e94]: 2025年初，DeepSeek（深度求索）横空出世，凭借开源+强大的技术实力，直接打击了包括Kimi在内的一众竞品。
+              - paragraph [ref=f5e95]: 2025年3月，DeepSeek月活跃用户数达到1.94亿，位居AI原生APP榜首，而Kimi的月活跃用户则是从顶峰时期的3600万下滑到了1830万，位居第四。
+              - paragraph [ref=f5e96]: 在国内AI用户甚至是普通民众的口中，“DeepSeek”成为了大家口中频繁出现的词汇，AI顶流的代名词，直到今天。
+              - paragraph [ref=f5e97]: 而Kimi呢？
+              - paragraph [ref=f5e98]: 仿佛它的高光时刻，已经过去，沦为了众多新兴AI的垫脚石。
+              - paragraph [ref=f5e99]: 我个人就有很深的体会，说实话，我已经很久没有点开Kimi的网页或者APP了。
+              - paragraph [ref=f5e100]: 去年3月，Kimi风光无限，今年3月，Kimi却没能够再次震撼世界。
+              - paragraph [ref=f5e101]: 然而，在AI圈大战没落下帷幕的时候，乾坤未定，一切皆有可能。
+              - paragraph [ref=f5e102]: 6月20号，月之暗面官方发布的一篇文章，让我忍不住感叹：原来不是Kimi握不动刀了，而是它拿起了板砖！
+              - heading "二、Kimi-Researcher，专为深度研究而生的Agent" [level=2] [ref=f5e103]
+              - heading "1、你是否也有同感？" [level=3] [ref=f5e104]
+              - paragraph [ref=f5e105]: GDR（Google DeepResearch）一直是我很喜欢用的一个产品，动辄输出十多页、二十多页的报告，总让我有种莫名的“量大管饱”的满足感…
+              - list [ref=f5e106]:
+                - listitem [ref=f5e107]: · 不过，如果要说它有什么地方有待改进的话，作为资深用户，我还是能提几个出来的：对网络环境要求极高…大家都知道，由于Gemini是国外的AI，所以如果要使用它的话，不得不用些特殊手段，这点就在无形当中制造了门槛；
+                - listitem [ref=f5e108]: · 当你发出指令的时候，它会先列出执行步骤给你确认，但是假如我们自己都没想清楚，那自然也没有办法进行修正，这种感觉，就像点外卖的时候没选择“需要餐具”一样尴尬…
+                - listitem [ref=f5e109]: · 它开始干活的时候，真的是很严格地在按照流程来执行，但是有时候太“按规矩办事”，反而失去了一些灵动感，毕竟…哪位老板希望自己的员工只像老黄牛一样吭哧吭哧地埋头苦干呢…
+              - paragraph [ref=f5e110]: 但是这丝毫不影响我对Gemini的爱，充其量只是相当于，喜欢的女孩脸上长了青春痘，虽然影响了美貌，但是无伤大雅…
+              - paragraph [ref=f5e111]: 不过总是有些遗憾。
+              - heading "2、Kimi-Researcher，来了。" [level=3] [ref=f5e112]
+              - paragraph [ref=f5e113]: 上周五，朋友群里转发了一篇来自Kimi官方的公众号文章，就讲了一件事——他们发布了一款专门为了深度研究而生的Agent，并且现在开始了内测。
+              - paragraph [ref=f5e114]: 这一下，好像平静的水面投入了一颗巨石，激起千层浪…群炸了。
+              - paragraph [ref=f5e115]: 我也在第一时间就申请了内测。
+              - paragraph [ref=f5e116]: 我也忘了是多久，反正就不超过一天的时间，当我再次点进Kimi官网的时候，输入框下面就出现了一个“深度研究”的按钮。
+              - paragraph [ref=f5e117]: 最近AI的活动贼多，群里几乎每天都能收到“某某AI举办活动，地址在北京/杭州”这样的消息。
+              - paragraph [ref=f5e118]: 每次有朋友说自己要去的时候，我内心都涌现出一堆很复杂的情绪，总结两个字：“羡慕”。
+              - paragraph [ref=f5e119]: 所以，我稍加思索之后，就输入了这段话：
+              - paragraph [ref=f5e120]: 引用可靠来源，经过多角度，多维度的分析，告诉我以下答案：
+              - paragraph [ref=f5e121]: 为什么AI公司基本都开在北京和杭州？
+              - paragraph [ref=f5e122]: Kimi给我的回复是这样的：
+              - paragraph [ref=f5e123]
+              - paragraph [ref=f5e125]: 我们可以看到，它不是着急干活，而是要先向我确认我的具体需求。
+              - paragraph [ref=f5e126]: 这一步骤，叫做“澄清问题”。是当它理解问题时，主动反问，向用户做确认，有的放矢。
+              - paragraph [ref=f5e127]: 其实我很怕麻烦，如果可以，我真想要的是当一名“甩手掌柜”，完全不插手，不参与。
+              - paragraph [ref=f5e128]: 但是这明显不太可能。
+              - paragraph [ref=f5e129]: 因为一旦我真的当了甩手掌柜，那么结果就完全不是我可以控制的，甚至可能输出一份与我的要求不符合的报告，不仅白白浪费时间，还给自己找罪受….
+              - paragraph [ref=f5e130]: 但是如果你要我说出个一二三来，准确表达我的需求，这又有点为难我了。
+              - paragraph [ref=f5e131]: Kimi-Researcher直接像一名称职的助理一样，直接列出需要关注的点，让我自己选择，有了这一步操作，起码能够保证这份报告具有一定的聚焦。
+              - paragraph [ref=f5e132]: 然后，我就告诉它：
+              - paragraph [ref=f5e133]
+              - paragraph [ref=f5e135]: 其实这一步我是感觉有些惊讶的。
+              - paragraph [ref=f5e136]: 因为我自己都没注意到，我提出的“AI公司”这个概念太庞大了，但是Kimi注意到了，并且还向我发起了提问。
+              - paragraph [ref=f5e137]: 那在之后的时间里，我原本应该去干自己的事儿，坐等报告就好，但是奈何Kimi Research执行任务的过程太精彩了，比小说还好看，一下子就吸引了我的眼球。
+              - paragraph [ref=f5e138]: 直到这里，我才想起，Kimi-Research，它就是一个Agent啊！
+              - paragraph [ref=f5e139]
+              - paragraph [ref=f5e141]: Kimi-Research并没有选择一条道走到黑——只关注在这些特定问题上不懂变通，而是学会了自己思考。
+              - paragraph [ref=f5e142]: 这个部分，是它的深入思考：能够自主梳理并理解需求，在这当中，我们只需要帮助它锚定需要聚焦的点就可以，其他的让其自由发挥。
+              - paragraph [ref=f5e143]: 我们同样，也能看到，它其实是有在提取关键词，根据关键词进行搜索的，而且它能够筛选，把那些信息质量高的来源主动摘取出来，作为报告的引用源。
+              - paragraph [ref=f5e144]: 而这，是它任务步骤中的“主动搜索”。
+              - paragraph [ref=f5e145]: 它在不需要人工干预的情况下，经过推理之后自行采取更加合理的策略，使用更加高质量的搜索来源。
+              - paragraph [ref=f5e146]: 在经过不算太漫长的等待，大约5分钟左右之后，这份由我+Kimi-Research共同撰写的研究报告就完成了。
+              - paragraph [ref=f5e147]: 在这过程中，它出现了明显的自主性，调用合适的工具完成任务，交付结果。
+              - paragraph [ref=f5e148]: 随之输出的，不仅是一份文字报告，还有一份网页的可视化报告。
+              - paragraph [ref=f5e149]: 仔细看这份文字报告，它不止有文字，它还在每个引用的地方标注了参考来源。当我们点击文字旁边的方块后，在右侧会跳转到对应的引用内容，并且对于它引用的部分，还进行了高亮处理。
+              - paragraph [ref=f5e150]
+              - paragraph [ref=f5e152]: 点进它引用的文章，跳转页面，我们又能看到一个细节：
+              - paragraph [ref=f5e153]
+              - paragraph [ref=f5e155]: 它从哪段开始引用的，在来源的网页里，也给你标出来了。
+              - paragraph [ref=f5e156]: 仿佛真的是一名严谨专业的研究员。
+              - paragraph [ref=f5e157]: 而且….
+              - paragraph [ref=f5e158]: 我写论文的时候，也没有这么严谨好吧。
+              - paragraph [ref=f5e159]: 真正的做到了“可溯源”，确保了信息来源的可靠性。
+              - paragraph [ref=f5e160]: 在以前，为了防止AI随意杜撰，捏造一些不存在的网页，我都会在提示词上加一段：“引用可靠的来源，不要随意杜撰”。
+              - paragraph [ref=f5e161]: 但是现在，完全不需要了。
+              - paragraph [ref=f5e162]: 因为Kimi会自己帮助你验证这些网站的可靠性，这就是它“懂我们没说的”。
+              - paragraph [ref=f5e163]: 完整的文字报告太长了，我就不放了，大家可以在评论区回复，我会私发给你。
+              - paragraph [ref=f5e164]: 可视化报告如下：
+              - paragraph [ref=f5e165]: 网页链接：https://www.kimi.com/preview/d1e1ln9sfuve986n5brg?blockId=18
+              - paragraph [ref=f5e166]: 在这个网页里，我们能看到，它的左边是有目录的，点击就能够跳转到对应章节。而且对于有需要的地方，它能够帮你绘制表格，形状，而且样式还特别精美，保证你看了之后不会想打瞌睡。
+              - paragraph [ref=f5e167]
+              - paragraph [ref=f5e169]: 只因你…你的报告，你做主。
+              - paragraph [ref=f5e170]: 考虑到大家的观感…请点击上面的网页移步观看，记得回来，因为精彩的内容，才刚刚开始。
+              - heading "三、案例测试" [level=2] [ref=f5e171]
+              - paragraph [ref=f5e172]: 之后，我又跑了好几个案例，我将它的问题澄清部分和我的回复都放在下面，是不是够强大，有没有严格遵循我的指令，交给朋友们来评判，如果你要文字版本，欢迎在评论区留言：
+              - heading "1、提示词的输入对AI输出结果的决定作用" [level=3] [ref=f5e173]
+              - paragraph [ref=f5e174]: 提示词：提示词的输入对于AI的输出结果起到怎么样的作用？请参考可靠的信息来源，从多方查证后，为我输出一份深度研究的报告。
+              - paragraph [ref=f5e175]: Kimi确认需求：
+              - paragraph [ref=f5e176]
+              - paragraph [ref=f5e178]: 我的回复：
+              - paragraph [ref=f5e179]
+              - paragraph [ref=f5e181]: 生成的可视化网页：https://www.kimi.com/preview/d1e2pvope77i9aeu4itg?blockId=52
+              - heading "2、那艺娜为什么还能这么火？" [level=3] [ref=f5e182]
+              - paragraph [ref=f5e183]: 提示词：
+              - blockquote [ref=f5e184]:
+                - paragraph [ref=f5e185]: 那艺娜明明被拆穿了俄罗斯人的身份，为什么现在还那么火？
+              - paragraph [ref=f5e186]: Kimi确认需求：
+              - paragraph [ref=f5e187]
+              - paragraph [ref=f5e189]: 我的回复：
+              - paragraph [ref=f5e190]
+              - paragraph [ref=f5e192]: 生成的可视化网页：https://www.kimi.com/preview/d1e2ujo52cekgv1uhep0?blockId=18
+              - heading "3、Kimi从发布到今天的月活用户变化" [level=3] [ref=f5e193]
+              - paragraph [ref=f5e194]: 提示词：
+              - blockquote [ref=f5e195]:
+                - paragraph [ref=f5e196]: Kimi AI发展情况是怎么样的？它的月活用户量变动情况如何？未来它有可能怎么样发展？请从Kimi的发布时间开始算起，直到今天2025年6月24日，参考可靠来源， 从多视角、多维度进行深度研究，为我生成报告。
+              - paragraph [ref=f5e197]: Kimi确认需求：
+              - paragraph [ref=f5e198]
+              - paragraph [ref=f5e200]: 我的回复：
+              - paragraph [ref=f5e201]
+              - paragraph [ref=f5e203]: 生成的可视化网页：https://www.kimi.com/preview/d1e36njlmiuf20s294n0?blockId=38
+              - paragraph [ref=f5e204]
+              - paragraph [ref=f5e206]: 在这当中，Kimi-Research出现了一个很有意思的行为：它在没有任何干预的情况下，察觉到了代码存在问题，所以果断放弃了代码，选择了直接撰写报告。
+              - paragraph [ref=f5e207]: 具体为什么会这样？
+              - paragraph [ref=f5e208]: 所谓“知其然知其所以然”，在研读了月之暗面发布的技术解析博客后，我想试试看，用大家能听得懂的语言，来为大家讲解，在发起任务到完成交付的过程中，Kimi的这个Agent，用了怎么样的技术，如果有不完全的地方，请大家见谅哈~
+              - heading "四、技术原理解析" [level=2] [ref=f5e209]
+              - heading "1、端到端自主强化学习" [level=3] [ref=f5e210]
+              - paragraph [ref=f5e211]: 首先，我们应该知道，什么是“端到端”，指的是“用户输入”到“交付结果”中间，没有任何的人工干预，也不出现既定的套路模板，而是由Agent自行完成。Open AI的深度研究也采用了这样的方式。
+              - paragraph [ref=f5e212]: 其次，“自主强化学习”，指的是模型能够自动调用相关的工具，并且根据任务的进度能够自行判断哪个工具最为合适，不依赖我们的提示词，自己就能够走完全程。
+              - heading "2、奖励机制" [level=3] [ref=f5e213]
+              - paragraph [ref=f5e214]: 这是强化学习中很重要的一个概念。它能够帮助模型分辨“好”与“不好”。
+              - paragraph [ref=f5e215]: 为什么会这样？
+              - paragraph [ref=f5e216]: 在一开始的时候，就由人工进行标注，让人类为模型的回答打分。
+              - paragraph [ref=f5e217]: 例如，面对“今晚去哪里吃饭”这个问题，模型给出的回答是“去找家餐厅吧”，对这个回答给予高分；而对“去厕所”这个回答给予低分，这样就得到了原始的标注好的数据。
+              - paragraph [ref=f5e218]: 再根据标注好的数据，来训练一名“打分员”（奖励模型），让模型自己来判断好与不好。每次生成回答后，“打分员”会对回答进行打分，模型再根据回答调整自己的解题思路（参数），这个过程中，模型的回答会越来越偏向于人类满意的回答，这个过程就叫“强化学习”。
+              - paragraph [ref=f5e219]: 而在Kimi-Researcher中，使用的奖励机制是两种：
+              - list [ref=f5e220]:
+                - listitem [ref=f5e221]: · 格式奖励：每当模型的操作不符合“操作手册”的规范，它就会被扣钱（获得负奖励），从而帮助它的操作具有规范性和有效性，变成一名听话的好员工。
+                - listitem [ref=f5e222]: · 正确性奖励：基于格式奖励，对于模型符合操作规范的情况，将它最终输出的答案与标准答案进行比较，这就促使它的每一步都是为了产生更好的。
+              - paragraph [ref=f5e223]: 然而，对于操作流程完全正确，答案符合标准的两条答复，路径较短、更高效的回答，会在一开始就能够得到奖励，从而帮助模型能够更加有效率的完成任务。
+              - heading "3、上下文管理" [level=3] [ref=f5e224]
+              - paragraph [ref=f5e225]: 对于更复杂、流程更繁琐的任务，模型引入了上下文管理的方法，它就像聪明的学生，并不是每条消息都去记，而是会选择更重要的，丢弃不必要的，从而有选择性地去记忆，这样就能获取更多信息，实现更高的性能。
+              - heading "4、并行工具调用" [level=3] [ref=f5e226]
+              - paragraph [ref=f5e227]: 为了完成任务，Kimi-Researcher携带了三样工具。
+              - list [ref=f5e228]:
+                - listitem [ref=f5e229]: · 并行的实时内部搜索工具：可以同时发起多个请求，缩短信息检索的时间，从而更高效地找到答案，如果任务需要大量背景信息、专业知识，或者是某些特定的数据，这个工具是很关键的。
+                - listitem [ref=f5e230]: · 用于交互式网页任务，基于文本的浏览器工具：它会模拟人类在网页上的操作，例如点击链接、提取特定区域的内容，使得模型能够在一些交互式的网页中提取数据。
+                - listitem [ref=f5e231]: · 用于自动执行代码的编码工具：还记得刚刚截图里我们看到的使用python编码的操作吗？它就是来自于这个编码工具，它赋予了模型计算能力和数据处理能力，可以运行python代码，对于收集到的数据进行分析和处理。
+              - paragraph [ref=f5e232]: 而这三个工具，都被放置在端到端的自主强化学习框架下，供模型自己选择什么时候用什么工具，能够更好完成任务。
+              - heading "五、怎么样才能用上？" [level=2] [ref=f5e233]
+              - paragraph [ref=f5e234]: 目前，Kimi官网已经开放了对Kimi-Research的内测申请。
+              - paragraph [ref=f5e235]: 电脑进入Kimi官方网站：https://www.kimi.com/
+              - paragraph [ref=f5e236]: 在输入框下方，点击“申请Kimi Research内测”：
+              - paragraph [ref=f5e237]
+              - paragraph [ref=f5e239]: 现在通过的时间应该蛮快的，不会超过半天，你填写的手机号会收到一条短信，告诉你申请通过。
+              - paragraph [ref=f5e240]: 再次进入官网，你会发现，输入框里多了一个按钮：
+              - paragraph [ref=f5e241]
+              - paragraph [ref=f5e243]: 这就说明你已经可以用Kimi-Research，为你完成任务了。
+              - paragraph [ref=f5e244]: 需要注意的是，每个月20次使用额度，别一不小心就用完了~
+              - paragraph [ref=f5e245]: Kimi-Research虽好，可别贪用哦~
+              - paragraph [ref=f5e246]: 谁需要Kimi-Research？
+              - paragraph [ref=f5e247]: 如果你是一名学生，你可以用它来帮你搞懂复杂难懂的概念，让Kimi来当你的老师，陪伴你在学习道路上过五关斩六将；
+              - paragraph [ref=f5e248]: 如果你是数据分析从业者，那就更好办了——Kimi会帮你自动筛除掉那些无用的、低质量的信源，采用高质量的、有效的，对你需要整合的数据进行深入分析；
+              - paragraph [ref=f5e249]: 如果你是一名学术研究人员，或者正在撰写学术论文，你可以让Kimi来帮你查找可靠的资料，省去你辛苦跑知网、维普、万方，查找、阅读论文的时间；
+              - paragraph [ref=f5e250]: 如果你是酷爱冲浪的选手，你也可以用Kimi，轻松得知一个梗的前世今生，就像我用它来分析为什么那艺娜会那么火的原因一样，让你轻松踩在浪潮前端，打破信息差，不掉队。
+              - paragraph [ref=f5e251]: ….
+              - paragraph [ref=f5e252]: 更多好玩的场景，等你来发现。
+              - heading "六、Kimi，尚能饭否？" [level=2] [ref=f5e253]
+              - paragraph [ref=f5e254]: 在以上的内容中，我们一起跑了几个任务，但是我心中仍旧有所怀疑，那就是：它和传统意义上的深度研究，区别在哪？官方说它是一个Agent，真的做到了吗？
+              - paragraph [ref=f5e255]: 于是，我把这个问题扔给了ChatGPT。
+              - paragraph [ref=f5e256]
+              - paragraph [ref=f5e258]: 它对于Agent的定义，有点意思。
+              - paragraph [ref=f5e259]: ChatGPT认为，合格的Agent应该做到五个方面，将单词“Agent”拆分开来：
+              - paragraph [ref=f5e260]: 🐏
+              - paragraph [ref=f5e261]: A-G-E-N-T
+              - paragraph [ref=f5e262]: Awareness（有感知）:能识别用户意图，哪怕用户没说，它也能做得好。能理解上下文，也能看懂网页，读懂文档。
+              - paragraph [ref=f5e263]: Goal-oriented（有目标）：并不是像无头苍蝇一样到处乱转，而是有着清晰的结果导向，并且为了达到目标，而调用自身一切的资源。
+              - paragraph [ref=f5e264]: Execution（能行动）：能操作工具，完成任务。
+              - paragraph [ref=f5e265]: Navigation（能规划路径）：不只是将大目标拆分为子任务，而是有规划的去执行，不墨守成规。
+              - paragraph [ref=f5e266]: Tuning（能自我调整）：面对查询到的数据有冲突，策略有错误的时候，它不钻牛角尖，而是自己做决定，选择更好的方案。
+              - paragraph [ref=f5e267]: 那从这一点看来，Kimi发布的首个Agent，确实成了。
+              - paragraph [ref=f5e268]: 为什么Kimi的第一个Agent，要做Researcher，这个看似好像没有必要再继续扩展的赛道？
+              - paragraph [ref=f5e269]: 官方的一句话，让我泪目：
+              - paragraph [ref=f5e270]
+              - paragraph [ref=f5e272]: 并且，在不久的将来，Kimi-Researcher 的基础预训练模型以及其背后的强化学习模型，会被开源出来，让我们每个人都实现“研究自由”。
+              - paragraph [ref=f5e273]: Kimi，尚能饭否？
+              - paragraph [ref=f5e274]: 答案是：能！并且肯定会继续变好。
+              - paragraph [ref=f5e275]: 让我们期待，Kimi重现辉煌的那一天。
+              - paragraph [ref=f5e276]: 感谢你的观看，如果你觉得这篇文章有帮到你，是我的荣幸~
+              - paragraph [ref=f5e277]: 欢迎点赞、推荐、转发给你那还在为了论文、为了报告而焦头烂额的朋友。
+              - paragraph [ref=f5e278]: 如果你也用Kimi-Researcher整了更好玩的活，欢迎在评论区分享~
+              - generic [ref=f5e279]:
+                - paragraph [ref=f5e280]: 本文由 @ Simonlin（公众号同名）原创投稿或授权发布于人人都是产品经理。未经作者许可，禁止转载
+                - paragraph [ref=f5e281]: 题图来自 Unsplash，基于CC0协议，该文观点仅代表作者本人。
+            - generic [ref=f5e282]:
+              - button "赞赏" [ref=f5e283] [cursor=pointer]
+              - button "收藏" [ref=f5e286] [cursor=pointer]
+              - button "点赞" [ref=f5e290] [cursor=pointer]
+          - generic [ref=f5e294]: 更多精彩内容，请关注人人都是产品经理微信公众号或下载App
+          - link [ref=f5e296] [cursor=pointer]:
+            - /url: https://ke.qidianla.com/courses/bcpm
+          - generic [ref=f5e298]:
+            - generic [ref=f5e299]:
+              - link "# Kimi" [ref=f5e300] [cursor=pointer]:
+                - /url: https://www.woshipm.com/tag/kimi
+              - link "# 产品分析" [ref=f5e301] [cursor=pointer]:
+                - /url: https://www.woshipm.com/tag/%e4%ba%a7%e5%93%81%e5%88%86%e6%9e%90
+              - link "# 深度研究" [ref=f5e302] [cursor=pointer]:
+                - /url: https://www.woshipm.com/tag/%e6%b7%b1%e5%ba%a6%e7%a0%94%e7%a9%b6
+            - button "分享" [ref=f5e306] [cursor=pointer]
+        - generic [ref=f5e308]:
+          - link [ref=f5e310] [cursor=pointer]:
+            - /url: https://www.woshipm.com/u/1622361
+          - generic [ref=f5e311]:
+            - generic [ref=f5e313]:
+              - link "Simonlin" [ref=f5e314] [cursor=pointer]:
+                - /url: https://www.woshipm.com/u/1622361
+              - button "关注" [ref=f5e317] [cursor=pointer]
+            - generic [ref=f5e318]: 你好，我是Simonlin，你的AI之路同行者。
+            - generic [ref=f5e319]:
+              - text: 8篇作品
+              - generic [ref=f5e320]: ·
+              - text: 27076总阅读量
+        - generic [ref=f5e321]:
+          - navigation [ref=f5e322]:
+            - generic [ref=f5e323]: 为你推荐
+          - generic [ref=f5e324]:
+            - generic [ref=f5e325]:
+              - generic [ref=f5e326]:
+                - link "产品经理的用户增长策略——打造爆款产品的秘密配方" [ref=f5e328] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/share/5920804.html
+                - generic [ref=f5e329]:
+                  - text: 10-16
+                  - generic [ref=f5e330]: ·
+                  - text: 4087 浏览
+              - link [ref=f5e331] [cursor=pointer]:
+                - /url: https://www.woshipm.com/share/5920804.html
+                - img "产品经理的用户增长策略——打造爆款产品的秘密配方" [ref=f5e332]
+            - generic [ref=f5e333]:
+              - generic [ref=f5e334]:
+                - link "社交媒体数据在信贷风控中的应用：情绪分析与用户画像" [ref=f5e336] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/user-research/5864101.html
+                - generic [ref=f5e337]:
+                  - text: 07-11
+                  - generic [ref=f5e338]: ·
+                  - text: 5579 浏览
+              - link [ref=f5e339] [cursor=pointer]:
+                - /url: https://www.woshipm.com/user-research/5864101.html
+                - img "社交媒体数据在信贷风控中的应用：情绪分析与用户画像" [ref=f5e340]
+            - generic [ref=f5e341]:
+              - generic [ref=f5e342]:
+                - link "别急着学AI，先学会用AI思考" [ref=f5e344] [cursor=pointer]:
+                  - /url: https://996.pm/aN6G3
+                - generic [ref=f5e345]: 刚刚
+              - link [ref=f5e346] [cursor=pointer]:
+                - /url: https://996.pm/aN6G3
+            - generic [ref=f5e348]:
+              - generic [ref=f5e349]:
+                - link "论小红书爆款内容的极致化利用" [ref=f5e351] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/operate/5846351.html
+                - generic [ref=f5e352]:
+                  - text: 06-13
+                  - generic [ref=f5e353]: ·
+                  - text: 7404 浏览
+              - link [ref=f5e354] [cursor=pointer]:
+                - /url: https://www.woshipm.com/operate/5846351.html
+                - img "论小红书爆款内容的极致化利用" [ref=f5e355]
+            - generic [ref=f5e356]:
+              - generic [ref=f5e357]:
+                - link "以七色米&管家婆为例，谈谈进存销入门知识学" [ref=f5e359] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/pd/2306546.html
+                - generic [ref=f5e360]:
+                  - text: 02-08
+                  - generic [ref=f5e361]: ·
+                  - text: 4959 浏览
+              - link [ref=f5e362] [cursor=pointer]:
+                - /url: https://www.woshipm.com/pd/2306546.html
+                - img "以七色米&管家婆为例，谈谈进存销入门知识学" [ref=f5e363]
+            - generic [ref=f5e364]:
+              - generic [ref=f5e365]:
+                - link "“敏感的人”更适合做设计（服务人触点构建）" [ref=f5e367] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/share/5928715.html
+                - generic [ref=f5e368]:
+                  - text: 10-29
+                  - generic [ref=f5e369]: ·
+                  - text: 3496 浏览
+              - link [ref=f5e370] [cursor=pointer]:
+                - /url: https://www.woshipm.com/share/5928715.html
+                - img "“敏感的人”更适合做设计（服务人触点构建）" [ref=f5e371]
+        - generic [ref=f5e373]:
+          - link [ref=f5e374] [cursor=pointer]:
+            - /url: https://www.woshipm.com/open/6443677.html
+            - img "AI落地总踩坑？预约直播锁定3大“速赢”场景，让组织效率实现可量化跃升" [ref=f5e375]
+          - generic [ref=f5e376]:
+            - link "AI落地总踩坑？预约直播锁定3大“速赢”场景，让组织效率实现可量化跃升" [ref=f5e378] [cursor=pointer]:
+              - /url: https://www.woshipm.com/open/6443677.html
+            - generic [ref=f5e379]: 推荐
+        - generic [ref=f5e381]:
+          - generic [ref=f5e382]: 评论
+          - form [ref=f5e383]:
+            - generic [ref=f5e384]:
+              - generic [ref=f5e385] [cursor=pointer]: 评论请登录
+              - button "发布" [ref=f5e387] [cursor=pointer]
+          - list [ref=f5e389]:
+            - listitem [ref=f5e390]: 目前还没评论，等你发挥！
+        - generic [ref=f5e391]:
+          - navigation [ref=f5e392]:
+            - generic [ref=f5e393]: 为你推荐
+          - generic [ref=f5e394]:
+            - link "面试问\"你怎么评估大模型效果\"，你答得上来吗？多数人只能答个大概" [ref=f5e396] [cursor=pointer]:
+              - /url: https://996.pm/aN6G3
+            - list [ref=f5e400]:
+              - listitem [ref=f5e401]:
+                - link [ref=f5e403] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/it/5742132.html
+                  - img "“一切都回来了”以后，协同办公商业化路在哪里？" [ref=f5e404]
+                - generic [ref=f5e405]:
+                  - link "“一切都回来了”以后，协同办公商业化路在哪里？" [ref=f5e407] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/it/5742132.html
+                  - generic [ref=f5e408]:
+                    - text: 02-08
+                    - generic [ref=f5e409]: ·
+                    - text: 5892 浏览
+              - listitem [ref=f5e410]:
+                - link [ref=f5e412] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/operate/5872201.html
+                  - img "全网浏览量超5亿，三伏天“晒背”是如何走红的？" [ref=f5e413]
+                - generic [ref=f5e414]:
+                  - link "全网浏览量超5亿，三伏天“晒背”是如何走红的？" [ref=f5e416] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/operate/5872201.html
+                  - generic [ref=f5e417]:
+                    - text: 07-25
+                    - generic [ref=f5e418]: ·
+                    - text: 3629 浏览
+              - listitem [ref=f5e419]:
+                - link [ref=f5e421] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/pd/5933249.html
+                  - img "供应链金融是只“披着羊皮的狼”？" [ref=f5e422]
+                - generic [ref=f5e423]:
+                  - link "供应链金融是只“披着羊皮的狼”？" [ref=f5e425] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/pd/5933249.html
+                  - generic [ref=f5e426]:
+                    - text: 11-02
+                    - generic [ref=f5e427]: ·
+                    - text: 4816 浏览
+        - generic [ref=f5e428]:
+          - navigation [ref=f5e429]:
+            - generic [ref=f5e430]: 推荐专题
+            - link "更多专题" [ref=f5e431] [cursor=pointer]:
+              - /url: /topic-list
+          - generic [ref=f5e432]:
+            - generic [ref=f5e433]:
+              - link "专题 13541人已学习·12篇文章" [ref=f5e434] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/medical-treatment
+                - generic [ref=f5e435]: 专题
+                - generic [ref=f5e437]:
+                  - text: 13541人已学习
+                  - generic [ref=f5e438]: ·
+                  - text: 12篇文章
+              - generic [ref=f5e439]:
+                - link "互联网医疗运营" [ref=f5e441] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/medical-treatment
+                - generic [ref=f5e442]: 对着互联网行业的不断发展，如今很多传统行业都与互联网想结合，医药行业也不例外。本文作者分享了关于互联网医疗的运营知识。
+            - generic [ref=f5e443]:
+              - link "专题 15519人已学习·12篇文章" [ref=f5e444] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/lixiang
+                - generic [ref=f5e445]: 专题
+                - generic [ref=f5e447]:
+                  - text: 15519人已学习
+                  - generic [ref=f5e448]: ·
+                  - text: 12篇文章
+              - generic [ref=f5e449]:
+                - link "产品立项指南" [ref=f5e451] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/lixiang
+                - generic [ref=f5e452]: 产品立项，对于产品来说是其生命周期中最基础的和最重要的阶段。产品立项都有哪些主要工作？本专题的文章分享了产品立项指南。
+            - generic [ref=f5e453]:
+              - link "专题 91026人已学习·18篇文章" [ref=f5e454] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/newbie
+                - generic [ref=f5e455]: 专题
+                - generic [ref=f5e457]:
+                  - text: 91026人已学习
+                  - generic [ref=f5e458]: ·
+                  - text: 18篇文章
+              - generic [ref=f5e459]:
+                - link "产品新人入行须知" [ref=f5e461] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/newbie
+                - generic [ref=f5e462]: 沉住气，学做事，更要学会做人。
+            - generic [ref=f5e463]:
+              - link "专题 21026人已学习·17篇文章" [ref=f5e464] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/data-visualization
+                - generic [ref=f5e465]: 专题
+                - generic [ref=f5e467]:
+                  - text: 21026人已学习
+                  - generic [ref=f5e468]: ·
+                  - text: 17篇文章
+              - generic [ref=f5e469]:
+                - link "数据可视化的设计思路" [ref=f5e471] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/data-visualization
+                - generic [ref=f5e472]: 数据可视化的方式，能够更加清晰明确的进行数据分析。本专题的文章分享了数据可视化的设计思路。
+            - generic [ref=f5e473]:
+              - link "专题 73718人已学习·13篇文章" [ref=f5e474] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/%e4%ba%a7%e5%93%81%e7%9a%84%e5%95%86%e4%b8%9a%e6%a8%a1%e5%bc%8f
+                - generic [ref=f5e475]: 专题
+                - generic [ref=f5e477]:
+                  - text: 73718人已学习
+                  - generic [ref=f5e478]: ·
+                  - text: 13篇文章
+              - generic [ref=f5e479]:
+                - link "产品的商业模式" [ref=f5e481] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/%e4%ba%a7%e5%93%81%e7%9a%84%e5%95%86%e4%b8%9a%e6%a8%a1%e5%bc%8f
+                - generic [ref=f5e482]: 什么是产品的商业模式，不同类型的产品在商业模式上有什么区别？
+            - generic [ref=f5e483]:
+              - link "专题 16517人已学习·14篇文章" [ref=f5e484] [cursor=pointer]:
+                - /url: https://www.woshipm.com/topic/gmv
+                - generic [ref=f5e485]: 专题
+                - generic [ref=f5e487]:
+                  - text: 16517人已学习
+                  - generic [ref=f5e488]: ·
+                  - text: 14篇文章
+              - generic [ref=f5e489]:
+                - link "GMV破亿的经验总结" [ref=f5e491] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/topic/gmv
+                - generic [ref=f5e492]: 对电商行业的从业者们而言，GMV这个概念估计都不陌生，不少人也开始拿GMV作为评判各家电商平台市占率的指标之一。本专题的文章分享了GMV破亿的经验总结。
+      - complementary [ref=f5e493]:
+        - generic [ref=f5e494]:
+          - generic [ref=f5e496]:
+            - generic [ref=f5e497]:
+              - generic [ref=f5e498]: 社群
+              - generic [ref=f5e499]: 付费群 | 免费群
+            - list [ref=f5e501]:
+              - listitem [ref=f5e502]:
+                - generic [ref=f5e504]: AI产品经理交流群
+                - generic [ref=f5e505] [cursor=pointer]: 加入
+              - listitem [ref=f5e507]:
+                - generic [ref=f5e509]: AI工具共学交流群
+                - generic [ref=f5e510] [cursor=pointer]: 加入
+              - listitem [ref=f5e512]:
+                - generic [ref=f5e514]: 华为鸿蒙交流群
+                - generic [ref=f5e515] [cursor=pointer]: 加入
+              - listitem [ref=f5e517]:
+                - generic [ref=f5e519]: 运营增长交流群
+                - generic [ref=f5e520] [cursor=pointer]: 加入
+              - listitem [ref=f5e522]:
+                - generic [ref=f5e524]: OPC一人公司交流群
+                - generic [ref=f5e525] [cursor=pointer]: 加入
+              - listitem [ref=f5e527]:
+                - generic [ref=f5e529]: OpenCalw&Hermes交流群
+                - generic [ref=f5e530] [cursor=pointer]: 加入
+          - generic [ref=f5e533]:
+            - generic [ref=f5e534]:
+              - generic [ref=f5e535]: 快讯
+              - link "查看更多" [ref=f5e537] [cursor=pointer]:
+                - /url: /digest
+            - generic [ref=f5e538]:
+              - generic [ref=f5e539]:
+                - link "索尼与台积电最快将于2029年量产下一代图像传感器" [ref=f5e541] [cursor=pointer]:
+                  - /url: /digest/508243
+                - generic [ref=f5e542]: 4小时前
+              - generic [ref=f5e543]:
+                - link "与美竞争，欧洲敲定自家“星链”规划" [ref=f5e545] [cursor=pointer]:
+                  - /url: /digest/508255
+                - generic [ref=f5e546]: 4小时前
+              - generic [ref=f5e547]:
+                - link "罗马仕等被执行2056万" [ref=f5e549] [cursor=pointer]:
+                  - /url: /digest/508247
+                - generic [ref=f5e550]: 4小时前
+          - generic [ref=f5e552]:
+            - generic [ref=f5e553]: 热门文章
+            - list [ref=f5e555]:
+              - listitem [ref=f5e556]:
+                - link [ref=f5e558] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/share/6441946.html
+                  - img "Vibe Coding之后：小白4步网上部署到阿里云实操" [ref=f5e559]
+                - generic [ref=f5e560]:
+                  - link "Vibe Coding之后：小白4步网上部署到阿里云实操" [ref=f5e562] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/share/6441946.html
+                  - generic [ref=f5e563]: 08-07
+              - listitem [ref=f5e564]:
+                - link [ref=f5e566] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/ai/6438065.html
+                  - img "老板让我下班前出 3 套产品方案，幸好我偷藏了这个“作弊神器”。" [ref=f5e567]
+                - generic [ref=f5e568]:
+                  - link "老板让我下班前出 3 套产品方案，幸好我偷藏了这个“作弊神器”。" [ref=f5e570] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/ai/6438065.html
+                  - generic [ref=f5e571]: 08-03
+              - listitem [ref=f5e572]:
+                - link [ref=f5e574] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/ai/6441319.html
+                  - img "复刻爆款，为什么生成成功仍然等于失败？" [ref=f5e575]
+                - generic [ref=f5e576]:
+                  - link "复刻爆款，为什么生成成功仍然等于失败？" [ref=f5e578] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/ai/6441319.html
+                  - generic [ref=f5e579]: 08-06
+              - listitem [ref=f5e580]:
+                - link [ref=f5e582] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/share/6429831.html
+                  - img "再解读产品Offer快" [ref=f5e583]
+                - generic [ref=f5e584]:
+                  - link "再解读产品Offer快" [ref=f5e586] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/share/6429831.html
+                  - generic [ref=f5e587]: 08-10
+              - listitem [ref=f5e588]:
+                - link [ref=f5e590] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/share/6441308.html
+                  - img "AI 时代，软件交付逻辑也要改变了，技术不再是重点，一切回归业务本身" [ref=f5e591]
+                - generic [ref=f5e592]:
+                  - link "AI 时代，软件交付逻辑也要改变了，技术不再是重点，一切回归业务本身" [ref=f5e594] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/share/6441308.html
+                  - generic [ref=f5e595]: 08-06
+              - listitem [ref=f5e596]:
+                - link [ref=f5e598] [cursor=pointer]:
+                  - /url: https://www.woshipm.com/ai/6442539.html
+                  - img "一周以后，我想我终于可以来聊聊Seedance 2.5了。" [ref=f5e599]
+                - generic [ref=f5e600]:
+                  - link "一周以后，我想我终于可以来聊聊Seedance 2.5了。" [ref=f5e602] [cursor=pointer]:
+                    - /url: https://www.woshipm.com/ai/6442539.html
+                  - generic [ref=f5e603]: 08-08
+          - generic [ref=f5e604]:
+            - generic [ref=f5e607]:
+              - generic [ref=f5e608]: 面试时，面试官问你多久可以入职，这个时间如何把握？
+              - generic [ref=f5e609]: 面试官：您大概多久可以入职？你：
+              - generic [ref=f5e610]:
+                - generic [ref=f5e615]:
+                  - text: 166.2k 点击
+                  - generic [ref=f5e616]: ·
+                  - text: 15 回答
+                - link "进入回答" [ref=f5e617] [cursor=pointer]:
+                  - /url: https://wen.woshipm.com/question/detail/n4jeq8.html?sf=wipm
+            - generic [ref=f5e619]:
+              - generic [ref=f5e620]:
+                - link "你心目中都有哪些“好”的产品名字？" [ref=f5e622] [cursor=pointer]:
+                  - /url: https://wen.woshipm.com/question/detail/cmd8ar.html?sf=wipm
+                - generic [ref=f5e623]:
+                  - text: 132.9k 点击
+                  - generic [ref=f5e624]: ·
+                  - text: 73 回答
+              - generic [ref=f5e625]:
+                - link "社交产品为什么比工具性产品更容易让人成瘾？" [ref=f5e627] [cursor=pointer]:
+                  - /url: https://wen.woshipm.com/question/detail/otiovf.html?sf=wipm
+                - generic [ref=f5e628]:
+                  - text: 16.9k 点击
+                  - generic [ref=f5e629]: ·
+                  - text: 26 回答
+              - generic [ref=f5e630]:
+                - link "未成年人周最多游戏3小时，互联网行业会发生怎样的蝴蝶效应？" [ref=f5e632] [cursor=pointer]:
+                  - /url: https://wen.woshipm.com/question/detail/8ukrv9.html?sf=wipm
+                - generic [ref=f5e633]:
+                  - text: 29.4k 点击
+                  - generic [ref=f5e634]: ·
+                  - text: 17 回答
+          - generic [ref=f5e636]:
+            - generic [ref=f5e637]: 文章导航
+            - list [ref=f5e639]:
+              - listitem [ref=f5e640]:
+                - link "一、Kimi的荣耀与滑铁卢" [ref=f5e641] [cursor=pointer]:
+                  - /url: "#toc-1"
+              - listitem [ref=f5e642]:
+                - link "二、Kimi-Researcher，专为深度研究而生的Agent" [ref=f5e643] [cursor=pointer]:
+                  - /url: "#toc-2"
+              - listitem [ref=f5e644]:
+                - link "三、案例测试" [ref=f5e645] [cursor=pointer]:
+                  - /url: "#toc-3"
+              - listitem [ref=f5e646]:
+                - link "四、技术原理解析" [ref=f5e647] [cursor=pointer]:
+                  - /url: "#toc-4"
+              - listitem [ref=f5e648]:
+                - link "五、怎么样才能用上？" [ref=f5e649] [cursor=pointer]:
+                  - /url: "#toc-5"
+              - listitem [ref=f5e650]:
+                - link "六、Kimi，尚能饭否？" [ref=f5e651] [cursor=pointer]:
+                  - /url: "#toc-6"
+  - contentinfo [ref=f5e652]:
+    - generic [ref=f5e653]:
+      - generic [ref=f5e654]:
+        - generic [ref=f5e655]: 关于
+        - text: 人人都是产品经理（woshipm.com）是以产品经理、运营为核心的学习、交流、分享平台，集媒体、培训、社群为一体，全方位服务产品人和运营人，成立12年举办在线讲座1000+期，线下分享会500+场，产品经理大会、运营大会50+场，覆盖北上广深杭成都等20个城市，在行业有较高的影响力和知名度。平台聚集了众多BAT美团京东滴滴360小米网易等知名互联网公司产品总监和运营总监，他们在这里与你一起成长。
+      - generic [ref=f5e656]:
+        - generic [ref=f5e657]: 合作伙伴
+        - list [ref=f5e658]:
+          - listitem [ref=f5e659]:
+            - link [ref=f5e660] [cursor=pointer]:
+              - /url: https://www.qidianla.com?woshipm
+              - img "起点课堂" [ref=f5e661]
+          - listitem [ref=f5e662]:
+            - link [ref=f5e663] [cursor=pointer]:
+              - /url: https://36kr.com/
+          - listitem [ref=f5e665]:
+            - link [ref=f5e666] [cursor=pointer]:
+              - /url: https://www.geetest.com/?woshipm
+              - img "极验验证" [ref=f5e667]
+          - listitem [ref=f5e668]:
+            - link [ref=f5e669] [cursor=pointer]:
+              - /url: https://www.zhisheji.com/?woshipm
+              - img "致设计" [ref=f5e670]
+          - listitem [ref=f5e671]:
+            - link [ref=f5e672] [cursor=pointer]:
+              - /url: https://www.polyv.net/?-cpjl
+              - img "保利威" [ref=f5e673]
+        - generic [ref=f5e674]: 链接
+        - navigation [ref=f5e675]:
+          - list [ref=f5e676]:
+            - listitem [ref=f5e677]:
+              - link "隐私政策" [ref=f5e678] [cursor=pointer]:
+                - /url: https://www.woshipm.com/policy
+            - listitem [ref=f5e679]:
+              - link "投稿须知" [ref=f5e680] [cursor=pointer]:
+                - /url: /it/1010671.html
+            - listitem [ref=f5e681]:
+              - link "意见反馈" [ref=f5e682] [cursor=pointer]:
+                - /url: https://wen.woshipm.com/question/detail/omkf.html
+            - listitem [ref=f5e683]:
+              - link "帮助中心" [ref=f5e684] [cursor=pointer]:
+                - /url: https://doc.weixin.qq.com/doc/w3_ALsAdwZgAO8uhueZ8ahRse75jgAJm?scode=AGsAywdaAA0wPabVgMAYgAZgbwAOM
+      - generic [ref=f5e685]:
+        - generic [ref=f5e686]:
+          - img "公众号" [ref=f5e687]
+          - paragraph [ref=f5e688]: 公众号
+        - generic [ref=f5e689]:
+          - img "视频号" [ref=f5e690]
+          - paragraph [ref=f5e691]: 视频号
+    - generic [ref=f5e692]:
+      - list [ref=f5e694]:
+        - listitem [ref=f5e695]: 友情链接
+        - listitem [ref=f5e696]:
+          - link "PM265" [ref=f5e697] [cursor=pointer]:
+            - /url: https://pm265.com
+        - listitem [ref=f5e698]:
+          - link "产品经理导航" [ref=f5e699] [cursor=pointer]:
+            - /url: https://www.pmbaobao.com/
+        - listitem [ref=f5e700]:
+          - link "起点课堂" [ref=f5e701] [cursor=pointer]:
+            - /url: https://www.qidianla.com/
+        - listitem [ref=f5e702]:
+          - link "猪八戒网" [ref=f5e703] [cursor=pointer]:
+            - /url: http://www.zbj.com/
+        - listitem [ref=f5e704]:
+          - link "伙伴云表格" [ref=f5e705] [cursor=pointer]:
+            - /url: https://www.huoban.com
+        - listitem [ref=f5e706]:
+          - link "网易易盾" [ref=f5e707] [cursor=pointer]:
+            - /url: https://dun.163.com/
+        - listitem [ref=f5e708]:
+          - link "个推" [ref=f5e709] [cursor=pointer]:
+            - /url: https://www.getui.com/cn/
+        - listitem [ref=f5e710]:
+          - link "友盟+" [ref=f5e711] [cursor=pointer]:
+            - /url: https://www.umeng.com/
+        - listitem [ref=f5e712]:
+          - link "创业邦" [ref=f5e713] [cursor=pointer]:
+            - /url: https://www.cyzone.cn/?woshipm
+        - listitem [ref=f5e714]:
+          - link "AI学习社区" [ref=f5e715] [cursor=pointer]:
+            - /url: https://www.aixq.cc
+        - listitem [ref=f5e716]:
+          - link "慕课网" [ref=f5e717] [cursor=pointer]:
+            - /url: https://www.imooc.com/
+      - generic [ref=f5e719]:
+        - text: "旗下品牌:"
+        - link "起点课堂" [ref=f5e720] [cursor=pointer]:
+          - /url: https://www.qidianla.com/
+        - text: "|"
+        - link "运营派" [ref=f5e721] [cursor=pointer]:
+          - /url: https://www.yunyingpai.com/
+        - text: "|"
+        - link "粮仓企微管家" [ref=f5e722] [cursor=pointer]:
+          - /url: https://www.liangcang.cc
+        - text: ©2010-2024 - 人人都是产品经理 -
+        - link "粤ICP备14037330号" [ref=f5e723] [cursor=pointer]:
+          - /url: https://beian.miit.gov.cn
+        - text: "-"
+        - link "粤公网安备 44030502001309号" [ref=f5e724] [cursor=pointer]:
+          - /url: https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=44030502001309
+        - link "广播电视节目制作经营许可证（粤）字第03109号" [ref=f5e725] [cursor=pointer]:
+          - /url: https://static.qidianla.com/Audio-TVLicense.jpg
+        - link "增值电信业务经营许可证粤B2-20190788" [ref=f5e726] [cursor=pointer]:
+          - /url: https://dxzhgl.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyesearch.jsp?num=深圳聚力创想信息科技有限公司&type=xuke
+        - text: 版权所有 © 深圳聚力创想信息科技有限公司

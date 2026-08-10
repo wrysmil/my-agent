@@ -1,0 +1,74 @@
+- generic [ref=e4]:
+  - complementary [ref=e5]:
+    - link "新建会话" [ref=e7] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+    - link "新建会话 Ctrl K" [ref=e9] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+      - generic [ref=e10]:
+        - generic [ref=e11]: 新建会话
+        - generic [ref=e16]:
+          - generic [ref=e17]: Ctrl
+          - generic [ref=e18]: K
+    - generic [ref=e19]:
+      - region "Primary Navigation" [ref=e20]:
+        - generic [ref=e21]:
+          - link "插件" [ref=e22] [cursor=pointer]:
+            - /url: /plugins
+          - link "定时任务" [ref=e30] [cursor=pointer]:
+            - /url: /tasks
+          - link "集群" [ref=e42] [cursor=pointer]:
+            - /url: /agent-swarm
+          - link "PPT" [ref=e680] [cursor=pointer]:
+            - /url: /slides
+          - link "深度研究" [ref=e690] [cursor=pointer]:
+            - /url: /deep-research
+          - button "收起" [expanded] [ref=e700] [cursor=pointer]
+        - generic [ref=e716]:
+          - link "网站" [ref=e717] [cursor=pointer]:
+            - /url: /websites
+          - link "文档" [ref=e726] [cursor=pointer]:
+            - /url: /docs
+          - link "表格" [ref=e734] [cursor=pointer]:
+            - /url: /sheets
+          - link "设计" [ref=e742] [cursor=pointer]:
+            - /url: /design
+          - link "Kimi Work Beta" [ref=e752] [cursor=pointer]:
+            - /url: https://www.kimi.com/products/kimi-work
+            - generic [ref=e934]:
+              - generic [ref=e935]: Kimi Work
+              - generic "Beta" [ref=e936]
+          - link "Kimi Code" [ref=e937] [cursor=pointer]:
+            - /url: /code?from=kimi_homepage_sidebar
+          - generic [ref=e947]:
+            - button "Kimi Claw" [ref=e948] [cursor=pointer]
+            - button "添加 Claw"
+      - region [ref=e956]:
+        - button "项目" [expanded] [ref=e958] [cursor=pointer]
+        - button "新建项目" [ref=e966] [cursor=pointer]
+      - region "对话" [ref=e973]:
+        - button "登录以同步历史会话" [ref=e981] [cursor=pointer]
+    - generic [ref=e983]:
+      - list [ref=e984]:
+        - listitem [ref=e985]:
+          - generic [ref=e986] [cursor=pointer]: 获取应用程序
+        - listitem [ref=e992]:
+          - generic [ref=e993] [cursor=pointer]: 关于我们
+        - listitem [ref=e999]:
+          - generic [ref=e1000] [cursor=pointer]: Language
+        - listitem [ref=e1007]:
+          - generic [ref=e1008] [cursor=pointer]: 帮助
+      - generic [ref=e1015]:
+        - button "登录" [expanded] [ref=e1016] [cursor=pointer]
+        - button "获取应用程序" [ref=e1028] [cursor=pointer]
+  - generic [ref=e1033]:
+    - generic "展开导航" [ref=e1037] [cursor=pointer]
+    - generic [ref=e1046]:
+      - img "Kimi Doodle" [ref=e1051]
+      - generic [ref=e1054]:
+        - generic [ref=e1056]:
+          - textbox [active] [ref=e1057]:
+            - paragraph [ref=e1058]
+          - generic: 尽管问，或做个 Agent 任务...
+        - generic [ref=e1060]:
+          - generic [ref=e1062] [cursor=pointer]
+          - generic [ref=e1065]: 深度研究

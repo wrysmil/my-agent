@@ -1,0 +1,62 @@
+- generic [ref=f12e4]:
+  - complementary [ref=f12e5]:
+    - link "新建会话" [ref=f12e7] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+    - link "新建会话 Ctrl K" [ref=f12e9] [cursor=pointer]:
+      - /url: /?chat_enter_method=new_chat
+      - generic [ref=f12e10]:
+        - generic [ref=f12e11]: 新建会话
+        - generic [ref=f12e16]:
+          - generic [ref=f12e17]: Ctrl
+          - generic [ref=f12e18]: K
+    - generic [ref=f12e19]:
+      - region "Primary Navigation" [ref=f12e20]:
+        - generic [ref=f12e21]:
+          - link "插件" [ref=f12e22] [cursor=pointer]:
+            - /url: /plugins
+          - link "定时任务" [ref=f12e30] [cursor=pointer]:
+            - /url: /tasks
+          - link "集群" [ref=f12e42] [cursor=pointer]:
+            - /url: /agent-swarm
+          - link "PPT" [ref=f12e680] [cursor=pointer]:
+            - /url: /slides
+          - link "深度研究" [ref=f12e690] [cursor=pointer]:
+            - /url: /deep-research
+          - button "收起" [expanded] [ref=f12e700] [cursor=pointer]
+        - generic [ref=f12e716]:
+          - link "网站" [ref=f12e717] [cursor=pointer]:
+            - /url: /websites
+          - link "文档" [ref=f12e726] [cursor=pointer]:
+            - /url: /docs
+          - link "表格" [ref=f12e734] [cursor=pointer]:
+            - /url: /sheets
+          - link "设计" [ref=f12e742] [cursor=pointer]:
+            - /url: /design
+          - link "Kimi Work Beta" [ref=f12e752] [cursor=pointer]:
+            - /url: https://www.kimi.com/products/kimi-work
+            - generic [ref=f12e934]:
+              - generic [ref=f12e935]: Kimi Work
+              - generic "Beta" [ref=f12e936]
+          - link "Kimi Code" [ref=f12e937] [cursor=pointer]:
+            - /url: /code?from=kimi_homepage_sidebar
+          - generic [ref=f12e947]:
+            - button "Kimi Claw" [ref=f12e948] [cursor=pointer]
+            - button "添加 Claw"
+      - region [ref=f12e956]:
+        - button "项目" [expanded] [ref=f12e958] [cursor=pointer]
+        - button "新建项目" [ref=f12e966] [cursor=pointer]
+      - region "对话" [ref=f12e973]:
+        - button "登录以同步历史会话" [ref=f12e981] [cursor=pointer]
+    - generic [ref=f12e984]:
+      - button "登录" [ref=f12e985] [cursor=pointer]
+      - button "获取应用程序" [ref=f12e997] [cursor=pointer]
+  - generic [ref=f12e1002]:
+    - generic "展开导航" [ref=f12e1006] [cursor=pointer]
+    - generic [ref=f12e1024]:
+      - generic [ref=f12e1026]:
+        - textbox [active] [ref=f12e1027]:
+          - paragraph [ref=f12e1028]
+        - generic: 尽管问，或做个 Agent 任务...
+      - generic [ref=f12e1030]:
+        - generic [ref=f12e1032] [cursor=pointer]
+        - generic [ref=f12e1037] [cursor=pointer]
