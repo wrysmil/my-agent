@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { isDeepStrictEqual } from "node:util";
 import type { Message, MessageContent } from "../shared/types.js";
 
 // ============================================================
@@ -196,6 +197,39 @@ export type ActiveCheckpointCandidate = {
  * await runner2.run({ message: "继续分析 tsconfig.json" });
  * ```
  */
+export type UserTurnIdentityCheck =
+  | { status: "available" }
+  | {
+    status: "duplicate" | "conflict";
+    turnId: number;
+    messageId: string;
+    runId?: string;
+  };
+
+export class ClientMessageIdConflictError extends Error {
+  readonly clientMessageId: string;
+
+  constructor(clientMessageId: string) {
+    super(`clientMessageId "${clientMessageId}" conflicts with an existing user payload`);
+    this.name = "ClientMessageIdConflictError";
+    this.clientMessageId = clientMessageId;
+  }
+}
+
+function comparableUserPayload(content: MessageContent[]): unknown[] {
+  return content.map((block) => {
+    if (block.type === "text" || block.type === "thinking") {
+      const { id: _id, ...payload } = block;
+      return payload;
+    }
+    if (block.type === "tool_result") {
+      const { id: _id, ...payload } = block;
+      return payload;
+    }
+    return block;
+  });
+}
+
 export class Session {
   /** 对话消息列表（包含 user、assistant、tool_result 所有消息） */
   protected messages: Message[] = [];
@@ -214,6 +248,28 @@ export class Session {
 
   // ---- 消息管理 ----
 
+  checkUserTurnIdentity(
+    clientMessageId: string,
+    content: MessageContent[],
+  ): UserTurnIdentityCheck {
+    const existing = this.messages.find(
+      (message) => message.role === "user" && message.id === clientMessageId,
+    );
+    if (!existing) return { status: "available" };
+
+    const base = {
+      turnId: existing.turnId ?? 0,
+      messageId: clientMessageId,
+      ...(existing.runId !== undefined ? { runId: existing.runId } : {}),
+    };
+    return isDeepStrictEqual(
+      comparableUserPayload(existing.content),
+      comparableUserPayload(content),
+    )
+      ? { status: "duplicate", ...base }
+      : { status: "conflict", ...base };
+  }
+
   /**
    * 开始新的用户轮次。
    *
@@ -225,6 +281,14 @@ export class Session {
     content: MessageContent[],
     meta?: { id?: string; runId?: string },
   ): Promise<number> {
+    if (meta?.id !== undefined) {
+      const identity = this.checkUserTurnIdentity(meta.id, content);
+      if (identity.status === "duplicate") return identity.turnId;
+      if (identity.status === "conflict") {
+        throw new ClientMessageIdConflictError(meta.id);
+      }
+    }
+
     this.turnId++;
     this.messages.push({
       role: "user",
@@ -245,12 +309,12 @@ export class Session {
    */
   async addAssistantMessage(
     content: MessageContent[],
-    meta?: { id?: string; runId?: string },
+    meta?: { id?: string; runId?: string; turnId?: number },
   ): Promise<void> {
     this.messages.push({
       role: "assistant",
       content,
-      turnId: this.turnId,
+      turnId: meta?.turnId ?? this.turnId,
       id: meta?.id ?? randomUUID(),
       runId: meta?.runId,
     });
@@ -269,6 +333,7 @@ export class Session {
     toolUseId: string,
     content: string,
     isError?: boolean,
+    meta?: { turnId?: number; runId?: string },
   ): Promise<void> {
     this.messages.push({
       role: "user",
@@ -279,7 +344,9 @@ export class Session {
         isError,
         id: `result:${toolUseId}`,
       }],
-      turnId: this.turnId,
+      turnId: meta?.turnId ?? this.turnId,
+      id: randomUUID(),
+      runId: meta?.runId,
     });
   }
 
@@ -294,8 +361,15 @@ export class Session {
   async addMessage(
     role: "user" | "assistant",
     content: MessageContent[],
+    meta?: { turnId?: number; runId?: string },
   ): Promise<void> {
-    this.messages.push({ role, content, turnId: this.turnId, id: randomUUID() });
+    this.messages.push({
+      role,
+      content,
+      turnId: meta?.turnId ?? this.turnId,
+      id: randomUUID(),
+      runId: meta?.runId,
+    });
   }
 
   /**
@@ -313,8 +387,12 @@ export class Session {
    * @param _opts.includeExecutionPlan — 是否将执行计划作为上下文包含
    * @returns 消息列表的副本（含注入的上下文）
    */
-  getMessagesForModel(_opts?: { turnContext?: string; includeExecutionPlan?: boolean }): Message[] {
-    const messages = [...this.messages];
+  getMessagesForModel(_opts?: {
+    turnContext?: string;
+    includeExecutionPlan?: boolean;
+    turnId?: number;
+  }): Message[] {
+    const messages = this.messages.filter((message) => !message.compactionIdentityAnchor);
     const turnContext = _opts?.turnContext?.trim();
 
     if (turnContext && messages.length > 0) {
@@ -323,7 +401,7 @@ export class Session {
       // 必须注入第一条而非最后一条，否则当最后一条 user 消息是
       // tool_result 时，注入的文本会破坏 assistant(tool_calls) → tool
       // 的连续消息格式，导致 API 报错。
-      const currentTurnId = this.turnId;
+      const currentTurnId = _opts?.turnId ?? this.turnId;
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i];
         if (msg.role === "user" && msg.turnId === currentTurnId) {
@@ -369,6 +447,7 @@ export class Session {
   estimateModelTokens(): number {
     let chars = 0;
     for (const msg of this.messages) {
+      if (msg.compactionIdentityAnchor) continue;
       for (const block of msg.content) {
         if ("text" in block) chars += (block as { text: string }).text.length;
         else if ("content" in block) chars += String((block as { content: string }).content).length;
@@ -389,7 +468,7 @@ export class Session {
    *
    * @param _outcome — 可选的轮次结果标签（如 `"completed"`、`"aborted"`）
    */
-  completeActiveTurn(_outcome?: string): void {
+  completeActiveTurn(_outcome?: string, _targetTurnId?: number): void {
     // 在完整实现中会记录轮次完成状态
   }
 
@@ -596,13 +675,14 @@ export class Session {
    *
    * @returns 压缩候选或 null
    */
-  getPendingHistoryArchive(): HistoryArchiveCandidate | null {
-    // 已完成轮次 = 最后一个活跃轮次（this.turnId）之前的所有轮次
-    const activeTurnId = this.turnId;
+  getPendingHistoryArchive(targetTurnId: number = this.turnId): HistoryArchiveCandidate | null {
+    // 已完成轮次 = 此次 run 的目标轮次之前的所有轮次。
+    // 旧 turn 重试时不能使用全局最新 this.turnId，否则会把目标 turn 本身误归档。
     const completedTurns = new Map<number, Message[]>();
     for (const msg of this.messages) {
+      if (msg.compactionIdentityAnchor) continue;
       const tid = msg.turnId;
-      if (tid !== undefined && tid < activeTurnId) {
+      if (tid !== undefined && tid < targetTurnId) {
         const list = completedTurns.get(tid) ?? [];
         list.push(msg);
         completedTurns.set(tid, list);
@@ -637,12 +717,26 @@ export class Session {
     for (const msg of this.messages) {
       const tid = msg.turnId;
       if (tid !== undefined && turnIdSet.has(tid)) {
-        // 每个被压缩轮次只插入一条摘要消息（保留原轮次 ID）
+        // 保留每轮原始 client message 作为不进入 provider 的身份锚点，
+        // 以便压缩后及服务重载后仍能做 payload 冲突检测与 dedup。
+        if (
+          msg.role === "user" &&
+          msg.id !== undefined &&
+          !msg.content.every((block) => block.type === "tool_result") &&
+          !result.some(
+            (candidate) =>
+              candidate.turnId === tid && candidate.compactionIdentityAnchor === true,
+          )
+        ) {
+          result.push({ ...msg, compactionIdentityAnchor: true });
+        }
         if (!insertedTurnIds.has(tid)) {
           result.push({
-            role: "user",
+            role: "assistant",
             content: [{ type: "text", text: summaryText }],
             turnId: tid,
+            id: randomUUID(),
+            runId: msg.runId,
           });
           insertedTurnIds.add(tid);
         }
@@ -661,15 +755,18 @@ export class Session {
    *
    * @returns 压缩候选或 null
    */
-  getPendingActiveCheckpoint(): HistoryArchiveCandidate | null {
-    const currentTurnMessages = this.messages.filter((m) => m.turnId === this.turnId);
+  getPendingActiveCheckpoint(targetTurnId: number = this.turnId): HistoryArchiveCandidate | null {
+    const currentTurnMessages = this.messages.filter(
+      (message) =>
+        message.turnId === targetTurnId && !message.compactionIdentityAnchor,
+    );
     if (currentTurnMessages.length === 0) return null;
 
     // 估算 token 数（粗略：4 字符 ≈ 1 token）
     const rawTokens = Math.ceil(
       currentTurnMessages.reduce((sum, m) => sum + JSON.stringify(m.content).length, 0) / 4,
     );
-    return { turnIds: [this.turnId], rawTokens };
+    return { turnIds: [targetTurnId], rawTokens };
   }
 
   /**
@@ -680,19 +777,37 @@ export class Session {
    * @param summary — 结构化摘要
    * @param epoch — 压缩周期编号
    */
-  applyActiveCheckpointSummary(summary: string, epoch: number): void {
-    const activeTurnId = this.turnId;
+  applyActiveCheckpointSummary(
+    summary: string,
+    epoch: number,
+    targetTurnId: number = this.turnId,
+  ): void {
+    const originalClientMessage = this.messages.find(
+      (message) =>
+        message.turnId === targetTurnId &&
+        message.role === "user" &&
+        message.id !== undefined &&
+        !message.content.every((block) => block.type === "tool_result"),
+    );
     let replaced = false;
     const result: Message[] = [];
     for (const msg of this.messages) {
-      if (msg.turnId === activeTurnId) {
+      if (msg.turnId === targetTurnId) {
         if (!replaced) {
+          if (originalClientMessage) {
+            result.push({
+              ...originalClientMessage,
+              compactionIdentityAnchor: true,
+            });
+          }
           result.push({
-            role: "user",
+            role: "assistant",
             content: [
               { type: "text", text: `[Active checkpoint summary (epoch ${epoch})]: ${summary}` },
             ],
-            turnId: activeTurnId,
+            turnId: targetTurnId,
+            id: randomUUID(),
+            runId: originalClientMessage?.runId ?? msg.runId,
           });
           replaced = true;
         }

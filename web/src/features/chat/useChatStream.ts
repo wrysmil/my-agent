@@ -16,13 +16,15 @@
  * - callback 通过"当前最后一条 assistant"定位更新目标
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { parseSseStream } from '@/lib/sse';
 import { apiGet } from '@/lib/api';
 import { logger } from '@/lib/logger';
 import {
   useChatRuntimeStore,
-  createSessionSelectors,
+  selectSessionHistoryLoaded,
+  selectSessionMessages,
+  selectSessionStatus,
 } from './chatRuntimeStore';
 import type {
   ChatStatus,
@@ -160,52 +162,100 @@ function parseHistoryBlocks(
   return blocks;
 }
 
-// ============================================================
-// 两层历史合并（P0）
-// ============================================================
+function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
+  return rawMessages.map((m) => {
+    const role = m.role === 'user' ? ('user' as const) : ('assistant' as const);
+    if (role === 'user') {
+      const text = Array.isArray(m.content)
+        ? m.content
+            .filter((block) => block.type === 'text')
+            .map((block) => block.text || '')
+            .join('\n')
+        : '';
+      return {
+        id: `hist-${m.id ?? Date.now().toString(36)}`,
+        role,
+        blocks: [],
+        text,
+        clientMessageId: m.id,
+        messageId: m.id,
+        runId: m.runId,
+      };
+    }
+    return {
+      id: `hist-${m.id ?? Date.now().toString(36)}`,
+      role,
+      blocks: parseHistoryBlocks(m),
+      messageId: m.id,
+      runId: m.runId,
+    };
+  });
+}
 
 /**
- * 合并 persisted（history API）和 overlay（store 中已有的 optimistic 消息）。
- *
- * 规则：
- * 1. persisted 中不存在相同 messageId → 保留 overlay
- * 2. persisted 中存在相同 messageId 且 revision 足够 → persisted 替换 overlay
- * 3. 相同 blockId 仅保留更高 seq 的版本
+ * persisted 快照只替换已经达到该 run 持久化 revision 的 overlay。
+ * 没有稳定 ID 的旧消息按本地 id 去重，避免重复 history/refetch 膨胀。
  */
-function mergePersistedWithOverlay(
+export function mergePersistedWithOverlay(
   persisted: ChatMessage[],
   overlay: ChatMessage[],
+  historyRevision: number,
+  requiredRevisionForRun: (runId: string) => number | null,
 ): ChatMessage[] {
-  if (overlay.length === 0) return persisted;
-
   const result = [...persisted];
-  const persistedMsgIds = new Set(
-    persisted.map((m) => m.messageId).filter(Boolean),
-  );
+  const identity = (message: ChatMessage) =>
+    message.messageId ?? message.clientMessageId ?? message.id;
 
-  for (const ovMsg of overlay) {
-    // 规则 1: persisted 中无此 messageId → 保留 overlay
-    if (!ovMsg.messageId || !persistedMsgIds.has(ovMsg.messageId)) {
-      // 找该 overlay 在 result 中的前一条 user 消息位置
-      const userIdx = findPrecedingUserIdx(result);
-      const alreadyExists = result.some(
-        (m, i) => i > userIdx && m.messageId === ovMsg.messageId,
+  for (let overlayIndex = 0; overlayIndex < overlay.length; overlayIndex += 1) {
+    const candidate = overlay[overlayIndex];
+    const candidateIdentity = identity(candidate);
+    const persistedIndex = result.findIndex(
+      (message) => identity(message) === candidateIdentity,
+    );
+    const indexedRevision = candidate.runId
+      ? requiredRevisionForRun(candidate.runId)
+      : null;
+    const requiredRevision =
+      indexedRevision ?? candidate.pendingPersistenceRevision ?? null;
+
+    if (persistedIndex >= 0) {
+      if (requiredRevision !== null && historyRevision < requiredRevision) {
+        result[persistedIndex] = candidate;
+      }
+      continue;
+    }
+
+    let insertAt = result.length;
+    for (let previous = overlayIndex - 1; previous >= 0; previous -= 1) {
+      const previousIdentity = identity(overlay[previous]);
+      const previousResultIndex = result.findIndex(
+        (message) => identity(message) === previousIdentity,
       );
-      if (!alreadyExists) {
-        result.push(ovMsg);
+      if (previousResultIndex >= 0) {
+        insertAt = previousResultIndex + 1;
+        break;
       }
     }
-    // 规则 2: persisted 中存在 → 已由 persisted 覆盖，跳过 overlay
+    result.splice(insertAt, 0, candidate);
   }
 
   return result;
 }
 
-function findPrecedingUserIdx(messages: ChatMessage[]): number {
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role === 'user') return i;
-  }
-  return -1;
+function updateAssistantForRun(
+  messages: ChatMessage[],
+  runId: string,
+  updater: (message: ChatMessage) => ChatMessage,
+): ChatMessage[] {
+  const index = messages.findIndex(
+    (message) => message.role === 'assistant' && message.runId === runId,
+  );
+  if (index < 0) return messages;
+  const updated = updater(messages[index]);
+  if (updated === messages[index]) return messages;
+  const next = [...messages];
+  next[index] = updated;
+  return next;
 }
 
 // ============================================================
@@ -213,27 +263,28 @@ function findPrecedingUserIdx(messages: ChatMessage[]): number {
 // ============================================================
 
 export function useChatStream(sessionId: string) {
-  const store = useChatRuntimeStore();
-  const selectors = createSessionSelectors(sessionId);
-
-  // 从 store 读取当前 session 状态
-  const session = store.getSession(sessionId);
-  const messages = session?.messages ?? [];
-  const status = session?.status ?? 'idle';
-  const historyLoaded = session?.historyLoaded ?? false;
-  const activeRunId = session?.activeRunId ?? null;
-
-  const submittingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const optionsRef = useRef<ChatOptions>({});
-  // 追踪 message_stop：用于区分"回复完了但连接异常关闭" vs "真正的 error"
-  const messageStopRef = useRef(false);
+  const messagesSelector = useMemo(
+    () => selectSessionMessages(sessionId),
+    [sessionId],
+  );
+  const statusSelector = useMemo(
+    () => selectSessionStatus(sessionId),
+    [sessionId],
+  );
+  const historyLoadedSelector = useMemo(
+    () => selectSessionHistoryLoaded(sessionId),
+    [sessionId],
+  );
+  const messages = useChatRuntimeStore(messagesSelector);
+  const status = useChatRuntimeStore(statusSelector);
+  const historyLoaded = useChatRuntimeStore(historyLoadedSelector);
 
   // ==========================================================
   // 初始化 + 加载历史
   // ==========================================================
   useEffect(() => {
     if (!sessionId) return;
-
+    const store = useChatRuntimeStore.getState();
     store.ensureSession(sessionId);
 
     let cancelled = false;
@@ -245,54 +296,29 @@ export function useChatStream(sessionId: string) {
         if (cancelled) return;
         const rawMessages = data?.messages;
         if (!rawMessages) {
-          store.setSessionHistoryLoaded(sessionId, true, 0);
+          store.applySessionHistory(sessionId, 0, (current) => current);
           return;
         }
 
         const revision = data.revision ?? rawMessages.length;
-        const loaded: ChatMessage[] = [];
-
-        for (const m of rawMessages) {
-          const role = m.role === 'user' ? ('user' as const) : ('assistant' as const);
-
-          if (role === 'user') {
-            let text = '';
-            if (Array.isArray(m.content)) {
-              text = m.content
-                .filter((b) => b.type === 'text')
-                .map((b) => b.text || '')
-                .join('\n');
-            }
-            loaded.push({
-              id: `hist-${m.id ?? Date.now().toString(36)}`,
-              role: 'user',
-              blocks: [],
-              text,
-              clientMessageId: m.id, // history 中的 id 即 clientMessageId（user 消息）
-              messageId: m.id,
-              runId: m.runId,
-            });
-          } else {
-            const blocks = parseHistoryBlocks(m);
-            loaded.push({
-              id: `hist-${m.id ?? Date.now().toString(36)}`,
-              role: 'assistant',
-              blocks,
-              messageId: m.id,
-              runId: m.runId,
-            });
-          }
-        }
-
-        // 两层合并：persisted + store overlay
-        const existingOverlay = store.getSession(sessionId)?.messages ?? [];
-        const merged = mergePersistedWithOverlay(loaded, existingOverlay);
-
-        store.setSessionMessages(sessionId, merged);
-        store.setSessionHistoryLoaded(sessionId, true, revision);
+        if (data.sessionId && data.sessionId !== sessionId) return;
+        const loaded = parseHistoryMessages(rawMessages);
+        store.applySessionHistory(
+          sessionId,
+          revision,
+          (overlay, pendingPersistence) =>
+            mergePersistedWithOverlay(
+              loaded,
+              overlay,
+              revision,
+              (targetRunId) => pendingPersistence[targetRunId] ?? null,
+            ),
+        );
       })
       .catch(() => {
-        if (!cancelled) store.setSessionHistoryLoaded(sessionId, true, 0);
+        if (!cancelled) {
+          store.applySessionHistory(sessionId, 0, (current) => current);
+        }
       });
 
     return () => {
@@ -303,19 +329,23 @@ export function useChatStream(sessionId: string) {
   // ==========================================================
   // 发送消息
   // ==========================================================
-  const send = useCallback(
-    async (text: string, options?: ChatOptions) => {
+  const sendAttempt = useCallback(
+    async (
+      text: string,
+      options?: ChatOptions,
+      retryClientMessageId?: string,
+    ) => {
+      const store = useChatRuntimeStore.getState();
       const currentStatus = store.getSession(sessionId)?.status ?? 'idle';
       if (['submitting', 'streaming', 'reconnecting'].includes(currentStatus)) {
         return;
       }
 
       const ctrl = new AbortController();
-      optionsRef.current = options ?? {};
-      messageStopRef.current = false;
 
-      // P0：浏览器生成 clientMessageId（幂等键）+ runId
-      const clientMessageId = crypto.randomUUID();
+      // 普通发送创建幂等键；retry 只复用 clientMessageId，run 始终重新创建。
+      const clientMessageId =
+        retryClientMessageId ?? crypto.randomUUID();
       const runId = crypto.randomUUID();
 
       store.createRun(sessionId, runId);
@@ -330,26 +360,72 @@ export function useChatStream(sessionId: string) {
         blocks: [],
         text,
         clientMessageId,
+        messageId: clientMessageId,
         runId,
       };
-      store.setSessionMessages(sessionId, [
-        ...(store.getSession(sessionId)?.messages ?? []),
-        userMsg,
-      ]);
-
-      logger.debug(`📤 发送消息 → ${sessionId} run:${runId}`, {
-        text: text.slice(0, 80),
+      const currentMessages = store.getSession(sessionId)?.messages ?? [];
+      store.setSessionMessages(
+        sessionId,
+        retryClientMessageId
+          ? currentMessages.map((message) =>
+              message.role === 'user' &&
+              message.clientMessageId === clientMessageId
+                ? { ...message, runId }
+                : message,
+            )
+          : [...currentMessages, userMsg],
+      );
+      const previousCandidate = store.getSession(sessionId)?.retryCandidate;
+      store.setSessionRetryCandidate(sessionId, {
+        clientMessageId,
+        runId,
+        sourceRunId:
+          retryClientMessageId && previousCandidate
+            ? previousCandidate.sourceRunId ?? previousCandidate.runId
+            : runId,
+        options: { ...(options ?? {}) },
       });
 
-      if (submittingTimerRef.current) clearTimeout(submittingTimerRef.current);
-      submittingTimerRef.current = setTimeout(() => {
-        if (store.getSession(sessionId)?.status === 'submitting') {
-          store.setSessionStatus(sessionId, 'error');
+      logger.debug('📤 发送消息', {
+        textLength: text.length,
+        sessionId,
+        runId,
+      });
+
+      const submittingTimer = setTimeout(() => {
+        const currentRun = store.getRun(runId);
+        if (currentRun?.status === 'queued') {
+          currentRun.abortController?.abort();
+          store.setRunStatus(runId, 'failed');
+          store.setRunSubmittingTimer(runId, null);
+          store.setRunAbortController(runId, null);
+          if (store.getSession(sessionId)?.activeRunId === runId) {
+            store.setActiveRun(sessionId, null);
+            store.setSessionStatus(sessionId, 'error');
+          }
         }
       }, SUBMITTING_TIMEOUT_MS);
+      store.setRunSubmittingTimer(runId, submittingTimer);
+
+      const finishRun = (
+        runStatus: 'succeeded' | 'failed' | 'aborted',
+        sessionStatus: ChatStatus,
+        retainForPersistence = false,
+      ) => {
+        const ownsUi =
+          store.getSession(sessionId)?.activeRunId === runId;
+        store.setRunStatus(runId, runStatus);
+        store.setRunSubmittingTimer(runId, null);
+        store.setRunAbortController(runId, null);
+        if (ownsUi) {
+          store.setActiveRun(sessionId, null);
+          store.setSessionStatus(sessionId, sessionStatus);
+        }
+        if (!retainForPersistence) store.removeRun(runId);
+      };
 
       try {
-        const body: Record<string, unknown> = { text, clientMessageId };
+        const body: Record<string, unknown> = { text, clientMessageId, runId };
         if (options?.model) body.model = options.model;
         if (options?.thinkingLevel) body.thinkingLevel = options.thinkingLevel;
 
@@ -393,8 +469,7 @@ export function useChatStream(sessionId: string) {
               runId,
             },
           ]);
-          store.setSessionStatus(sessionId, 'error');
-          store.setRunStatus(runId, 'failed');
+          finishRun('failed', 'error');
           return;
         }
 
@@ -402,6 +477,7 @@ export function useChatStream(sessionId: string) {
 
         let retries = 0;
         let assistantCreated = false;
+        let terminalReceived = false;
 
         /** 确保 assistant 消息存在 */
         const ensureAssistant = () => {
@@ -440,9 +516,9 @@ export function useChatStream(sessionId: string) {
               continue;
             }
 
-            // P0: 身份校验 — runId 必须匹配当前 activeRunId
-            const currentActiveRunId = store.getSession(sessionId)?.activeRunId;
-            if (envRunId && envRunId !== currentActiveRunId) {
+            // callback 捕获不可变 runId；activeRunId 在终态会先清空，
+            // 不能用它阻断同一 run 后续的 rAF/history 收敛。
+            if (envRunId && envRunId !== runId) {
               // 该事件属于已过期的 run，静默丢弃
               continue;
             }
@@ -457,29 +533,25 @@ export function useChatStream(sessionId: string) {
             // ---- 事件分发 ----
             switch (envEvent) {
               case 'message_start': {
-                store.setSessionStatus(sessionId, 'streaming');
-                if (submittingTimerRef.current) {
-                  clearTimeout(submittingTimerRef.current);
+                ensureAssistant();
+                if (store.getSession(sessionId)?.activeRunId === runId) {
+                  store.setSessionStatus(sessionId, 'streaming');
                 }
+                store.setRunSubmittingTimer(runId, null);
                 const msg = innerData.message as Record<string, unknown> | undefined;
                 if (msg?.stream_id) {
                   store.setRunStreamId(runId, msg.stream_id as string);
                 }
                 if (msg?.id) {
                   // 更新 assistant 消息的 messageId
-                  store.updateMessages(sessionId, runId, (msgs) => {
-                    const last = msgs[msgs.length - 1];
-                    if (last?.role === 'assistant' && last.id === `asst-${runId}`) {
-                      return [
-                        ...msgs.slice(0, -1),
-                        { ...last, messageId: msg.id as string },
-                      ];
-                    }
-                    return msgs;
-                  });
+                  store.updateMessages(sessionId, runId, (msgs) =>
+                    updateAssistantForRun(msgs, runId, (assistant) => ({
+                      ...assistant,
+                      messageId: msg.id as string,
+                    })),
+                  );
                 }
                 store.setRunStatus(runId, 'running');
-                ensureAssistant();
                 break;
               }
 
@@ -487,10 +559,9 @@ export function useChatStream(sessionId: string) {
                 ensureAssistant();
                 const cb = innerData.content_block as Record<string, unknown> | undefined;
                 if (cb?.type === 'tool_use') {
-                  store.updateMessages(sessionId, runId, (msgs) => {
-                    const last = msgs[msgs.length - 1];
-                    if (!last || last.role !== 'assistant') return msgs;
-                    const blocks = [...last.blocks];
+                  store.updateMessages(sessionId, runId, (msgs) =>
+                    updateAssistantForRun(msgs, runId, (assistant) => {
+                    const blocks = [...assistant.blocks];
                     blocks.push({
                       id: nextBlockId(),
                       type: 'tool_call',
@@ -500,16 +571,14 @@ export function useChatStream(sessionId: string) {
                       inputRaw: '',
                       blockId: cb.id as string | undefined,
                     });
-                    return [
-                      ...msgs.slice(0, -1),
-                      {
-                        ...last,
+                    return {
+                        ...assistant,
                         blocks,
                         streamState: 'tool_executing',
-                        activeToolCount: (last.activeToolCount ?? 0) + 1,
-                      },
-                    ];
-                  });
+                        activeToolCount: (assistant.activeToolCount ?? 0) + 1,
+                      };
+                    }),
+                  );
                 }
                 break;
               }
@@ -522,27 +591,22 @@ export function useChatStream(sessionId: string) {
                   ensureAssistant();
                   // P0: 使用 store 的 rAF 缓冲（按 run 隔离）
                   store.appendTextBuffer(runId, delta.text);
-                  store.updateMessages(sessionId, runId, (msgs) => {
-                    const last = msgs[msgs.length - 1];
-                    if (!last || last.role !== 'assistant') return msgs;
-                    if (last.streamState !== 'generating') {
-                      return [
-                        ...msgs.slice(0, -1),
-                        { ...last, streamState: 'generating' },
-                      ];
-                    }
-                    return msgs;
-                  });
+                  store.updateMessages(sessionId, runId, (msgs) =>
+                    updateAssistantForRun(msgs, runId, (assistant) =>
+                      assistant.streamState === 'generating'
+                        ? assistant
+                        : { ...assistant, streamState: 'generating' },
+                    ),
+                  );
                 }
 
                 if (
                   delta.type === 'input_json_delta' &&
                   typeof delta.partial_json === 'string'
                 ) {
-                  store.updateMessages(sessionId, runId, (msgs) => {
-                    const last = msgs[msgs.length - 1];
-                    if (!last || last.role !== 'assistant') return msgs;
-                    const blocks = [...last.blocks];
+                  store.updateMessages(sessionId, runId, (msgs) =>
+                    updateAssistantForRun(msgs, runId, (assistant) => {
+                    const blocks = [...assistant.blocks];
                     let tcIdx = -1;
                     for (let i = blocks.length - 1; i >= 0; i--) {
                       if (blocks[i].type === 'tool_call' && blocks[i].status === 'streaming') {
@@ -556,22 +620,19 @@ export function useChatStream(sessionId: string) {
                         ...tc,
                         inputRaw: tc.inputRaw + delta.partial_json,
                       };
-                      return [
-                        ...msgs.slice(0, -1),
-                        { ...last, blocks },
-                      ];
+                      return { ...assistant, blocks };
                     }
-                    return msgs;
-                  });
+                    return assistant;
+                    }),
+                  );
                 }
                 break;
               }
 
               case 'content_block_stop': {
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const blocks = [...last.blocks];
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                  const blocks = [...assistant.blocks];
                   let textIdx = -1;
                   for (let i = blocks.length - 1; i >= 0; i--) {
                     if (blocks[i].type === 'text' && blocks[i].status !== 'done') {
@@ -582,11 +643,9 @@ export function useChatStream(sessionId: string) {
                   if (textIdx >= 0) {
                     blocks[textIdx] = { ...blocks[textIdx], status: 'done' };
                   }
-                  return [
-                    ...msgs.slice(0, -1),
-                    { ...last, blocks },
-                  ];
-                });
+                  return { ...assistant, blocks };
+                  }),
+                );
                 break;
               }
 
@@ -594,10 +653,9 @@ export function useChatStream(sessionId: string) {
                 ensureAssistant();
                 const thinking = (innerData.thinking as string) ?? '';
                 if (!thinking) break;
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const blocks = [...last.blocks];
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                  const blocks = [...assistant.blocks];
                   let thIdx = -1;
                   for (let i = blocks.length - 1; i >= 0; i--) {
                     if (blocks[i].type === 'thinking' && blocks[i].status === 'streaming') {
@@ -627,11 +685,9 @@ export function useChatStream(sessionId: string) {
                       collapsed: true,
                     });
                   }
-                  return [
-                    ...msgs.slice(0, -1),
-                    { ...last, blocks, streamState: 'thinking' },
-                  ];
-                });
+                  return { ...assistant, blocks, streamState: 'thinking' };
+                  }),
+                );
                 break;
               }
 
@@ -641,10 +697,9 @@ export function useChatStream(sessionId: string) {
                 const toolName = (innerData.name as string) ?? '';
                 const isPartial = innerData.partial === true;
 
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const blocks = [...last.blocks];
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                  const blocks = [...assistant.blocks];
                   const tcIdx = blocks.findIndex(
                     (b) => b.type === 'tool_call' && (b as import('./types').ToolCallBlock).toolId === toolId,
                   );
@@ -680,16 +735,14 @@ export function useChatStream(sessionId: string) {
                       blockId: toolId,
                     });
                   }
-                  return [
-                    ...msgs.slice(0, -1),
-                    {
-                      ...last,
+                  return {
+                      ...assistant,
                       blocks,
                       streamState: 'tool_executing',
-                      activeToolCount: (last.activeToolCount ?? 0) + (tcIdx >= 0 ? 0 : 1),
-                    },
-                  ];
-                });
+                      activeToolCount: (assistant.activeToolCount ?? 0) + (tcIdx >= 0 ? 0 : 1),
+                    };
+                  }),
+                );
                 break;
               }
 
@@ -700,10 +753,9 @@ export function useChatStream(sessionId: string) {
                 const trIsError = (innerData.is_error as boolean) ?? false;
                 const trDurationMs = innerData.duration_ms as number | undefined;
 
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const blocks = [...last.blocks];
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                  const blocks = [...assistant.blocks];
 
                   // 标记对应 tool_call 为 done
                   const tcIdx = blocks.findIndex(
@@ -736,16 +788,14 @@ export function useChatStream(sessionId: string) {
                     (b) => b.type === 'tool_call' && b.status !== 'done',
                   ).length;
 
-                  return [
-                    ...msgs.slice(0, -1),
-                    {
-                      ...last,
+                  return {
+                      ...assistant,
                       blocks,
                       streamState: remaining > 0 ? 'tool_executing' : 'generating',
                       activeToolCount: remaining,
-                    },
-                  ];
-                });
+                    };
+                  }),
+                );
                 break;
               }
 
@@ -766,103 +816,161 @@ export function useChatStream(sessionId: string) {
               }
 
               case 'message_stop': {
-                messageStopRef.current = true;
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const blocks = last.blocks.map((b) =>
-                    b.status === 'streaming' ? { ...b, status: 'done' as const } : b,
-                  );
-                  return [
-                    ...msgs.slice(0, -1),
-                    { ...last, blocks, streamState: 'done' },
-                  ];
-                });
+                store.setRunMessageStopped(runId, true);
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => ({
+                    ...assistant,
+                    blocks: assistant.blocks.map((block) =>
+                      block.status === 'streaming'
+                        ? { ...block, status: 'done' as const }
+                        : block,
+                    ),
+                    streamState: 'done',
+                  })),
+                );
                 break;
               }
 
               case 'usage': {
                 const usage = innerData.usage as Record<string, unknown> | undefined;
                 if (usage) {
-                  store.updateMessages(sessionId, runId, (msgs) => {
-                    const last = msgs[msgs.length - 1];
-                    if (!last || last.role !== 'assistant') return msgs;
-                    return [
-                      ...msgs.slice(0, -1),
-                      {
-                        ...last,
+                  store.updateMessages(sessionId, runId, (msgs) =>
+                    updateAssistantForRun(msgs, runId, (assistant) => ({
+                        ...assistant,
                         usage: {
                           inputTokens: (usage.inputTokens as number) ?? 0,
                           outputTokens: (usage.outputTokens as number) ?? 0,
                           totalTokens: (usage.totalTokens as number) ?? 0,
                         },
-                      },
-                    ];
-                  });
+                      }),
+                    ),
+                  );
                 }
                 break;
               }
 
               case 'done': {
+                terminalReceived = true;
+                const persistedRevision = innerData.persistedRevision as number | undefined;
+                const messageId = innerData.messageId as string | undefined;
+                const deduplicated = innerData.deduplicated === true;
+
+                if (deduplicated) {
+                  store.cancelRunRaf(runId);
+                  const retryCandidate =
+                    store.getSession(sessionId)?.retryCandidate;
+                  store.updateMessages(sessionId, runId, (messages) =>
+                    messages
+                      .filter(
+                        (message) =>
+                          !(
+                            message.role === 'assistant' &&
+                            message.runId === runId &&
+                            message.blocks.length === 0
+                          ),
+                      )
+                      .map((message) => {
+                        if (
+                          message.role === 'user' &&
+                          retryCandidate?.runId === runId &&
+                          message.clientMessageId ===
+                            retryCandidate.clientMessageId
+                        ) {
+                          return {
+                            ...message,
+                            runId: retryCandidate.sourceRunId,
+                          };
+                        }
+                        if (
+                          message.role === 'assistant' &&
+                          messageId &&
+                          message.messageId === messageId &&
+                          persistedRevision !== undefined
+                        ) {
+                          return {
+                            ...message,
+                            pendingPersistenceRevision: persistedRevision,
+                          };
+                        }
+                        return message;
+                      }),
+                  );
+
+                  if (persistedRevision !== undefined && messageId) {
+                    apiGet<SessionHistoryResponse>(
+                      `/api/sessions/${sessionId}/history`,
+                    )
+                      .then((data) => {
+                        if (!data?.messages) return;
+                        if (data.sessionId && data.sessionId !== sessionId) return;
+                        const currentRevision =
+                          data.revision ?? data.messages.length;
+                        const freshLoaded = parseHistoryMessages(data.messages);
+                        store.applySessionHistory(
+                          sessionId,
+                          currentRevision,
+                          (overlay, pendingPersistence) =>
+                            mergePersistedWithOverlay(
+                              freshLoaded,
+                              overlay,
+                              currentRevision,
+                              (targetRunId) =>
+                                pendingPersistence[targetRunId] ?? null,
+                            ),
+                        );
+                      })
+                      .catch(() => {
+                        // dedup refetch 失败时保留原 overlay，不创建占位消息。
+                      });
+                  }
+
+                  logger.debug('📥 去重响应已收敛', {
+                    sessionId,
+                    runId,
+                    messageId,
+                    persistedRevision,
+                  });
+                  finishRun('succeeded', 'done');
+                  return;
+                }
+
                 // flush text buffer + finalize
                 store.flushTextBuffer(runId);
                 store.cancelRunRaf(runId);
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const finalized = finalizeStreamingBlocks(last.blocks);
-                  if (finalized === last.blocks) return msgs;
-                  return [
-                    ...msgs.slice(0, -1),
-                    { ...last, blocks: finalized, streamState: 'done' },
-                  ];
-                });
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                    const finalized = finalizeStreamingBlocks(assistant.blocks);
+                    return finalized === assistant.blocks
+                      ? assistant
+                      : { ...assistant, blocks: finalized, streamState: 'done' };
+                  }),
+                );
 
                 // P0: 收到 persistedRevision → 触发 history refetch
-                const persistedRevision = innerData.persistedRevision as number | undefined;
                 if (persistedRevision !== undefined) {
+                  store.setRunPersistedRevision(runId, persistedRevision);
+                  store.markRunAwaitingPersistence(runId, persistedRevision);
                   // 异步 refetch history 以原子替换 overlay
                   apiGet<SessionHistoryResponse>(
                     `/api/sessions/${sessionId}/history`,
                   )
                     .then((data) => {
                       if (!data?.messages) return;
+                      if (data.sessionId && data.sessionId !== sessionId) return;
                       const currentRevision = data.revision ?? data.messages.length;
-                      if (currentRevision >= persistedRevision) {
-                        // revision 足够 → persisted 替换 overlay
-                        const freshLoaded = data.messages.map((m) => {
-                          const role = m.role === 'user' ? ('user' as const) : ('assistant' as const);
-                          if (role === 'user') {
-                            let text = '';
-                            if (Array.isArray(m.content)) {
-                              text = m.content
-                                .filter((b) => b.type === 'text')
-                                .map((b) => b.text || '')
-                                .join('\n');
-                            }
-                            return {
-                              id: `hist-${m.id ?? Date.now().toString(36)}`,
-                              role: 'user' as const,
-                              blocks: [] as Block[],
-                              text,
-                              clientMessageId: m.id,
-                              messageId: m.id,
-                              runId: m.runId,
-                            };
-                          }
-                          return {
-                            id: `hist-${m.id ?? Date.now().toString(36)}`,
-                            role: 'assistant' as const,
-                            blocks: parseHistoryBlocks(m),
-                            messageId: m.id,
-                            runId: m.runId,
-                          };
-                        });
-                        const existing = store.getSession(sessionId)?.messages ?? [];
-                        const merged = mergePersistedWithOverlay(freshLoaded, existing);
-                        store.setSessionMessages(sessionId, merged);
-                        store.setSessionHistoryLoaded(sessionId, true, currentRevision);
-                      }
+                      const freshLoaded = parseHistoryMessages(data.messages);
+                      store.applySessionHistory(
+                        sessionId,
+                        currentRevision,
+                        (overlay, pendingPersistence) =>
+                          mergePersistedWithOverlay(
+                            freshLoaded,
+                            overlay,
+                            currentRevision,
+                            (targetRunId) =>
+                              pendingPersistence[targetRunId] ?? null,
+                          ),
+                      );
                     })
                     .catch(() => {
                       // refetch 失败保留 overlay
@@ -870,31 +978,37 @@ export function useChatStream(sessionId: string) {
                 }
 
                 logger.debug('📥 流式响应完成');
-                store.setSessionStatus(sessionId, 'done');
-                store.setRunStatus(runId, 'succeeded');
+                finishRun(
+                  'succeeded',
+                  'done',
+                  persistedRevision !== undefined,
+                );
                 return;
               }
 
               case 'error': {
+                terminalReceived = true;
                 store.flushTextBuffer(runId);
                 store.cancelRunRaf(runId);
                 const errInfo = innerData.error as Record<string, unknown> | undefined;
                 const errMsg = (errInfo?.message as string) || '未知错误';
                 logger.error(`❌ 流式响应错误: ${errMsg}`);
                 store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (last?.role === 'assistant') {
-                    const blocks = finalizeStreamingBlocks([...last.blocks]);
+                  const assistantExists = msgs.some(
+                    (message) =>
+                      message.role === 'assistant' && message.runId === runId,
+                  );
+                  if (assistantExists) {
+                    return updateAssistantForRun(msgs, runId, (assistant) => {
+                    const blocks = finalizeStreamingBlocks([...assistant.blocks]);
                     blocks.push({
                       id: nextBlockId(),
                       type: 'text',
                       status: 'error',
                       text: `❌ 错误：${errMsg}`,
                     });
-                    return [
-                      ...msgs.slice(0, -1),
-                      { ...last, blocks, streamState: 'done' },
-                    ];
+                    return { ...assistant, blocks, streamState: 'done' };
+                    });
                   }
                   return [
                     ...msgs,
@@ -913,26 +1027,23 @@ export function useChatStream(sessionId: string) {
                     },
                   ];
                 });
-                store.setSessionStatus(sessionId, 'error');
-                store.setRunStatus(runId, 'failed');
+                finishRun('failed', 'error');
                 return;
               }
 
               case 'aborted': {
+                terminalReceived = true;
                 store.flushTextBuffer(runId);
                 store.cancelRunRaf(runId);
-                store.updateMessages(sessionId, runId, (msgs) => {
-                  const last = msgs[msgs.length - 1];
-                  if (!last || last.role !== 'assistant') return msgs;
-                  const finalized = finalizeStreamingBlocks(last.blocks);
-                  if (finalized === last.blocks) return msgs;
-                  return [
-                    ...msgs.slice(0, -1),
-                    { ...last, blocks: finalized, streamState: 'done' },
-                  ];
-                });
-                store.setSessionStatus(sessionId, 'aborted');
-                store.setRunStatus(runId, 'aborted');
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAssistantForRun(msgs, runId, (assistant) => {
+                    const finalized = finalizeStreamingBlocks(assistant.blocks);
+                    return finalized === assistant.blocks
+                      ? assistant
+                      : { ...assistant, blocks: finalized, streamState: 'done' };
+                  }),
+                );
+                finishRun('aborted', 'aborted');
                 return;
               }
 
@@ -941,58 +1052,54 @@ export function useChatStream(sessionId: string) {
             }
           } catch {
             if (retries >= MAX_RETRIES) {
-              store.setSessionStatus(sessionId, 'error');
-              store.setRunStatus(runId, 'failed');
+              finishRun('failed', 'error');
               return;
             }
             retries += 1;
             await new Promise((r) =>
               setTimeout(r, BACKOFF_MS[retries - 1] ?? 16000),
             );
-            store.setSessionStatus(sessionId, 'reconnecting');
+            if (store.getSession(sessionId)?.activeRunId === runId) {
+              store.setSessionStatus(sessionId, 'reconnecting');
+            }
           }
         }
 
-        // 流自然结束（没有 done 事件）
-        store.flushTextBuffer(runId);
-        store.cancelRunRaf(runId);
-        store.updateMessages(sessionId, runId, (msgs) => {
-          const last = msgs[msgs.length - 1];
-          if (!last || last.role !== 'assistant') return msgs;
-          const finalized = finalizeStreamingBlocks(last.blocks);
-          if (finalized === last.blocks) return msgs;
-          return [
-            ...msgs.slice(0, -1),
-            { ...last, blocks: finalized, streamState: 'done' },
-          ];
-        });
-        store.setSessionStatus(sessionId, 'done');
-        store.setRunStatus(runId, 'succeeded');
+        if (!terminalReceived) {
+          // 正常 EOF 只表示连接关闭，不代表 run 成功；保留已 flush 的 partial overlay。
+          store.flushTextBuffer(runId);
+          store.cancelRunRaf(runId);
+          logger.error('❌ 流式连接在 terminal 事件前关闭', {
+            sessionId,
+            runId,
+          });
+          finishRun('failed', 'error');
+        }
       } catch (err: unknown) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           logger.debug('⏹️ 请求已取消');
-          store.setSessionStatus(sessionId, 'aborted');
-          store.setRunStatus(runId, 'aborted');
-        } else if (messageStopRef.current) {
-          logger.debug('📥 流式连接在 message_stop 后关闭，视为完成');
-          store.setSessionStatus(sessionId, 'done');
-          store.setRunStatus(runId, 'succeeded');
+          finishRun('aborted', 'aborted');
         } else {
           logger.error('❌ 流式请求失败', {
             error: err instanceof Error ? err.message : String(err),
           });
-          store.setSessionStatus(sessionId, 'error');
-          store.setRunStatus(runId, 'failed');
+          finishRun('failed', 'error');
         }
       }
     },
-    [sessionId, store],
+    [sessionId],
+  );
+
+  const send = useCallback(
+    (text: string, options?: ChatOptions) => sendAttempt(text, options),
+    [sendAttempt],
   );
 
   // ==========================================================
   // abort — 精确按 (sessionId, runId) 中止
   // ==========================================================
   const abort = useCallback(() => {
+    const store = useChatRuntimeStore.getState();
     const currentRunId = store.getSession(sessionId)?.activeRunId;
     if (!currentRunId) return;
 
@@ -1004,20 +1111,34 @@ export function useChatStream(sessionId: string) {
     // 2) 切状态
     store.setSessionStatus(sessionId, 'aborted');
     store.setRunStatus(currentRunId, 'aborted');
-  }, [sessionId, store]);
+    store.setRunSubmittingTimer(currentRunId, null);
+    store.setActiveRun(sessionId, null);
+  }, [sessionId]);
 
   // ==========================================================
   // retry
   // ==========================================================
   const retry = useCallback(() => {
+    const store = useChatRuntimeStore.getState();
     const sess = store.getSession(sessionId);
-    if (!sess) return;
-    const lastUserMsg = [...sess.messages].reverse().find((m) => m.role === 'user');
+    const candidate = sess?.retryCandidate;
+    if (!sess || !candidate) return;
+    const lastUserMsg = [...sess.messages]
+      .reverse()
+      .find(
+        (message) =>
+          message.role === 'user' &&
+          message.clientMessageId === candidate.clientMessageId,
+      );
     if (lastUserMsg) {
       const text = lastUserMsg.text ?? messageText(lastUserMsg);
-      send(text, optionsRef.current);
+      void sendAttempt(
+        text,
+        candidate.options,
+        candidate.clientMessageId,
+      );
     }
-  }, [sessionId, store, send]);
+  }, [sessionId, sendAttempt]);
 
   return { status, messages, send, abort, retry, historyLoaded };
 }

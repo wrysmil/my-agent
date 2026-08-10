@@ -11,7 +11,12 @@
  */
 
 import { create } from 'zustand';
-import type { ChatMessage, ChatStatus, TextBlock } from './types';
+import type {
+  ChatMessage,
+  ChatOptions,
+  ChatStatus,
+  TextBlock,
+} from './types';
 
 // ============================================================
 // 常量
@@ -19,6 +24,12 @@ import type { ChatMessage, ChatStatus, TextBlock } from './types';
 
 /** 非当前且无 active run 的 session 最大缓存数 */
 const MAX_CACHED_SESSIONS = 20;
+const MAX_TERMINAL_RUNS_PER_SESSION = 20;
+/** 每个 session 最多保留的快速 persistence convergence 索引项 */
+export const MAX_PENDING_PERSISTENCE_PER_SESSION = 32;
+/** 未收敛索引保留 30 分钟；overlay 自身继续携带安全 revision 门槛 */
+export const PENDING_PERSISTENCE_TTL_MS = 30 * 60 * 1000;
+const EMPTY_MESSAGES: ChatMessage[] = [];
 
 // ============================================================
 // RunRuntime
@@ -41,6 +52,11 @@ export interface RunRuntime {
   pendingTextBuffer: string;
   rafHandle: number | null;
   rafScheduled: boolean;
+  submittingTimer: ReturnType<typeof setTimeout> | null;
+  messageStopped: boolean;
+  persistedRevision: number | null;
+  createdAt: number;
+  terminalAt: number | null;
   status: RunStatus;
 }
 
@@ -57,6 +73,17 @@ export interface SessionRuntime {
   activeRunId: string | null;
   status: ChatStatus;
   error: string | null;
+  /** run metadata 被清理后仍保留的持久化收敛门槛 */
+  pendingPersistence: Record<string, number>;
+  /** pendingPersistence 各项最后更新时间，用于 TTL/cap 淘汰 */
+  pendingPersistenceUpdatedAt: Record<string, number>;
+  /** 当前 session 唯一的可重试发送身份；单槽位保证有界 */
+  retryCandidate: {
+    clientMessageId: string;
+    runId: string;
+    sourceRunId: string;
+    options: ChatOptions;
+  } | null;
   /** 用户输入草稿（P2 完善） */
   draft?: string;
 }
@@ -65,7 +92,7 @@ export interface SessionRuntime {
 // Store State & Actions
 // ============================================================
 
-interface ChatRuntimeState {
+export interface ChatRuntimeState {
   sessions: Record<string, SessionRuntime>;
   runs: Record<string, RunRuntime>;
   /** LRU 访问顺序追踪 */
@@ -79,6 +106,15 @@ interface ChatRuntimeState {
   removeSession: (sessionId: string) => void;
   /** 设置 session 消息列表 */
   setSessionMessages: (sessionId: string, messages: ChatMessage[]) => void;
+  /** 原子应用不低于当前 revision 的 history，并清理已收敛 run */
+  applySessionHistory: (
+    sessionId: string,
+    revision: number,
+    merge: (
+      currentMessages: ChatMessage[],
+      pendingPersistence: Record<string, number>,
+    ) => ChatMessage[],
+  ) => boolean;
   /** 标记 history 加载完成 */
   setSessionHistoryLoaded: (
     sessionId: string,
@@ -91,6 +127,11 @@ interface ChatRuntimeState {
   setSessionError: (sessionId: string, error: string | null) => void;
   /** 设置 session 的 active run（同时更新 access order） */
   setActiveRun: (sessionId: string, runId: string | null) => void;
+  /** 更新 session 自有的单槽位 retry 身份 */
+  setSessionRetryCandidate: (
+    sessionId: string,
+    candidate: SessionRuntime['retryCandidate'],
+  ) => void;
 
   // ---- Run 操作 ----
 
@@ -109,6 +150,17 @@ interface ChatRuntimeState {
   setRunLastSeq: (runId: string, seq: number) => void;
   /** 设置 run 状态 */
   setRunStatus: (runId: string, status: RunStatus) => void;
+  /** 设置 run 自有的 submitting 超时，避免 hook/session 间共享 */
+  setRunSubmittingTimer: (
+    runId: string,
+    timer: ReturnType<typeof setTimeout> | null,
+  ) => void;
+  /** 记录该 run 是否收到 message_stop */
+  setRunMessageStopped: (runId: string, stopped: boolean) => void;
+  /** 记录成功终态要求的持久化 revision */
+  setRunPersistedRevision: (runId: string, revision: number | null) => void;
+  /** 在 session 上持久保存收敛门槛，不依赖 RunRuntime 生命周期 */
+  markRunAwaitingPersistence: (runId: string, revision: number) => void;
 
   // ---- Message 更新（带身份校验） ----
 
@@ -140,6 +192,7 @@ interface ChatRuntimeState {
 
   _touchSession: (sessionId: string) => void;
   _evictIfNeeded: (currentSessionId?: string) => void;
+  _pruneTerminalRuns: (sessionId: string) => void;
 }
 
 // ============================================================
@@ -173,6 +226,9 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
             activeRunId: null,
             status: 'idle',
             error: null,
+            pendingPersistence: {},
+            pendingPersistenceUpdatedAt: {},
+            retryCandidate: null,
           },
         },
         _accessOrder: [...s._accessOrder.filter((id) => id !== sessionId), sessionId],
@@ -184,17 +240,16 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
       const session = get().sessions[sessionId];
       if (!session) return;
 
-      // 1. abort active run
-      if (session.activeRunId) {
-        const run = get().runs[session.activeRunId];
-        if (run) {
+      // 1. abort + remove 所有关联 run（包括 activeRunId 已清空的孤儿）
+      for (const run of Object.values(get().runs)) {
+        if (run.sessionId === sessionId) {
           try {
             run.abortController?.abort();
           } catch {
             /* ignore */
           }
+          get().removeRun(run.runId);
         }
-        get().removeRun(session.activeRunId);
       }
 
       // 2. 清理 session runtime
@@ -218,6 +273,52 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
           },
         };
       });
+    },
+
+    applySessionHistory: (sessionId, revision, merge) => {
+      let applied = false;
+      set((s) => {
+        const ses = s.sessions[sessionId];
+        if (!ses || revision < ses.historyRevision) return s;
+
+        applied = true;
+        const messages = merge(ses.messages, ses.pendingPersistence);
+        const pendingPersistence = { ...ses.pendingPersistence };
+        const pendingPersistenceUpdatedAt = {
+          ...ses.pendingPersistenceUpdatedAt,
+        };
+        const convergedRunIds = Object.entries(pendingPersistence)
+          .filter(([, requiredRevision]) => revision >= requiredRevision)
+          .map(([runId]) => runId);
+        for (const runId of convergedRunIds) {
+          delete pendingPersistence[runId];
+          delete pendingPersistenceUpdatedAt[runId];
+        }
+
+        let runs = s.runs;
+        if (convergedRunIds.length > 0) {
+          const converged = new Set(convergedRunIds);
+          runs = Object.fromEntries(
+            Object.entries(s.runs).filter(([runId]) => !converged.has(runId)),
+          );
+        }
+
+        return {
+          runs,
+          sessions: {
+            ...s.sessions,
+            [sessionId]: {
+              ...ses,
+              messages,
+              historyLoaded: true,
+              historyRevision: revision,
+              pendingPersistence,
+              pendingPersistenceUpdatedAt,
+            },
+          },
+        };
+      });
+      return applied;
     },
 
     setSessionHistoryLoaded: (sessionId, loaded, revision) => {
@@ -277,6 +378,19 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
       get()._touchSession(sessionId);
     },
 
+    setSessionRetryCandidate: (sessionId, candidate) => {
+      set((s) => {
+        const session = s.sessions[sessionId];
+        if (!session) return s;
+        return {
+          sessions: {
+            ...s.sessions,
+            [sessionId]: { ...session, retryCandidate: candidate },
+          },
+        };
+      });
+    },
+
     // ==========================================================
     // Run 操作
     // ==========================================================
@@ -294,6 +408,11 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
             pendingTextBuffer: '',
             rafHandle: null,
             rafScheduled: false,
+            submittingTimer: null,
+            messageStopped: false,
+            persistedRevision: null,
+            createdAt: Date.now(),
+            terminalAt: null,
             status: 'queued',
           },
         },
@@ -306,6 +425,14 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
       // 清理 rAF
       if (run.rafHandle !== null) {
         cancelAnimationFrame(run.rafHandle);
+      }
+      if (run.submittingTimer !== null) {
+        clearTimeout(run.submittingTimer);
+      }
+      try {
+        run.abortController?.abort();
+      } catch {
+        /* ignore */
       }
       set((s) => {
         const { [runId]: _, ...restRuns } = s.runs;
@@ -344,11 +471,120 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
     },
 
     setRunStatus: (runId, status) => {
+      let sessionId: string | undefined;
+      set((s) => {
+        const run = s.runs[runId];
+        if (!run) return s;
+        sessionId = run.sessionId;
+        const terminalAt = ['succeeded', 'failed', 'aborted'].includes(status)
+          ? (run.terminalAt ?? Date.now())
+          : null;
+        return {
+          runs: { ...s.runs, [runId]: { ...run, status, terminalAt } },
+        };
+      });
+      if (sessionId) get()._pruneTerminalRuns(sessionId);
+    },
+
+    setRunSubmittingTimer: (runId, timer) => {
+      set((s) => {
+        const run = s.runs[runId];
+        if (!run) return s;
+        if (run.submittingTimer !== null && run.submittingTimer !== timer) {
+          clearTimeout(run.submittingTimer);
+        }
+        return {
+          runs: { ...s.runs, [runId]: { ...run, submittingTimer: timer } },
+        };
+      });
+    },
+
+    setRunMessageStopped: (runId, stopped) => {
       set((s) => {
         const run = s.runs[runId];
         if (!run) return s;
         return {
-          runs: { ...s.runs, [runId]: { ...run, status } },
+          runs: { ...s.runs, [runId]: { ...run, messageStopped: stopped } },
+        };
+      });
+    },
+
+    setRunPersistedRevision: (runId, revision) => {
+      set((s) => {
+        const run = s.runs[runId];
+        if (!run) return s;
+        return {
+          runs: { ...s.runs, [runId]: { ...run, persistedRevision: revision } },
+        };
+      });
+    },
+
+    markRunAwaitingPersistence: (runId, revision) => {
+      const run = get().runs[runId];
+      if (!run) return;
+      set((s) => {
+        const session = s.sessions[run.sessionId];
+        if (!session) return s;
+        const now = Date.now();
+        const requiredRevision = Math.max(
+          session.pendingPersistence[runId] ?? 0,
+          revision,
+        );
+        const pendingPersistence = {
+          ...session.pendingPersistence,
+          [runId]: requiredRevision,
+        };
+        const pendingPersistenceUpdatedAt = {
+          ...session.pendingPersistenceUpdatedAt,
+          [runId]: now,
+        };
+
+        for (const [pendingRunId, updatedAt] of Object.entries(
+          pendingPersistenceUpdatedAt,
+        )) {
+          if (
+            pendingRunId !== session.activeRunId &&
+            now - updatedAt > PENDING_PERSISTENCE_TTL_MS
+          ) {
+            delete pendingPersistence[pendingRunId];
+            delete pendingPersistenceUpdatedAt[pendingRunId];
+          }
+        }
+
+        const excess =
+          Object.keys(pendingPersistence).length -
+          MAX_PENDING_PERSISTENCE_PER_SESSION;
+        if (excess > 0) {
+          const oldestEvictable = Object.keys(pendingPersistence)
+            .filter((pendingRunId) => pendingRunId !== session.activeRunId)
+            .sort(
+              (left, right) =>
+                (pendingPersistenceUpdatedAt[left] ?? 0) -
+                (pendingPersistenceUpdatedAt[right] ?? 0),
+            );
+          for (const pendingRunId of oldestEvictable.slice(0, excess)) {
+            delete pendingPersistence[pendingRunId];
+            delete pendingPersistenceUpdatedAt[pendingRunId];
+          }
+        }
+
+        return {
+          sessions: {
+            ...s.sessions,
+            [run.sessionId]: {
+              ...session,
+              messages: session.messages.map((message) =>
+                message.runId === runId
+                  ? {
+                      ...message,
+                      pendingPersistenceRevision: requiredRevision,
+                    }
+                  : message,
+              ),
+              pendingPersistence,
+              pendingPersistenceUpdatedAt,
+            },
+          },
         };
       });
     },
@@ -361,8 +597,10 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
       set((s) => {
         const ses = s.sessions[sessionId];
         if (!ses) return s;
-        // 校验：只允许 activeRunId 匹配的 run 写入
-        if (ses.activeRunId !== runId) return s;
+        // run 终态后 activeRunId 会先清空，但同一 run 的 rAF/history
+        // 收敛仍必须能写入；因此校验稳定 run 身份，而不是瞬时 activeRunId。
+        const run = s.runs[runId];
+        if (!run || run.sessionId !== sessionId) return s;
         const nextMessages = updater(ses.messages);
         if (nextMessages === ses.messages) return s;
         return {
@@ -412,27 +650,35 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
       if (!run) return;
 
       const buf = run.pendingTextBuffer;
-      // 重置 buffer 和 rAF 状态
-      set((s) => ({
-        runs: {
-          ...s.runs,
-          [runId]: {
-            ...s.runs[runId],
-            pendingTextBuffer: '',
-            rafHandle: null,
-            rafScheduled: false,
-          },
-        },
-      }));
-
       if (!buf) return;
 
-      // 写入该 run 对应 session 的最后一条 assistant 消息
       const sid = run.sessionId;
+      const targetExists = get().sessions[sid]?.messages.some(
+        (message) => message.role === 'assistant' && message.runId === runId,
+      );
+      if (!targetExists) {
+        // placeholder 尚未建立时保留 buffer；只释放已执行的 rAF handle，
+        // 后续 append 或终态同步 flush 会再次尝试。
+        set((s) => {
+          const current = s.runs[runId];
+          if (!current) return s;
+          return {
+            runs: {
+              ...s.runs,
+              [runId]: { ...current, rafHandle: null, rafScheduled: false },
+            },
+          };
+        });
+        return;
+      }
+
       get().updateMessages(sid, runId, (msgs) => {
-        const last = msgs[msgs.length - 1];
-        if (!last || last.role !== 'assistant') return msgs;
-        const blocks = [...last.blocks];
+        const messageIndex = msgs.findIndex(
+          (message) => message.role === 'assistant' && message.runId === runId,
+        );
+        if (messageIndex < 0) return msgs;
+        const target = msgs[messageIndex];
+        const blocks = [...target.blocks];
         // 找最后一个 text block
         let textBlockIdx = -1;
         for (let i = blocks.length - 1; i >= 0; i--) {
@@ -456,7 +702,25 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
             text: buf,
           });
         }
-        return [...msgs.slice(0, -1), { ...last, blocks }];
+        const next = [...msgs];
+        next[messageIndex] = { ...target, blocks };
+        return next;
+      });
+
+      set((s) => {
+        const current = s.runs[runId];
+        if (!current) return s;
+        return {
+          runs: {
+            ...s.runs,
+            [runId]: {
+              ...current,
+              pendingTextBuffer: '',
+              rafHandle: null,
+              rafScheduled: false,
+            },
+          },
+        };
       });
     },
 
@@ -471,7 +735,6 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
           ...s.runs,
           [runId]: {
             ...s.runs[runId],
-            pendingTextBuffer: '',
             rafHandle: null,
             rafScheduled: false,
           },
@@ -516,11 +779,11 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
 
       while (evictable.length > MAX_CACHED_SESSIONS) {
         const oldest = evictable.shift()!;
-        const ses = sessions[oldest];
-        if (ses?.activeRunId) {
-          const run = runs[ses.activeRunId];
-          run?.abortController?.abort();
-          get().removeRun(ses.activeRunId);
+        for (const run of Object.values(get().runs)) {
+          if (run.sessionId === oldest) {
+            run.abortController?.abort();
+            get().removeRun(run.runId);
+          }
         }
         set((s) => {
           const { [oldest]: _, ...rest } = s.sessions;
@@ -529,6 +792,25 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
             _accessOrder: s._accessOrder.filter((id) => id !== oldest),
           };
         });
+      }
+    },
+
+    _pruneTerminalRuns: (sessionId) => {
+      const terminalRuns = Object.values(get().runs)
+        .filter(
+          (run) =>
+            run.sessionId === sessionId &&
+            ['succeeded', 'failed', 'aborted'].includes(run.status),
+        )
+        .sort(
+          (left, right) =>
+            (left.terminalAt ?? left.createdAt) -
+            (right.terminalAt ?? right.createdAt),
+        );
+      const excess = terminalRuns.length - MAX_TERMINAL_RUNS_PER_SESSION;
+      if (excess <= 0) return;
+      for (const run of terminalRuns.slice(0, excess)) {
+        get().removeRun(run.runId);
       }
     },
   }),
@@ -542,7 +824,7 @@ export const useChatRuntimeStore = create<ChatRuntimeState>()(
 export function selectSessionMessages(
   sessionId: string,
 ): (state: ChatRuntimeState) => ChatMessage[] {
-  return (state) => state.sessions[sessionId]?.messages ?? [];
+  return (state) => state.sessions[sessionId]?.messages ?? EMPTY_MESSAGES;
 }
 
 /** 获取指定 session 的状态 */
@@ -562,7 +844,8 @@ export function selectSessionHistoryLoaded(
 /** 带 sessionId 参数 selector 的工厂（避免每次 render 创建新函数） */
 export function createSessionSelectors(sessionId: string) {
   return {
-    messages: (s: ChatRuntimeState) => s.sessions[sessionId]?.messages ?? [],
+    messages: (s: ChatRuntimeState) =>
+      s.sessions[sessionId]?.messages ?? EMPTY_MESSAGES,
     status: (s: ChatRuntimeState) => s.sessions[sessionId]?.status ?? 'idle',
     historyLoaded: (s: ChatRuntimeState) =>
       s.sessions[sessionId]?.historyLoaded ?? false,

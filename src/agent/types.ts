@@ -60,6 +60,17 @@ export type AgentRunParams = {
    */
   message: string;
 
+  // ---- 稳定身份（可选，兼容旧调用方） ----
+
+  /** 本次模型执行的稳定 ID；缺省时由 runner 生成。 */
+  runId?: string;
+
+  /** 用户消息的稳定 ID；缺省时由 runner 生成。 */
+  clientMessageId?: string;
+
+  /** 最终 assistant 消息的稳定 ID；缺省时由 runner 生成。 */
+  assistantMessageId?: string;
+
   // ---- 多媒体附件 ----
 
   /**
@@ -812,4 +823,6 @@ export type AgentRunEvent =
       type: "done";
       /** 完整的 run 结果 */
       result: AgentRunResult;
+      /** 最终实际持久化的 assistant message ID；错误终态或旧调用方可缺省。 */
+      messageId?: string;
     };

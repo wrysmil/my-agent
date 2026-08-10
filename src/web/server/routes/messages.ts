@@ -184,17 +184,39 @@ async function postMessageStream(
     return;
   }
 
-  // 4) P0 生成稳定 runId + assistantMessageId
-  const runId = randomUUID();
-  const assistantMessageId = randomUUID();
+  const userContent = [{ type: "text" as const, text: body.text }];
+  const userIdentity = body.clientMessageId === undefined
+    ? { status: "available" as const }
+    : session.checkUserTurnIdentity(body.clientMessageId, userContent);
+  if (userIdentity.status === "conflict") {
+    sendJsonError(
+      res,
+      409,
+      "CLIENT_MESSAGE_ID_CONFLICT",
+      `clientMessageId "${body.clientMessageId}" is already bound to a different payload`,
+    );
+    return;
+  }
+  const completedDuplicateAssistant = userIdentity.status === "duplicate"
+    ? session.getCompletedTurnFinalAssistant(userIdentity.turnId)
+    : undefined;
+
+  // 4) P0 使用客户端传来的 runId（前后端对齐）；缺省时服务端自生成
+  const runId = body.runId ?? randomUUID();
+  const assistantMessageId = completedDuplicateAssistant?.id ?? randomUUID();
 
   // 5) 注册 hub 流（生成 streamId + AbortController）
   const { streamId, controller } = hub.register(sessionId, runId);
 
-  // SSE stream 开始日志（用户输入截取前80字避免日志膨胀）
+  // SSE stream 开始日志：仅记录长度与匿名运行标识，不记录用户正文
   const sseStartTime = Date.now();
-  const userInputPreview = body.text.length > 80 ? body.text.slice(0, 80) + "..." : body.text;
-  logger?.info(`💬 对话开始 [${sessionId}] run:${runId} 用户: "${userInputPreview}"`, { sessionId, runId, streamId, model: body.model });
+  logger?.info("💬 对话开始", {
+    sessionId,
+    runId,
+    streamId,
+    messageLength: body.text.length,
+    model: body.model,
+  });
 
   // 6) 读取 Last-Event-ID
   const lastEventId = parseLastEventId(req.headers["last-event-id"]);
@@ -227,6 +249,18 @@ async function postMessageStream(
   };
 
   try {
+    if (completedDuplicateAssistant !== undefined) {
+      emit("done", {
+        ok: true,
+        streamId,
+        runId,
+        persistedRevision: session.getAllMessages().length,
+        messageId: assistantMessageId,
+        deduplicated: true,
+      });
+      return;
+    }
+
     // 7a) 首条 message_start（含 runId/streamId/messageId）
     emit("message_start", {
       type: "message_start",
@@ -241,7 +275,11 @@ async function postMessageStream(
 
     // 7b) 适配 AgentRunner.runStream → SSE events（带 envelope）
     let aborted = false;
-    let endedNormally = false;
+    let terminalError:
+      | { code: "AUTH_ERROR" | "CHAT_RUNNER_ERROR"; message: string }
+      | undefined;
+    let terminalMessageId: string = assistantMessageId;
+    let sourceTerminalReceived = false;
     let nextBlockIndex = 0;
     const openTextBlocks = new Set<number>();
 
@@ -254,6 +292,9 @@ async function postMessageStream(
 
       const params: AgentRunParams = {
         message: body.text,
+        runId,
+        clientMessageId: body.clientMessageId ?? randomUUID(),
+        assistantMessageId,
         ...(body.systemPrompt !== undefined
           ? { systemPrompt: body.systemPrompt }
           : {}),
@@ -270,6 +311,7 @@ async function postMessageStream(
 
       for await (const ev of runner.runStream(params)) {
         if (sse.clientGone) break;
+        if (aborted) break;
         // P0: Last-Event-ID 去重（按 frameSeq）
         if (isReconnect && frameSeq <= lastEventId) continue;
         if (isReconnect) {
@@ -277,23 +319,58 @@ async function postMessageStream(
           lastEventLru.record(frameSeq + 1);
         }
 
+        if (ev.type === "done") {
+          sourceTerminalReceived = true;
+          const doneEvent = ev as typeof ev & {
+            messageId?: string;
+            result?: { meta?: { error?: { kind?: string; message: string } } };
+          };
+          terminalMessageId = doneEvent.messageId ?? terminalMessageId;
+          const error = doneEvent.result?.meta?.error;
+          if (error) {
+            terminalError = {
+              code: error.kind === "auth" ? "AUTH_ERROR" : "CHAT_RUNNER_ERROR",
+              message: error.message,
+            };
+            emit("error", { ok: false, error: terminalError });
+          }
+          break;
+        }
+
         await adaptStreamEventWithEnvelope(
           res, ev, emit, () => nextBlockIndex++, openTextBlocks,
         );
 
-        if (ev.type === "message_end" || ev.type === "error" || (ev.type as string) === "done") {
-          if (ev.type === "message_end") endedNormally = true;
+        if (ev.type === "error") {
+          sourceTerminalReceived = true;
+          terminalError = {
+            code: "CHAT_RUNNER_ERROR",
+            message: ev.error instanceof Error ? ev.error.message : String(ev.error),
+          };
           break;
         }
       }
+      if (
+        !sse.clientGone &&
+        !aborted &&
+        !sourceTerminalReceived &&
+        terminalError === undefined
+      ) {
+        terminalError = {
+          code: "CHAT_RUNNER_ERROR",
+          message: "Runner stream ended without a terminal event",
+        };
+        emit("error", { ok: false, error: terminalError });
+      }
     } catch (err) {
-      if (!sse.clientGone) {
+      if (!sse.clientGone && !aborted) {
+        terminalError = {
+          code: "CHAT_RUNNER_ERROR",
+          message: err instanceof Error ? err.message : String(err),
+        };
         emit("error", {
           ok: false,
-          error: {
-            code: "CHAT_RUNNER_ERROR",
-            message: err instanceof Error ? err.message : String(err),
-          },
+          error: terminalError,
         });
       }
     }
@@ -305,12 +382,13 @@ async function postMessageStream(
       if (aborted) {
         emit("aborted", {
           ok: false, streamId, runId, reason: "client_abort",
-          persistedRevision: revision, messageId: assistantMessageId,
+          persistedRevision: revision,
         });
-      } else {
+      } else if (terminalError === undefined) {
         emit("done", {
           ok: true, streamId, runId,
-          persistedRevision: revision, messageId: assistantMessageId,
+          persistedRevision: revision,
+          messageId: terminalMessageId,
         });
       }
     }
@@ -388,9 +466,9 @@ async function abortMessage(
   // 4) abort：优先 runId → streamId
   let ok: boolean;
   if (targetRunId) {
-    ok = hub.abortByRunId(targetRunId);
+    ok = hub.abortByRunId(sessionId, targetRunId);
   } else {
-    ok = hub.abort(targetStreamId!);
+    ok = hub.abort(targetStreamId!, sessionId);
   }
   if (!ok) {
     sendJsonError(res, 404, "STREAM_NOT_FOUND", `Stream not found`);

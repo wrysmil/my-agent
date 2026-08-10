@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useChatStream } from '../../src/features/chat/useChatStream';
+import {
+  messageText,
+  useChatStream,
+} from '../../src/features/chat/useChatStream';
+import { useChatRuntimeStore } from '../../src/features/chat/chatRuntimeStore';
 
 function makeMockStream(frames: string[]): Response {
   const enc = new TextEncoder();
@@ -16,9 +20,48 @@ function makeMockStream(frames: string[]): Response {
   });
 }
 
+function makeOpenMockStream(frames: string[]): Response {
+  const enc = new TextEncoder();
+  const body = new ReadableStream({
+    start(c: ReadableStreamDefaultController) {
+      for (const f of frames) c.enqueue(enc.encode(f));
+    },
+  });
+  return new Response(body, {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+}
+
+function makeControlledStream() {
+  const encoder = new TextEncoder();
+  let controller!: ReadableStreamDefaultController<Uint8Array>;
+  const body = new ReadableStream<Uint8Array>({
+    start(nextController) {
+      controller = nextController;
+    },
+  });
+  return {
+    response: new Response(body, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+    }),
+    emit(event: string, envelope: Record<string, unknown>) {
+      controller.enqueue(
+        encoder.encode(`event: ${event}\ndata: ${JSON.stringify(envelope)}\n\n`),
+      );
+    },
+  };
+}
+
 describe('useChatStream state machine', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    useChatRuntimeStore.setState({
+      sessions: {},
+      runs: {},
+      _accessOrder: [],
+    });
   });
 
   it('initial status is idle, messages is empty', () => {
@@ -27,15 +70,16 @@ describe('useChatStream state machine', () => {
     expect(result.current.messages).toEqual([]);
   });
 
-  it('idle → submitting → streaming → done on message_stop', async () => {
+  it('idle → submitting → streaming → done on explicit done', async () => {
     const { result } = renderHook(() => useChatStream('test-cid'));
     expect(result.current.status).toBe('idle');
 
     vi.spyOn(global, 'fetch').mockResolvedValueOnce(
       makeMockStream([
         'event: message_start\ndata: {"streamId":"abc","cid":"c","seq":1}\n\n',
-        'event: content_block_delta\ndata: {"seq":2,"delta":{"text":"hi"}}\n\n',
+        'event: content_block_delta\ndata: {"seq":2,"delta":{"type":"text_delta","text":"hi"}}\n\n',
         'event: message_stop\ndata: {"seq":3}\n\n',
+        'event: done\ndata: {"seq":4}\n\n',
       ])
     );
 
@@ -45,39 +89,39 @@ describe('useChatStream state machine', () => {
 
     expect(result.current.status).toBe('done');
     expect(result.current.messages).toHaveLength(2);
-    expect(result.current.messages[0]).toEqual({ role: 'user', text: 'hello' });
+    expect(result.current.messages[0]).toMatchObject({
+      role: 'user',
+      text: 'hello',
+    });
     expect(result.current.messages[1].role).toBe('assistant');
-    expect(result.current.messages[1].text).toBe('hi');
+    expect(messageText(result.current.messages[1])).toBe('hi');
   });
 
-  it('abort() sends POST to abort endpoint', async () => {
+  it('abort() stops the active run and clears its session ownership', async () => {
     const { result } = renderHook(() => useChatStream('test-cid'));
 
-    // Stream without message_stop so send stays in 'streaming' after consumption
-    const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValueOnce(
-      makeMockStream([
+    vi.spyOn(global, 'fetch').mockResolvedValueOnce(
+      makeOpenMockStream([
         'event: message_start\ndata: {"streamId":"abc","cid":"c","seq":1}\n\n',
-        'event: content_block_delta\ndata: {"seq":2,"delta":{"text":"x"}}\n\n',
+        'event: content_block_delta\ndata: {"seq":2,"delta":{"type":"text_delta","text":"x"}}\n\n',
       ])
     );
 
-    // Start send — stream will be fully consumed, status becomes 'streaming'
-    await act(async () => {
-      await result.current.send('x');
+    act(() => {
+      void result.current.send('x');
     });
 
-    expect(result.current.status).toBe('streaming');
+    await waitFor(() => expect(result.current.status).toBe('streaming'));
+    const runId = useChatRuntimeStore.getState().getSession('test-cid')?.activeRunId;
+    expect(runId).toBeTruthy();
 
-    // Now abort while in streaming state (streamId is already set)
-    await act(async () => {
-      await result.current.abort();
+    act(() => {
+      result.current.abort();
     });
 
     expect(result.current.status).toBe('aborted');
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/sessions/test-cid/messages/abort',
-      expect.objectContaining({ method: 'POST' })
-    );
+    expect(useChatRuntimeStore.getState().getSession('test-cid')?.activeRunId).toBeNull();
+    expect(useChatRuntimeStore.getState().getRun(runId!)?.abortController).toBeNull();
   });
 
   it('transitions to error on HTTP failure', async () => {
@@ -247,39 +291,81 @@ describe('useChatStream state machine', () => {
       expect(['submitting', 'streaming', 'reconnecting']).not.toContain(result.current.status);
     });
 
-    it('abort 后第二次 send 必须能起新 fetch（避免 controllerRef 悬挂导致新请求被瞬 abort）', async () => {
-      // 这条聚焦 controller 清理：修复前的 bug 是 abort 没把 controllerRef 清 null，
-      // 下一次 send 会复用已被 abort 的旧 AbortController，fetch 立刻 reject AbortError。
-      // 用「只看 messages/stream 调用的次数」来隔离 history fetch 的干扰。
-      const fetchSpy = vi.spyOn(global, 'fetch')
-        // mount → GET history（无论内容）
-        .mockResolvedValue(
-          new Response(JSON.stringify({ ok: true, data: { messages: [] } }), { status: 200 }),
+    it('abort 后第二次 run 消费独立 stream，且第一 run 晚到终态不覆盖它', async () => {
+      const first = makeControlledStream();
+      const second = makeControlledStream();
+      const postedRuns: string[] = [];
+      vi.spyOn(global, 'fetch').mockImplementation((input, init) => {
+        const url = String(input);
+        if (url.endsWith('/history')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                ok: true,
+                data: { sessionId: 'test-cid', revision: 0, messages: [] },
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        const body = JSON.parse(String(init?.body)) as { runId: string };
+        postedRuns.push(body.runId);
+        return Promise.resolve(
+          postedRuns.length === 1 ? first.response : second.response,
         );
+      });
 
       const { result } = renderHook(() => useChatStream('test-cid'));
-      // 等 history 加载好
       await waitFor(() => expect(result.current.historyLoaded).toBe(true));
 
-      const streamCallCount = () =>
-        fetchSpy.mock.calls.filter(
-          ([url, init]) =>
-            String(url).endsWith('/messages/stream') &&
-            ((init as RequestInit | undefined)?.method ?? 'GET') === 'POST',
-        ).length;
-
-      act(() => { result.current.send('first'); });
-      expect(streamCallCount()).toBe(1);
-
-      // 中止
+      act(() => void result.current.send('first'));
+      await waitFor(() => expect(postedRuns).toHaveLength(1));
+      await act(async () => {
+        first.emit('message_start', {
+          sessionId: 'test-cid', runId: postedRuns[0], streamId: 'first', seq: 1,
+          event: 'message_start',
+          data: { message: { id: 'assistant-first', stream_id: 'first' } },
+        });
+      });
+      await waitFor(() => expect(result.current.status).toBe('streaming'));
       act(() => { result.current.abort(); });
       expect(result.current.status).toBe('aborted');
 
-      // 立刻再次发送：必须能跑出第二次 stream fetch（且不被 statusRef guard 阻断）
-      act(() => { result.current.send('second'); });
-      expect(streamCallCount()).toBe(2);
-      // 第二次 send 走到 submitting 阶段（fetch 永远不 resolve）
-      expect(['submitting', 'streaming']).toContain(result.current.status);
+      act(() => void result.current.send('second'));
+      await waitFor(() => expect(postedRuns).toHaveLength(2));
+      await act(async () => {
+        second.emit('message_start', {
+          sessionId: 'test-cid', runId: postedRuns[1], streamId: 'second', seq: 1,
+          event: 'message_start',
+          data: { message: { id: 'assistant-second', stream_id: 'second' } },
+        });
+        second.emit('content_block_delta', {
+          sessionId: 'test-cid', runId: postedRuns[1], streamId: 'second', seq: 2,
+          event: 'content_block_delta',
+          data: { delta: { type: 'text_delta', text: 'second reply' } },
+        });
+        second.emit('done', {
+          sessionId: 'test-cid', runId: postedRuns[1], streamId: 'second', seq: 3,
+          event: 'done',
+          data: {},
+        });
+      });
+      await waitFor(() => expect(result.current.status).toBe('done'));
+      expect(
+        result.current.messages
+          .filter((message) => message.runId === postedRuns[1])
+          .map(messageText)
+          .join(' '),
+      ).toContain('second reply');
+
+      await act(async () => {
+        first.emit('error', {
+          sessionId: 'test-cid', runId: postedRuns[0], streamId: 'first', seq: 2,
+          event: 'error',
+          data: { error: { message: 'late first error' } },
+        });
+      });
+      expect(result.current.status).toBe('done');
     });
   });
 });

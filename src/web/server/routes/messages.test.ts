@@ -22,10 +22,15 @@ import * as os from "node:os";
 import * as path from "node:path";
 
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { AgentRunner } from "../../../agent/runner.js";
 import { SessionStore } from "../../../storage/session-store.js";
+import { ProviderRegistry } from "../../../providers/registry.js";
+import { createConfig } from "../../../config/loader.js";
+import { defineTool } from "../../../tools/base.js";
 import type { AgentRunParams } from "../../../agent/types.js";
 import type { StreamEvent } from "../../../shared/types.js";
 import type { PersistentSession } from "../../../agent/persistent-session.js";
+import { MockProvider } from "../../../../test/mocks/provider.js";
 
 import { installMessageRoutes } from "./messages.js";
 import { ROUTES } from "../router.js";
@@ -246,7 +251,7 @@ afterEach(() => {
 // ============================================================
 
 describe("POST /api/sessions/:id/messages/stream — happy path", () => {
-  it("mock runner 发 text_delta + message_end → 响应至少 3 个 event + done 必发", async () => {
+  it("mock runner 发 text_delta + terminal done → 响应至少 3 个 event + done 必发", async () => {
     const session = sessionStore.create("gconv");
     const events: StreamEvent[] = [
       { type: "message_start", usage: { inputTokens: 10 } },
@@ -258,6 +263,7 @@ describe("POST /api/sessions/:id/messages/stream — happy path", () => {
         usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
         model: "deepseek-chat",
       },
+      { type: "done", result: {} },
     ];
 
     installMessageRoutes({
@@ -330,6 +336,716 @@ describe("POST /api/sessions/:id/messages/stream — happy path", () => {
     expect(doneEnv.data.messageId).toBeTruthy();
     expect(doneEnv.data.messageId).toBe(msMsg.id);
   });
+
+  it("route 将稳定 ID 传给 runner，且只发一个携带终态 revision 的 done", async () => {
+    const session = sessionStore.create("gconv");
+    const runId = "11111111-1111-4111-8111-111111111111";
+    const clientMessageId = "22222222-2222-4222-8222-222222222222";
+    let receivedParams: AgentRunParams | undefined;
+
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: ({ session: persistentSession }) => ({
+        async *runStream(params: AgentRunParams): AsyncIterable<StreamEvent> {
+          receivedParams = params;
+          await persistentSession.beginUserTurn(
+            [{ type: "text", text: params.message }],
+            { id: params.clientMessageId, runId: params.runId },
+          );
+          await persistentSession.addAssistantMessage(
+            [{ type: "text", text: "完成", id: `${params.assistantMessageId}:0` }],
+            { id: params.assistantMessageId, runId: params.runId },
+          );
+          yield {
+            type: "done",
+            result: {
+              text: "完成",
+              content: [],
+              meta: {
+                durationMs: 1,
+                model: "mock",
+                provider: "mock",
+                stopReason: "end_turn",
+                usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+                toolLoops: 0,
+                compactionCount: 0,
+              },
+            },
+          };
+        },
+      }),
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "hello", runId, clientMessageId }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    expect(receivedParams).toMatchObject({ runId, clientMessageId });
+    expect(receivedParams?.assistantMessageId).toBeTruthy();
+
+    const parsed = parseSse(res.body);
+    const starts = parsed.filter((frame) => frame.event === "message_start");
+    const dones = parsed.filter((frame) => frame.event === "done");
+    expect(starts).toHaveLength(1);
+    expect(dones).toHaveLength(1);
+
+    const startEnv = starts[0].data as SseEnvelope;
+    const doneEnv = dones[0].data as SseEnvelope;
+    const startMessage = startEnv.data.message as { id: string };
+    expect(doneEnv.data).toMatchObject({
+      ok: true,
+      persistedRevision: 2,
+      messageId: startMessage.id,
+    });
+
+    const persisted = session.getAllMessages();
+    expect(persisted.map((message) => message.id)).toEqual([
+      clientMessageId,
+      startMessage.id,
+    ]);
+    expect(persisted.every((message) => message.runId === runId)).toBe(true);
+  });
+
+  it("成功 done 使用 runner 返回的实际终态 messageId", async () => {
+    const session = sessionStore.create("gconv");
+    const actualTerminalMessageId = "44444444-4444-4444-8444-444444444444";
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: () => ({
+        async *runStream(): AsyncIterable<StreamEvent> {
+          yield {
+            type: "done",
+            result: {
+              text: "完成",
+              content: [],
+              meta: {
+                durationMs: 1,
+                model: "mock",
+                provider: "mock",
+                stopReason: "end_turn",
+                usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
+                toolLoops: 0,
+                compactionCount: 0,
+              },
+            },
+            messageId: actualTerminalMessageId,
+          } as StreamEvent & { messageId: string };
+        },
+      }),
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "hello" }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const done = parseSse(res.body).find((frame) => frame.event === "done");
+    expect((done?.data as SseEnvelope).data.messageId).toBe(actualTerminalMessageId);
+  });
+
+  it("真实 terminal tool 流程闭合 message_start、done 与最终 JSONL assistant ID", async () => {
+    const session = sessionStore.create("gconv");
+    const config = createConfig({
+      agent: {
+        defaultModel: "claude-sonnet-5",
+        defaultProvider: "mock",
+        maxRetries: 0,
+        maxToolLoops: 5,
+        toolIdleTimeoutMs: 5_000,
+      },
+    });
+    const mockProvider = new MockProvider();
+    const providers = new ProviderRegistry(config);
+    providers.registerFactory("mock", () => mockProvider);
+    const finishTool = defineTool({
+      name: "finish",
+      description: "完成并终止",
+      inputSchema: { type: "object", properties: {} },
+      execute: async () => ({ content: "terminal complete", endTurn: true }),
+    });
+    mockProvider.program({
+      kind: "tool_calls",
+      text: "准备结束",
+      calls: [{ id: "terminal-call", name: "finish", input: {} }],
+    });
+
+    installMessageRoutes({
+      sessionStore,
+      config,
+      providers,
+      runnerFactory: ({ session: persistentSession }) =>
+        new AgentRunner({
+          config,
+          providers,
+          tools: [finishTool],
+          session: persistentSession,
+        }),
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "run terminal tool",
+        runId: "11111111-1111-4111-8111-111111111111",
+        clientMessageId: "22222222-2222-4222-8222-222222222222",
+      }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const frames = parseSse(res.body);
+    const start = frames.find((frame) => frame.event === "message_start");
+    const done = frames.find((frame) => frame.event === "done");
+    const startId = (
+      (start?.data as SseEnvelope).data.message as { id: string }
+    ).id;
+    const doneId = (done?.data as SseEnvelope).data.messageId;
+    const jsonlRecords = fs
+      .readFileSync(path.join(tmpDir, `${session.sessionId}.jsonl`), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id?: string; role: string });
+    const ids = jsonlRecords
+      .map((record) => record.id)
+      .filter((id): id is string => typeof id === "string");
+    const finalAssistant = jsonlRecords
+      .filter((record) => record.role === "assistant")
+      .at(-1);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(startId).toBe(doneId);
+    expect(doneId).toBe(finalAssistant?.id);
+  });
+
+  it("真实 maxToolLoops 摘要闭合 message_start、done 与最终 JSONL assistant ID", async () => {
+    const session = sessionStore.create("gconv");
+    const config = createConfig({
+      agent: {
+        defaultModel: "claude-sonnet-5",
+        defaultProvider: "mock",
+        maxRetries: 0,
+        maxToolLoops: 2,
+        toolIdleTimeoutMs: 5_000,
+      },
+    });
+    const mockProvider = new MockProvider();
+    const providers = new ProviderRegistry(config);
+    providers.registerFactory("mock", () => mockProvider);
+    const echoTool = defineTool({
+      name: "echo",
+      description: "回显",
+      inputSchema: {
+        type: "object",
+        properties: { msg: { type: "string" } },
+      },
+      execute: async (input) => ({ content: `echo: ${input.msg}` }),
+    });
+    mockProvider.program({
+      kind: "tool_calls",
+      calls: [{ id: "loop-call-1", name: "echo", input: { msg: "one" } }],
+    });
+    mockProvider.program({
+      kind: "tool_calls",
+      calls: [{ id: "loop-call-2", name: "echo", input: { msg: "two" } }],
+    });
+    mockProvider.program({
+      kind: "tool_calls",
+      calls: [{ id: "loop-call-3", name: "echo", input: { msg: "three" } }],
+    });
+    mockProvider.program({ kind: "text", text: "循环上限最终摘要" });
+
+    installMessageRoutes({
+      sessionStore,
+      config,
+      providers,
+      runnerFactory: ({ session: persistentSession }) =>
+        new AgentRunner({
+          config,
+          providers,
+          tools: [echoTool],
+          session: persistentSession,
+        }),
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "run until maxToolLoops",
+        runId: "11111111-1111-4111-8111-111111111111",
+        clientMessageId: "22222222-2222-4222-8222-222222222222",
+      }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const frames = parseSse(res.body);
+    const start = frames.find((frame) => frame.event === "message_start");
+    const done = frames.find((frame) => frame.event === "done");
+    const startId = (
+      (start?.data as SseEnvelope).data.message as { id: string }
+    ).id;
+    const doneId = (done?.data as SseEnvelope).data.messageId;
+    const jsonlRecords = fs
+      .readFileSync(path.join(tmpDir, `${session.sessionId}.jsonl`), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as {
+        id?: string;
+        role: string;
+        runId?: string;
+        content?: unknown;
+      });
+    const ids = jsonlRecords
+      .map((record) => record.id)
+      .filter((id): id is string => typeof id === "string");
+    const assistants = jsonlRecords.filter((record) => record.role === "assistant");
+    const finalAssistant = assistants.at(-1);
+
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(startId).toBe(doneId);
+    expect(doneId).toBe(finalAssistant?.id);
+    expect(finalAssistant?.runId).toBe("11111111-1111-4111-8111-111111111111");
+    expect(JSON.stringify(finalAssistant?.content)).toContain("循环上限最终摘要");
+  });
+
+  it("已完成请求重复 clientMessageId 仅发关联真实 assistant 的 deduplicated done", async () => {
+    const session = sessionStore.create("gconv");
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    let runnerCalls = 0;
+    const runnerFactory = ({ session: persistentSession }: {
+      session: PersistentSession;
+    }) => ({
+      async *runStream(params: AgentRunParams) {
+        runnerCalls++;
+        await persistentSession.beginUserTurn(
+          [{ type: "text", text: params.message }],
+          { id: params.clientMessageId, runId: params.runId },
+        );
+        await persistentSession.addAssistantMessage(
+          [{ type: "text", text: "completed" }],
+          { id: params.assistantMessageId, runId: params.runId },
+        );
+        persistentSession.completeActiveTurn();
+        yield {
+          type: "done" as const,
+          result: {},
+          messageId: params.assistantMessageId,
+        };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const route = findStreamRoute();
+    const firstReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "same request",
+        clientMessageId,
+        runId: "22222222-2222-4222-8222-222222222222",
+      }),
+    });
+    const firstRes = makeMockRes();
+    await route!.handler(firstReq, firstRes, { id: session.sessionId });
+    const firstDone = parseSse(firstRes.body).find(
+      (frame) => frame.event === "done",
+    );
+    const persistedAssistantMessageId = (
+      firstDone?.data as SseEnvelope
+    ).data.messageId;
+
+    const duplicateReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "same request",
+        clientMessageId,
+        runId: "33333333-3333-4333-8333-333333333333",
+      }),
+    });
+    const duplicateRes = makeMockRes();
+    await route!.handler(duplicateReq, duplicateRes, { id: session.sessionId });
+
+    const duplicateFrames = parseSse(duplicateRes.body);
+    const done = duplicateFrames[0];
+    const userRecords = fs
+      .readFileSync(path.join(tmpDir, `${session.sessionId}.jsonl`), "utf-8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line) as { id?: string; role: string })
+      .filter((record) => record.role === "user" && record.id === clientMessageId);
+    expect(runnerCalls).toBe(1);
+    expect(userRecords).toHaveLength(1);
+    expect(duplicateFrames.map((frame) => frame.event)).toEqual(["done"]);
+    expect(duplicateFrames.map((frame) => frame.id)).toEqual([1]);
+    expect((done?.data as SseEnvelope).data.deduplicated).toBe(true);
+    expect((done?.data as SseEnvelope).data.messageId)
+      .toBe(persistedAssistantMessageId);
+    expect((done?.data as SseEnvelope).data.messageId)
+      .not.toBe(clientMessageId);
+    expect((done?.data as SseEnvelope).data.persistedRevision).toBe(2);
+    expect((done?.data as SseEnvelope).seq).toBe(1);
+  });
+
+  it("服务重载后 completed dedup 仍只返回原 assistant ID 的 done", async () => {
+    const session = sessionStore.create("gconv");
+    const sessionId = session.sessionId;
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    let runnerCalls = 0;
+    const runnerFactory = ({ session: persistentSession }: {
+      session: PersistentSession;
+    }) => ({
+      async *runStream(params: AgentRunParams) {
+        runnerCalls++;
+        await persistentSession.beginUserTurn(
+          [{ type: "text", text: params.message }],
+          { id: params.clientMessageId, runId: params.runId },
+        );
+        await persistentSession.addAssistantMessage(
+          [{ type: "text", text: "persisted completion" }],
+          { id: params.assistantMessageId, runId: params.runId },
+        );
+        persistentSession.completeActiveTurn();
+        yield {
+          type: "done" as const,
+          result: {},
+          messageId: params.assistantMessageId,
+        };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const route = findStreamRoute();
+    const firstReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "reload me", clientMessageId }),
+    });
+    const firstRes = makeMockRes();
+    await route!.handler(firstReq, firstRes, { id: sessionId });
+    const originalAssistantId = (
+      parseSse(firstRes.body).find((frame) => frame.event === "done")
+        ?.data as SseEnvelope
+    ).data.messageId;
+
+    sessionStore.closeAll();
+    expect(sessionStore.get(sessionId)).not.toBeNull();
+
+    const duplicateReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "reload me", clientMessageId }),
+    });
+    const duplicateRes = makeMockRes();
+    await route!.handler(duplicateReq, duplicateRes, { id: sessionId });
+
+    const frames = parseSse(duplicateRes.body);
+    expect(runnerCalls).toBe(1);
+    expect(frames.map((frame) => frame.event)).toEqual(["done"]);
+    expect((frames[0].data as SseEnvelope).data.messageId)
+      .toBe(originalAssistantId);
+    expect((frames[0].data as SseEnvelope).data.messageId)
+      .not.toBe(clientMessageId);
+    expect((frames[0].data as SseEnvelope).data.persistedRevision).toBe(2);
+  });
+
+  it("仅持久化 user 的重复请求允许安全重跑且不重复用户 JSONL", async () => {
+    const session = sessionStore.create("gconv");
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    await session.beginUserTurn(
+      [{ type: "text", text: "retry after interruption" }],
+      {
+        id: clientMessageId,
+        runId: "22222222-2222-4222-8222-222222222222",
+      },
+    );
+    let runnerCalls = 0;
+    const runnerFactory = ({ session: persistentSession }: {
+      session: PersistentSession;
+    }) => ({
+      async *runStream(params: AgentRunParams) {
+        runnerCalls++;
+        await persistentSession.beginUserTurn(
+          [{ type: "text", text: params.message }],
+          { id: params.clientMessageId, runId: params.runId },
+        );
+        await persistentSession.addAssistantMessage(
+          [{ type: "text", text: "retry succeeded" }],
+          { id: params.assistantMessageId, runId: params.runId },
+        );
+        persistentSession.completeActiveTurn();
+        yield {
+          type: "done" as const,
+          result: {},
+          messageId: params.assistantMessageId,
+        };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "retry after interruption",
+        clientMessageId,
+      }),
+    });
+    const res = makeMockRes();
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const messages = session.getAllMessages();
+    expect(runnerCalls).toBe(1);
+    expect(messages.filter((message) => message.id === clientMessageId))
+      .toHaveLength(1);
+    expect(messages.filter((message) => message.role === "assistant"))
+      .toHaveLength(1);
+    expect(parseSse(res.body).filter((frame) => frame.event === "done"))
+      .toHaveLength(1);
+  });
+
+  it("turn1 在 turn2 后重试时 terminal-tool 全链仍归属 turn1，重载后可 dedup", async () => {
+    const session = sessionStore.create("gconv");
+    const turn1ClientId = "11111111-1111-4111-8111-111111111111";
+    const turn2ClientId = "22222222-2222-4222-8222-222222222222";
+    const turn2AssistantId = "33333333-3333-4333-8333-333333333333";
+    const turn1 = await session.beginUserTurn(
+      [{ type: "text", text: "retry turn one" }],
+      { id: turn1ClientId },
+    );
+    const turn2 = await session.beginUserTurn(
+      [{ type: "text", text: "completed turn two" }],
+      { id: turn2ClientId },
+    );
+    await session.addAssistantMessage(
+      [{ type: "text", text: "turn two answer" }],
+      { id: turn2AssistantId },
+    );
+    session.completeActiveTurn();
+
+    const config = createConfig({
+      agent: {
+        defaultModel: "claude-sonnet-5",
+        defaultProvider: "mock",
+        maxRetries: 0,
+        maxToolLoops: 5,
+        toolIdleTimeoutMs: 5_000,
+      },
+    });
+    const mockProvider = new MockProvider();
+    const providers = new ProviderRegistry(config);
+    providers.registerFactory("mock", () => mockProvider);
+    const finishTool = defineTool({
+      name: "finish",
+      description: "结束重试",
+      inputSchema: { type: "object", properties: {} },
+      execute: async () => ({ content: "turn one recovered", endTurn: true }),
+    });
+    mockProvider.program({
+      kind: "tool_calls",
+      text: "finishing retry",
+      calls: [{ id: "retry-terminal-call", name: "finish", input: {} }],
+    });
+    let runnerCalls = 0;
+    installMessageRoutes({
+      sessionStore,
+      config,
+      providers,
+      runnerFactory: ({ session: persistentSession }) => {
+        runnerCalls++;
+        return new AgentRunner({
+          config,
+          providers,
+          tools: [finishTool],
+          session: persistentSession,
+        });
+      },
+    });
+
+    const route = findStreamRoute();
+    const retryReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "retry turn one",
+        clientMessageId: turn1ClientId,
+        runId: "44444444-4444-4444-8444-444444444444",
+      }),
+    });
+    const retryRes = makeMockRes();
+    await route!.handler(retryReq, retryRes, { id: session.sessionId });
+    const recoveredAssistantId = (
+      parseSse(retryRes.body).find((frame) => frame.event === "done")
+        ?.data as SseEnvelope
+    ).data.messageId;
+
+    const messages = session.getAllMessages();
+    const retryRunMessages = messages.filter(
+      (message) => message.runId === "44444444-4444-4444-8444-444444444444",
+    );
+    const toolResults = messages.filter((message) =>
+      message.content.some((block) => block.type === "tool_result"),
+    );
+    const ids = messages
+      .map((message) => message.id)
+      .filter((id): id is string => typeof id === "string");
+    expect(retryRunMessages.length).toBeGreaterThanOrEqual(2);
+    expect(retryRunMessages.every((message) => message.turnId === turn1)).toBe(true);
+    expect(toolResults.some((message) => message.turnId === turn1)).toBe(true);
+    expect(session.getCompletedTurnFinalAssistant(turn1)?.id)
+      .toBe(recoveredAssistantId);
+    expect(session.getCompletedTurnFinalAssistant(turn2)?.id)
+      .toBe(turn2AssistantId);
+    expect(new Set(ids).size).toBe(ids.length);
+
+    sessionStore.closeAll();
+    const duplicateReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({
+        text: "retry turn one",
+        clientMessageId: turn1ClientId,
+      }),
+    });
+    const duplicateRes = makeMockRes();
+    await route!.handler(duplicateReq, duplicateRes, { id: session.sessionId });
+    const duplicateFrames = parseSse(duplicateRes.body);
+    expect(runnerCalls).toBe(1);
+    expect(duplicateFrames.map((frame) => frame.event)).toEqual(["done"]);
+    expect((duplicateFrames[0].data as SseEnvelope).data.messageId)
+      .toBe(recoveredAssistantId);
+  });
+
+  it("已完成请求复用 clientMessageId 但 payload 不同返回 409 conflict", async () => {
+    const session = sessionStore.create("gconv");
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    const runnerFactory = ({ session: persistentSession }: {
+      session: PersistentSession;
+    }) => ({
+      async *runStream(params: AgentRunParams) {
+        await persistentSession.beginUserTurn(
+          [{ type: "text", text: params.message }],
+          { id: params.clientMessageId, runId: params.runId },
+        );
+        await persistentSession.addAssistantMessage(
+          [{ type: "text", text: "completed" }],
+          { id: params.assistantMessageId, runId: params.runId },
+        );
+        persistentSession.completeActiveTurn();
+        yield {
+          type: "done" as const,
+          result: {},
+          messageId: params.assistantMessageId,
+        };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const route = findStreamRoute();
+    const firstReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "first", clientMessageId }),
+    });
+    await route!.handler(firstReq, makeMockRes(), { id: session.sessionId });
+
+    const conflictReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "different", clientMessageId }),
+    });
+    const conflictRes = makeMockRes();
+    await route!.handler(conflictReq, conflictRes, { id: session.sessionId });
+
+    expect(conflictRes.statusCode).toBe(409);
+    expect(JSON.parse(conflictRes.body).error.code)
+      .toBe("CLIENT_MESSAGE_ID_CONFLICT");
+  });
+
+  it("info 日志不包含用户正文，只记录长度和匿名运行标识", async () => {
+    const session = sessionStore.create("gconv");
+    const sensitiveText = "不要记录这段用户正文-secret";
+    const info = vi.fn();
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory([
+        { type: "message_end", stopReason: "end_turn" },
+      ]),
+      logger: { info } as never,
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: sensitiveText }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const serializedCalls = JSON.stringify(info.mock.calls);
+    expect(serializedCalls).not.toContain(sensitiveText);
+    expect(serializedCalls).toContain(`"messageLength":${sensitiveText.length}`);
+  });
 });
 
 // ============================================================
@@ -389,6 +1105,66 @@ describe("POST .../stream — AbortController 中途取消", () => {
 
     // hub 应当被清理
     expect(hub.size()).toBe(0);
+  });
+
+  it("abort 端点触发 runner abort 错误时只发送一个 aborted terminal frame", async () => {
+    const session = sessionStore.create("gconv");
+    const runId = "11111111-1111-4111-8111-111111111111";
+    const runnerFactory = () => ({
+      async *runStream(params: AgentRunParams) {
+        yield { type: "text_delta" as const, text: "started" };
+        await new Promise<void>((resolve) => {
+          params.signal?.addEventListener("abort", () => resolve(), { once: true });
+        });
+        yield {
+          type: "done" as const,
+          result: {
+            meta: {
+              error: { kind: "timeout", message: "Run aborted" },
+            },
+          },
+        };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const streamReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "hi", runId }),
+    });
+    const streamRes = makeMockRes();
+    const streamRoute = findStreamRoute();
+    const streamPromise = streamRoute!.handler(
+      streamReq,
+      streamRes,
+      { id: session.sessionId },
+    );
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const abortReq = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/abort`,
+      body: JSON.stringify({ runId }),
+    });
+    const abortRes = makeMockRes();
+    const abortRoute = findAbortRoute();
+    await abortRoute!.handler(abortReq, abortRes, { id: session.sessionId });
+    await streamPromise;
+
+    const terminalFrames = parseSse(streamRes.body).filter((frame) =>
+      frame.event === "aborted" ||
+      frame.event === "error" ||
+      frame.event === "done",
+    );
+    expect(terminalFrames.map((frame) => frame.event)).toEqual(["aborted"]);
   });
 
   it("abort 端点指定 streamId → 200", async () => {
@@ -459,6 +1235,35 @@ describe("POST .../stream — AbortController 中途取消", () => {
     // 流已被 abortByRunId 从 hub 移除 → 按 streamId 再 abort 应返回 false
     expect(hub.abort(streamId)).toBe(false);
     expect(hub.hasActiveRun(session.sessionId)).toBe(false);
+  });
+
+  it("abort 端点拒绝用其他 sessionId 中止目标 run", async () => {
+    const ownerSession = sessionStore.create("gconv");
+    const attackerSession = sessionStore.create("gconv");
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory([]),
+    });
+
+    const runId = randomUUID();
+    hub.register(ownerSession.sessionId, runId);
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${attackerSession.sessionId}/messages/abort`,
+      body: JSON.stringify({ runId }),
+    });
+    const res = makeMockRes();
+
+    const route = findAbortRoute();
+    await route!.handler(req, res, { id: attackerSession.sessionId });
+
+    expect(res.statusCode).toBe(404);
+    expect(JSON.parse(res.body).error.code).toBe("STREAM_NOT_FOUND");
+    expect(hub.hasActiveRun(ownerSession.sessionId)).toBe(true);
   });
 
   it("abort 端点 streamId 不存在 → 404 STREAM_NOT_FOUND", async () => {
@@ -646,7 +1451,7 @@ describe("heartbeat 触发（fake timers）", () => {
 // ============================================================
 
 describe("done 事件必发", () => {
-  it("无论 runner 是 message_end 终止还是空流，都至少发 1 次 done", async () => {
+  it("成功路径精确发送一个 done，且不发送 error", async () => {
     const session = sessionStore.create("gconv");
     installMessageRoutes({
       sessionStore,
@@ -657,6 +1462,7 @@ describe("done 事件必发", () => {
       runnerFactory: makeMockRunnerFactory([
         { type: "message_start" },
         { type: "message_end", stopReason: "end_turn" },
+        { type: "done", result: {} },
       ]),
     });
 
@@ -674,7 +1480,9 @@ describe("done 事件必发", () => {
 
     const parsed = parseSse(res.body);
     const doneCount = parsed.filter((e) => e.event === "done").length;
-    expect(doneCount).toBeGreaterThanOrEqual(1);
+    const errorCount = parsed.filter((e) => e.event === "error").length;
+    expect(doneCount).toBe(1);
+    expect(errorCount).toBe(0);
   });
 });
 
@@ -683,7 +1491,41 @@ describe("done 事件必发", () => {
 // ============================================================
 
 describe("error 事件形态", () => {
-  it("runner.runStream throw → SSE error 事件 + done.ok=false 形态", async () => {
+  it("runner iterator 无 done/error 直接 EOF → 精确发送一个 error", async () => {
+    const session = sessionStore.create("gconv");
+    const runnerFactory = () => ({
+      async *runStream() {
+        if (false) yield { type: "text_delta" as const, text: "unreachable" };
+      },
+    });
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory,
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "hi" }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const terminalFrames = parseSse(res.body).filter((frame) =>
+      frame.event === "error" ||
+      frame.event === "done" ||
+      frame.event === "aborted",
+    );
+    expect(terminalFrames.map((frame) => frame.event)).toEqual(["error"]);
+  });
+
+  it("runner.runStream throw → 精确发送一个 error，且不发送 done", async () => {
     const session = sessionStore.create("gconv");
     const runnerFactory = (): {
       runStream(params: AgentRunParams): AsyncIterable<StreamEvent>;
@@ -726,6 +1568,46 @@ describe("error 事件形态", () => {
     };
     expect(inner.error.code).toBe("CHAT_RUNNER_ERROR");
     expect(inner.error.message).toContain("boom");
+    expect(parsed.filter((e) => e.event === "error")).toHaveLength(1);
+    expect(parsed.filter((e) => e.event === "done")).toHaveLength(0);
+  });
+
+  it("runner done 携带 error → 精确发送一个 error，且不发送 done", async () => {
+    const session = sessionStore.create("gconv");
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory([
+        {
+          type: "done",
+          result: {
+            meta: {
+              error: {
+                kind: "provider_error",
+                message: "provider failed",
+              },
+            },
+          },
+        },
+      ]),
+    });
+
+    const req = makeMockReq({
+      method: "POST",
+      url: `/api/sessions/${session.sessionId}/messages/stream`,
+      body: JSON.stringify({ text: "hi" }),
+    });
+    const res = makeMockRes();
+
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+    expect(parsed.filter((e) => e.event === "error")).toHaveLength(1);
+    expect(parsed.filter((e) => e.event === "done")).toHaveLength(0);
   });
 });
 
@@ -803,6 +1685,11 @@ describe("13 event 类型覆盖", () => {
 describe("并发 stream 处理", () => {
   it("同 session 已有活跃 run → 409 RUN_ALREADY_ACTIVE（旧流不被自动 abort）", async () => {
     const session = sessionStore.create("gconv");
+    const clientMessageId = "11111111-1111-4111-8111-111111111111";
+    await session.beginUserTurn(
+      [{ type: "text", text: "hi" }],
+      { id: clientMessageId },
+    );
     installMessageRoutes({
       sessionStore,
       // @ts-expect-error — test 注入简化
@@ -822,7 +1709,7 @@ describe("并发 stream 处理", () => {
       req: makeMockReq({
         method: "POST",
         url: `/api/sessions/${session.sessionId}/messages/stream`,
-        body: JSON.stringify({ text: "hi" }),
+        body: JSON.stringify({ text: "hi", clientMessageId }),
       }),
       res: makeMockRes(),
     };

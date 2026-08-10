@@ -376,8 +376,9 @@ export class PersistentSession extends Session {
     content: MessageContent[],
     meta?: { id?: string; runId?: string },
   ): Promise<number> {
+    const messageCountBefore = this.messages.length;
     const tid = await super.beginUserTurn(content, meta);
-    if (!this._loading) {
+    if (!this._loading && this.messages.length > messageCountBefore) {
       const last = this.messages[this.messages.length - 1];
       await appendJsonLineAtomic<SerializedMessage>(
         this.sessionFile,
@@ -388,10 +389,25 @@ export class PersistentSession extends Session {
     return tid;
   }
 
+  getCompletedTurnFinalAssistant(turnId: number): Message | undefined {
+    const completed = this._completedTurns.find((turn) => turn.id === turnId);
+    if (!completed) return undefined;
+    if (
+      completed.outcome !== undefined &&
+      !["completed", "succeeded", "success"].includes(completed.outcome)
+    ) {
+      return undefined;
+    }
+    const message = this.messages[completed.finalAssistantMessageIndex];
+    return message?.role === "assistant" && message.turnId === turnId
+      ? message
+      : undefined;
+  }
+
   /** @override */
   override async addAssistantMessage(
     content: MessageContent[],
-    meta?: { id?: string; runId?: string },
+    meta?: { id?: string; runId?: string; turnId?: number },
   ): Promise<void> {
     await super.addAssistantMessage(content, meta);
     if (!this._loading) {
@@ -408,8 +424,9 @@ export class PersistentSession extends Session {
     toolUseId: string,
     content: string,
     isError?: boolean,
+    meta?: { turnId?: number; runId?: string },
   ): Promise<void> {
-    await super.addToolResult(toolUseId, content, isError);
+    await super.addToolResult(toolUseId, content, isError, meta);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
       await appendJsonLineAtomic<SerializedMessage>(
@@ -423,8 +440,9 @@ export class PersistentSession extends Session {
   override async addMessage(
     role: "user" | "assistant",
     content: MessageContent[],
+    meta?: { turnId?: number; runId?: string },
   ): Promise<void> {
-    await super.addMessage(role, content);
+    await super.addMessage(role, content, meta);
     if (!this._loading) {
       const last = this.messages[this.messages.length - 1];
       await appendJsonLineAtomic<SerializedMessage>(
@@ -435,17 +453,24 @@ export class PersistentSession extends Session {
   }
 
   /** @override */
-  override completeActiveTurn(outcome?: string): void {
+  override completeActiveTurn(outcome?: string, targetTurnId?: number): void {
     if (this._loading) return;
 
-    const tid = this.turnId;
+    const tid = targetTurnId ?? this.turnId;
     if (tid <= 0) return;
 
     const existing = this._completedTurns.find((t) => t.id === tid);
 
     if (existing) {
       existing.endIndex = this.messages.length;
-      if (outcome) existing.outcome = outcome;
+      for (let i = this.messages.length - 1; i >= 0; i--) {
+        const message = this.messages[i];
+        if (message.turnId === tid && message.role === "assistant") {
+          existing.finalAssistantMessageIndex = i;
+          break;
+        }
+      }
+      existing.outcome = outcome;
     } else {
       let userIdx = -1;
       let assistantIdx = -1;
@@ -515,6 +540,50 @@ export class PersistentSession extends Session {
   /** @override */
   override getSessionId(): string {
     return this.sessionId;
+  }
+
+  private persistAutomaticCompaction(archivedTurnIds: readonly number[] = []): void {
+    const archived = new Set(archivedTurnIds);
+    for (const completed of this._completedTurns) {
+      let firstIndex = -1;
+      let userIndex = -1;
+      let assistantIndex = -1;
+      let lastIndex = -1;
+      for (let index = 0; index < this.messages.length; index++) {
+        const message = this.messages[index];
+        if (message.turnId !== completed.id) continue;
+        if (firstIndex < 0) firstIndex = index;
+        lastIndex = index;
+        if (userIndex < 0 && message.role === "user") userIndex = index;
+        if (message.role === "assistant") assistantIndex = index;
+      }
+      if (firstIndex >= 0) {
+        completed.startIndex = firstIndex;
+        completed.endIndex = lastIndex + 1;
+        completed.userMessageIndex = userIndex >= 0 ? userIndex : firstIndex;
+        completed.finalAssistantMessageIndex =
+          assistantIndex >= 0 ? assistantIndex : lastIndex;
+      }
+      if (archived.has(completed.id)) completed.archived = true;
+    }
+    this.flushMessagesToDisk(this.messages);
+    this.writeContextToDisk();
+  }
+
+  /** @override */
+  override applyHistorySummary(summary: string, turnIds: readonly number[]): void {
+    super.applyHistorySummary(summary, turnIds);
+    if (!this._loading) this.persistAutomaticCompaction(turnIds);
+  }
+
+  /** @override */
+  override applyActiveCheckpointSummary(
+    summary: string,
+    epoch: number,
+    targetTurnId?: number,
+  ): void {
+    super.applyActiveCheckpointSummary(summary, epoch, targetTurnId);
+    if (!this._loading) this.persistAutomaticCompaction();
   }
 
   // ============================================================

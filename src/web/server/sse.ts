@@ -91,18 +91,18 @@ export class SseHub {
     return false;
   }
 
-  /** 按 runId 查找流（P0+）。 */
-  getByRunId(runId: string): LiveStream | undefined {
+  /** 按 sessionId + runId 查找流（P0+），防止跨 session 访问。 */
+  getByRunId(cid: string, runId: string): LiveStream | undefined {
     for (const entry of this._map.values()) {
-      if (entry.runId === runId && !entry.closed) return entry;
+      if (entry.cid === cid && entry.runId === runId && !entry.closed) return entry;
     }
     return undefined;
   }
 
-  /** 按 runId 触发 abort（P0+）。返回 true 表示找到并 abort 成功。 */
-  abortByRunId(runId: string): boolean {
+  /** 按 sessionId + runId 触发 abort（P0+）。返回 true 表示找到并 abort 成功。 */
+  abortByRunId(cid: string, runId: string): boolean {
     for (const [id, entry] of this._map) {
-      if (entry.runId === runId && !entry.closed) {
+      if (entry.cid === cid && entry.runId === runId && !entry.closed) {
         entry.closed = true;
         try { entry.controller.abort(); } catch { /* ignore */ }
         this._map.delete(id);
@@ -127,10 +127,11 @@ export class SseHub {
     this._map.delete(streamId);
   }
 
-  /** 通过 streamId 触发 abort（给 /abort 路由调用）。 */
-  abort(streamId: string): boolean {
+  /** 通过 streamId 触发 abort；传 cid 时同时校验 session 所有权。 */
+  abort(streamId: string, cid?: string): boolean {
     const entry = this._map.get(streamId);
     if (!entry) return false;
+    if (cid !== undefined && entry.cid !== cid) return false;
     if (entry.closed) return true;
     entry.closed = true;
     try {

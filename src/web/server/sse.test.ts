@@ -285,12 +285,12 @@ describe("SseHub — P0 runId 关联", () => {
     const h = new SseHub();
     // 显式 runId
     const { streamId: s1 } = h.register("cid-a", "run-1");
-    expect(h.getByRunId("run-1")?.runId).toBe("run-1");
+    expect(h.getByRunId("cid-a", "run-1")?.runId).toBe("run-1");
     expect(h.listForCid("cid-a")).toEqual([s1]);
 
     // 缺省 runId → 使用 streamId 兜底（P0 兼容旧调用）
     const { streamId: s2 } = h.register("cid-b");
-    expect(h.getByRunId(s2)).toBeDefined();
+    expect(h.getByRunId("cid-b", s2)).toBeDefined();
     expect(h.size()).toBe(2);
   });
 
@@ -313,18 +313,31 @@ describe("SseHub — P0 runId 关联", () => {
     const { controller } = h.register("cid-y", "run-3");
     const abortSpy = vi.spyOn(controller, "abort");
 
-    expect(h.abortByRunId("run-3")).toBe(true);
+    expect(h.abortByRunId("cid-y", "run-3")).toBe(true);
     expect(abortSpy).toHaveBeenCalledTimes(1);
     expect(h.size()).toBe(0);
     expect(h.hasActiveRun("cid-y")).toBe(false);
 
     // 幂等：重复 abort 返回 false
-    expect(h.abortByRunId("run-3")).toBe(false);
+    expect(h.abortByRunId("cid-y", "run-3")).toBe(false);
+  });
+
+  it("abortByRunId 必须同时匹配 cid 与 runId", () => {
+    const h = new SseHub();
+    const { controller } = h.register("cid-owner", "run-owned");
+    const abortSpy = vi.spyOn(controller, "abort");
+
+    expect(h.abortByRunId("cid-attacker", "run-owned")).toBe(false);
+    expect(abortSpy).not.toHaveBeenCalled();
+    expect(h.hasActiveRun("cid-owner")).toBe(true);
+
+    expect(h.abortByRunId("cid-owner", "run-owned")).toBe(true);
+    expect(abortSpy).toHaveBeenCalledTimes(1);
   });
 
   it("abortByRunId 对不存在的 runId 返回 false", () => {
     const h = new SseHub();
-    expect(h.abortByRunId("no-such-run")).toBe(false);
+    expect(h.abortByRunId("cid-none", "no-such-run")).toBe(false);
   });
 
   it("abortByRunId 只中止目标 run，不影响同 cid 其他流", () => {
@@ -332,7 +345,7 @@ describe("SseHub — P0 runId 关联", () => {
     const { streamId: keepId } = h.register("cid-z", "run-a");
     h.register("cid-z", "run-b");
 
-    expect(h.abortByRunId("run-b")).toBe(true);
+    expect(h.abortByRunId("cid-z", "run-b")).toBe(true);
     // run-a 仍在飞
     expect(h.listForCid("cid-z")).toEqual([keepId]);
     expect(h.hasActiveRun("cid-z")).toBe(true);
