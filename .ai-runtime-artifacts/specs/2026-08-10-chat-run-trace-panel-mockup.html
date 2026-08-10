@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Run Trace 过程面板 · 静态草图</title>
+<style>
+  /* 与 web/src/styles/globals.css 的 @theme token 对齐 */
+  :root{
+    --surface:#ffffff;
+    --surface-hover:#f3f4f6;
+    --border:#ececef;
+    --text:#1f2328;
+    --text-muted:#4b5563;
+    --primary:#6c5ce7;
+    --primary-fg:#ffffff;
+    --danger:#dc2626;
+    --green:#16a34a;
+    --radius:14px;
+    --mono:'JetBrains Mono','Cascadia Code','Fira Code',monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:#eef0f4;color:var(--text);
+    font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:900px;margin:0 auto;padding:40px 24px 80px}
+  .page-title{font-size:13px;letter-spacing:.02em;color:var(--text-muted);text-transform:uppercase;margin:0 0 6px}
+  .page-sub{font-size:13px;color:var(--text-muted);margin:0 0 28px}
+  .state-label{font-size:12px;font-weight:600;color:var(--primary);margin:34px 0 10px;display:flex;align-items:center;gap:8px}
+  .state-label::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--primary)}
+
+  /* 聊天列 */
+  .chat{max-width:860px;margin:0 auto}
+  .row{display:flex;margin:0 0 20px}
+  .row.user{justify-content:flex-end}
+  .bubble-user{
+    background:#eff4ff;color:#1e3a8a;padding:10px 14px;border-radius:16px 16px 6px 16px;
+    font-size:14px;max-width:80%;
+  }
+  .assistant{max-width:100%;width:100%}
+
+  /* ===== Run Trace 容器 ===== */
+  .trace{
+    border:1px solid var(--border);
+    background:color-mix(in srgb,var(--surface-hover) 45%,transparent);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  /* 折叠摘要行（同时作为展开态的头） */
+  .trace-summary{
+    display:flex;align-items:center;gap:10px;width:100%;
+    padding:11px 14px;border:0;background:transparent;cursor:pointer;
+    font:inherit;color:var(--text-muted);text-align:left;
+  }
+  .trace-summary:hover{background:color-mix(in srgb,var(--surface-hover) 70%,transparent)}
+  .trace-summary .st-ico{width:16px;height:16px;flex:0 0 auto;color:var(--primary)}
+  .trace-summary .st-text{flex:1 1 auto;font-size:13px;color:var(--text)}
+  .trace-summary .st-meta{font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+  .chev{width:16px;height:16px;flex:0 0 auto;color:var(--text-muted);transition:transform .18s}
+  .trace[open-state] .chev{transform:rotate(180deg)}
+
+  .spinner{width:14px;height:14px;border-radius:50%;border:2px solid color-mix(in srgb,var(--primary) 30%,transparent);border-top-color:var(--primary);display:inline-block;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ===== timeline ===== */
+  .timeline{border-top:1px solid var(--border);padding:6px 8px 10px 8px;position:relative}
+  ol.steps{list-style:none;margin:0;padding:0}
+  li.step{position:relative;padding:0 8px 0 34px}
+  /* 左侧竖线 */
+  li.step::before{
+    content:"";position:absolute;left:19px;top:0;bottom:0;width:0;
+    border-left:1px dashed color-mix(in srgb,var(--text-muted) 30%,transparent);
+  }
+  li.step:first-child::before{top:18px}
+  li.step:last-child::before{bottom:calc(100% - 18px)}
+  .node{position:absolute;left:12px;top:10px;width:16px;height:16px;border-radius:50%;
+    background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted)}
+  .node svg{width:11px;height:11px}
+  .node.dot{background:var(--surface)}
+  .node.dot::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--text-muted)}
+  .node.ok{border-color:color-mix(in srgb,var(--green) 45%,transparent);color:var(--green)}
+  .node.run{border-color:color-mix(in srgb,var(--primary) 45%,transparent)}
+  .node.err{border-color:color-mix(in srgb,var(--danger) 45%,transparent);color:var(--danger)}
+
+  .step-row{display:flex;align-items:center;gap:8px;min-height:36px;padding:6px 0;cursor:pointer;border-radius:8px}
+  .step-row:hover{background:color-mix(in srgb,var(--surface-hover) 70%,transparent)}
+  .step-title{font-size:13px;color:var(--text);white-space:nowrap}
+  .step-arg{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto}
+  .step-meta{font-size:12px;color:var(--text-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .step-chev{width:14px;height:14px;color:color-mix(in srgb,var(--text-muted) 70%,transparent);flex:0 0 auto}
+  .step-detail{margin:2px 0 8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    background:color-mix(in srgb,var(--surface-hover) 40%,transparent);
+    font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--text-muted);white-space:pre-wrap}
+
+  /* 最终答案（容器外，更高权重）*/
+  .answer{padding:14px 2px 2px;font-size:15px;line-height:1.72;color:var(--text)}
+  .answer h3{font-size:16px;margin:6px 0 8px}
+  .answer p{margin:0 0 10px}
+  .answer .muted{color:var(--text-muted);font-size:13px}
+  .actions{display:flex;gap:8px;margin-top:6px}
+  .actions button{border:1px solid var(--border);background:var(--surface);color:var(--text-muted);
+    font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer}
+  .actions button:hover{border-color:color-mix(in srgb,var(--primary) 50%,transparent);color:var(--primary)}
+
+  .note{font-size:12px;color:var(--text-muted);margin:6px 0 0}
+  .divider{height:1px;background:var(--border);margin:40px 0 0}
+  .badge-err{color:var(--danger)}
+  .badge-warn{color:#b45309}
+</style>
+</head>
+<body>
+<div class="page">
+  <p class="page-title">Run Trace 过程面板 · 静态草图</p>
+  <p class="page-sub">对齐 rev.2 方案与 Kimi 时间线布局；配色取自项目 <code>globals.css</code> token（Inter / primary #6c5ce7）。以下为 4 种状态并列展示，纯静态。</p>
+
+  <!-- ============ 状态 1：运行中，自动展开 ============ -->
+  <div class="state-label">状态 A · 运行中（自动展开，显示当前动作与已完成步骤）</div>
+  <div class="chat">
+    <div class="row user"><div class="bubble-user">帮我设计一下旅游页面，平潭</div></div>
+    <div class="row"><div class="assistant">
+      <div class="trace" open-state>
+        <button class="trace-summary">
+          <span class="spinner"></span>
+          <span class="st-text">正在搜索网页…</span>
+          <span class="st-meta">6 步 · 3 个工具 · 00:18</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="timeline">
+          <ol class="steps">
+            <li class="step">
+              <span class="node dot"></span>
+              <div class="step-row"><span class="step-title">分析任务</span><span class="step-arg">拆解页面信息架构与交互</span><span class="step-meta">已完成</span></div>
+            </li>
+            <li class="step">
+              <span class="node ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="step-row"><span class="step-title">搜索网页</span><span class="step-arg">“平潭 旅游攻略 2026 蓝眼泪 景点 美食”</span><span class="step-meta">11 个结果</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="step-row"><span class="step-title">获取网页</span><span class="step-arg">sspai.com/post/…</span><span class="step-meta">1 个网页</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node dot"></span>
+              <div class="step-row"><span class="step-title">思考已完成</span><span class="step-arg">整理蓝眼泪观测期与北线景点</span><span class="step-meta">查看</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node run"><span class="spinner" style="width:9px;height:9px;border-width:2px"></span></span>
+              <div class="step-row"><span class="step-title">运行 Python 代码</span><span class="step-arg">生成景点概率图数据</span><span class="step-meta">执行中…</span></div>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ 状态 2：完成，折叠为一行摘要 ============ -->
+  <div class="state-label">状态 B · 完成（默认折叠为一行摘要，最终答案在容器外）</div>
+  <div class="chat">
+    <div class="row"><div class="assistant">
+      <div class="trace">
+        <button class="trace-summary">
+          <svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="st-text">已完成研究</span>
+          <span class="st-meta">12 步 · 5 个工具 · 8 个来源 · 01:42</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="answer">
+        <h3>平潭岛旅游页面设计建议</h3>
+        <p>建议首屏用一张全宽蓝眼泪夜景做 hero，叠加“最佳观测期 4–8 月”标签；下方按<strong>北线风光</strong>与<strong>南线人文</strong>分两个 Tab 组织景点卡片。</p>
+        <p class="muted">正文脱离过程容器，保持最高视觉权重；过程仅为可核验的次要信息。</p>
+        <div class="actions"><button>复制</button><button>查看 8 个来源</button></div>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ 状态 3：完成，展开 + 某步详情展开 ============ -->
+  <div class="state-label">状态 C · 完成且展开（工具行可二次展开看详情，无内部滚动）</div>
+  <div class="chat">
+    <div class="row"><div class="assistant">
+      <div class="trace" open-state>
+        <button class="trace-summary">
+          <svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="st-text">已完成研究</span>
+          <span class="st-meta">12 步 · 5 个工具 · 01:42</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(180deg)"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="timeline">
+          <ol class="steps">
+            <li class="step">
+              <span class="node dot"></span>
+              <div class="step-row"><span class="step-title">分析任务</span><span class="step-arg">明确目标与页面结构</span><span class="step-meta">已完成</span></div>
+            </li>
+            <li class="step">
+              <span class="node ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="step-row"><span class="step-title">搜索网页</span><span class="step-arg">“平潭 蓝眼泪 出现概率 月份”</span><span class="step-meta">11 个结果</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transform:rotate(180deg)"><path d="m6 9 6 6 6-6"/></svg></div>
+              <div class="step-detail">query: 平潭 蓝眼泪 出现概率 月份
+maxChars: 8000
+命中: 11 · 采用前 3
+来源: sspai.com · mafengwo.cn · 平潭文旅</div>
+            </li>
+            <li class="step">
+              <span class="node ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="step-row"><span class="step-title">获取网页</span><span class="step-arg">/app/.agents/skills/kimi-widget/SKILL.md</span><span class="step-meta">1 个网页</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node dot"></span>
+              <div class="step-row"><span class="step-title">思考已完成</span><span class="step-arg">确定用 CSS 变量映射设计系统</span><span class="step-meta">查看</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <div class="step-row"><span class="step-title">运行 Python 代码</span><span class="step-arg">生成蓝眼泪概率条形数据</span><span class="step-meta">已执行</span>
+                <svg class="step-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></div>
+            </li>
+            <li class="step">
+              <span class="node dot"></span>
+              <div class="step-row"><span class="step-title">整理回答</span><span class="step-arg">输出页面结构与组件建议</span><span class="step-meta">已完成</span></div>
+            </li>
+          </ol>
+        </div>
+      </div>
+      <div class="answer">
+        <h3>平潭岛旅游页面设计建议</h3>
+        <p>Hero + 蓝眼泪概率图 + 北线/南线 Tab + 景点卡片网格。</p>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ============ 状态 4：失败 / 中止 摘要 ============ -->
+  <div class="state-label">状态 D · 失败与中止（图标+文字双通道，不靠颜色单独表达）</div>
+  <div class="chat">
+    <div class="row"><div class="assistant">
+      <div class="trace" style="margin-bottom:14px">
+        <button class="trace-summary">
+          <svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--danger)"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <span class="st-text badge-err">完成，但有 1 个步骤失败</span>
+          <span class="st-meta">9 步 · 4 个工具 · 已自动重试 1 次</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+      <div class="trace">
+        <button class="trace-summary">
+          <svg class="st-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#b45309"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>
+          <span class="st-text badge-warn">已停止 · 保留 5 个步骤</span>
+          <span class="st-meta">5 步 · 2 个工具 · 00:07</span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+      </div>
+    </div></div>
+  </div>
+
+  <p class="note">说明：本文件为静态视觉草图，不含真实交互逻辑，也未接入 blocks 数据；实现时由 <code>RunTracePanel</code> 从现有 <code>message.blocks</code> 派生。</p>
+</div>
+</body>
+</html>
