@@ -598,6 +598,18 @@ details.stream-process-body {
   animation: messageIn 0.3s ease-out both;
 }
 
+/* ============================================================
+   Run Trace panel (WU-03) — a11y foundations
+   Timeline line / node / row hover are Tailwind in RunTracePanel;
+   only focus-visible + reduced-motion live here.
+   ============================================================ */
+
+[data-run-trace] button:focus-visible {
+  /* Visible focus ring even if a utility sets outline:none */
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
+  outline-offset: -2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up,
   .animate-fade-in,
@@ -607,5 +619,13 @@ details.stream-process-body {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* Chevron rotate / color transitions / spin → instant (no height anim in panel) */
+  [data-run-trace] *,
+  [data-run-trace] *::before,
+  [data-run-trace] *::after {
+    animation: none !important;
+    transition: none !important;
   }
 }

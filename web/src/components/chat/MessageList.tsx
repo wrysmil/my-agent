@@ -90,18 +90,19 @@ export function MessageList({
       aria-live="polite"
     >
       <div className="space-y-5">
-        {messages.map((m) => (
-          <div key={m.id} className="message-enter">
-            <MessageBubble
-              message={m}
-              isStreaming={
-                isStreaming &&
-                m.role === 'assistant' &&
-                m === messages[messages.length - 1]
-              }
-            />
-          </div>
-        ))}
+        {messages.map((m) => {
+          const isCurrentAssistant =
+            m.role === 'assistant' && m === messages[messages.length - 1];
+          return (
+            <div key={m.id} className="message-enter">
+              <MessageBubble
+                message={m}
+                isStreaming={isStreaming && isCurrentAssistant}
+                aborted={status === 'aborted' && isCurrentAssistant}
+              />
+            </div>
+          );
+        })}
       </div>
       <div ref={bottomRef} />
     </div>

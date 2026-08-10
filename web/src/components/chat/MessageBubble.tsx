@@ -1,9 +1,8 @@
 import { useState, lazy, Suspense } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { ThinkingDots } from './ThinkingDots';
-import { ThinkingBlockView } from './ThinkingBlock';
-import { ProcessTracker } from './ProcessTracker';
-import { ActivityStrip } from './ActivityStrip';
+import { RunTracePanel } from './RunTracePanel';
+import { buildRunTrace, hasTraceSteps } from '@/features/chat/runTrace';
 import type { ChatMessage } from '@/features/chat/types';
 import { messageText } from '@/features/chat/useChatStream';
 
@@ -16,27 +15,36 @@ function MarkdownFallback() {
 /**
  * MessageBubble — 聊天气泡组件。
  *
- * 支持结构化内容渲染：
- *   1. ThinkingDots（思考动画）—— 流开始时显示
- *   2. ProcessTracker（过程追踪）—— 工具调用/结果
- *   3. ActivityStrip（活动条）—— 当前状态+计时
- *   4. ThinkingBlock（思考内容）—— 可折叠
- *   5. FinalMarkdown（文本回复）—— Markdown 渲染
- *
- * 参考 Orkas 气泡分层设计：process → activity → thinking-dots → final。
+ * assistant 分层：
+ *   1. ThinkingDots — 流式且尚无 trace / 最终 text 时的极短暂 fallback
+ *   2. RunTracePanel — 过程时间线（思考 / 工具）
+ *   3. Final Markdown — 过程容器外的正文区（无强卡片边框）
  */
-export function MessageBubble({ message, isStreaming }: {
+export function MessageBubble({
+  message,
+  isStreaming,
+  aborted = false,
+}: {
   message: ChatMessage;
   isStreaming: boolean;
+  /** 当前流被中止时，由 MessageList 对最后一条 assistant 下传 */
+  aborted?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const role = message.role;
 
   const textContent = messageText(message);
-  const hasContent = message.blocks.some(
-    (b) => (b.type === 'text' && b.text.length > 0) || b.type === 'thinking'
+  const hasFinalText = message.blocks.some(
+    (b) => b.type === 'text' && b.text.length > 0,
   );
-  const showThinkingDots = isStreaming && !hasContent;
+
+  const trace = buildRunTrace(message.blocks, {
+    isStreaming,
+    streamState: message.streamState,
+    aborted,
+  });
+  const showTrace = hasTraceSteps(trace);
+  const showThinkingDots = isStreaming && !showTrace && !hasFinalText;
 
   // user 消息没有任何文本/内容时不渲染空气泡（避免流断开时显示空蓝色占位）
   const isEmptyUserMessage = role === 'user' && !message.text && !textContent;
@@ -50,10 +58,6 @@ export function MessageBubble({ message, isStreaming }: {
     } catch { /* ignore */ }
   };
 
-  // 提取 thinking blocks（放在 header 下方，collapsible）
-  const thinkingBlocks = message.blocks.filter((b) => b.type === 'thinking');
-
-  // 提取 text blocks 用于 Markdown 渲染
   const textBlocks = message.blocks.filter((b) => b.type === 'text');
 
   return (
@@ -64,38 +68,23 @@ export function MessageBubble({ message, isStreaming }: {
         className={`max-w-[80%] min-w-0 ${
           role === 'user'
             ? 'bg-blue-50 text-blue-950 px-4 py-3 rounded-2xl rounded-br-md shadow-sm dark:bg-blue-900/30 dark:text-blue-100'
-            : 'bg-surface border border-border/80 px-5 py-3.5 rounded-2xl rounded-bl-md shadow-[0_1px_3px_rgba(15,18,24,0.04)]'
+            : ''
         }`}
       >
         {role === 'user' ? (
-          // 用户消息：简单文本
           <div className="whitespace-pre-wrap break-words">{message.text || textContent}</div>
         ) : (
-          // AI 消息：结构化渲染
-          <div className="space-y-1">
-            {/* 1. Thinking Dots — 流开始时在气泡内显示 */}
+          <div className="space-y-2">
             {showThinkingDots && <ThinkingDots />}
 
-            {/* 2. Process Tracker — 工具调用/结果面板 */}
-            {message.blocks.length > 0 && (
-              <ProcessTracker blocks={message.blocks} />
-            )}
-
-            {/* 3. Activity Strip — 当前动作 + 计时器 */}
-            {isStreaming && (
-              <ActivityStrip
-                streamState={message.streamState}
-                activeToolCount={message.activeToolCount}
-                streamStartTime={message.streamStartTime}
+            {showTrace && (
+              <RunTracePanel
+                trace={trace}
+                isStreaming={isStreaming}
+                hasFinalText={hasFinalText}
               />
             )}
 
-            {/* 4. Thinking Blocks — 可折叠的思考内容 */}
-            {thinkingBlocks.map((block) => (
-              <ThinkingBlockView key={block.id} block={block} />
-            ))}
-
-            {/* 5. Text Blocks — Markdown 渲染 */}
             {textBlocks.length > 0 && (
               <Suspense fallback={<MarkdownFallback />}>
                 <div className="prose prose-sm max-w-none break-words">
@@ -106,17 +95,22 @@ export function MessageBubble({ message, isStreaming }: {
               </Suspense>
             )}
 
-            {/* Token 用量（完成后显示） */}
-            {!isStreaming && message.usage && message.usage.totalTokens > 0 && (
-              <div className="text-[10px] text-text-muted/30 text-right pt-1 border-t border-border/30 mt-1">
-                {message.usage.inputTokens} → {message.usage.outputTokens} tokens
-              </div>
-            )}
+            {/* Token 用量：仅开发入口，不删 message.usage 数据 */}
+            {(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true &&
+              !isStreaming &&
+              message.usage &&
+              message.usage.totalTokens > 0 && (
+                <details className="text-[10px] text-text-muted/50 pt-1">
+                  <summary className="cursor-pointer select-none">用量</summary>
+                  <div className="text-right pt-0.5">
+                    {message.usage.inputTokens} → {message.usage.outputTokens} tokens
+                  </div>
+                </details>
+              )}
           </div>
         )}
       </div>
 
-      {/* 复制按钮 */}
       {role === 'assistant' && textContent && (
         <button
           onClick={onCopy}
