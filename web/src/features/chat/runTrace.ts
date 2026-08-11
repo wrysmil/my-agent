@@ -35,8 +35,17 @@ export interface ToolTraceStep {
   resultPreview?: string;
   /** 完整结果文本；二次展开时显示 */
   resultDetail?: string;
+  /** 关键参数 pill 渲染数据；按 KEY_PARAM_ORDER 顺序取前 KEY_PARAM_MAX 项 */
+  keyParams?: KeyParam[];
   durationMs?: number;
   isError: boolean;
+}
+
+/** 关键参数 pill 数据；value 为渲染短文本，fullValue 用于 title 提示 */
+export interface KeyParam {
+  key: 'url' | 'filePath' | 'query' | 'command' | 'path';
+  value: string;
+  fullValue: string;
 }
 
 export type TraceStep = ThinkingTraceStep | ToolTraceStep;
@@ -148,6 +157,7 @@ export function buildRunTrace(
         toolName: block.toolName,
         actionLabel: toolActionLabel(block.toolName),
         inputPreview: formatInputPreview(block.input, block.inputRaw),
+        keyParams: extractKeyParams(block.input),
         isError: block.status === 'error',
       };
       toolIndex.set(block.toolId, steps.length);
@@ -277,4 +287,44 @@ function resolveStatus(options: BuildRunTraceOptions, errorCount: number): RunTr
 /** 无任何 trace step 时为 false，调用方据此完全不渲染面板 */
 export function hasTraceSteps(vm: RunTraceViewModel): boolean {
   return vm.steps.length > 0;
+}
+
+// ============================================================
+// KeyParam 提取（spec §5）
+// ============================================================
+
+const KEY_PARAM_ORDER = ['url', 'filePath', 'query', 'command', 'path'] as const;
+const KEY_PARAM_MAX = 2;
+
+/** 从 input 中按固定顺序抽取关键参数，最多 KEY_PARAM_MAX 项；非字符串值 JSON.stringify 入 fullValue */
+export function extractKeyParams(input?: Record<string, unknown>): KeyParam[] {
+  if (!input) return [];
+  const out: KeyParam[] = [];
+  for (const key of KEY_PARAM_ORDER) {
+    const raw = input[key];
+    if (raw == null) continue;
+    const full = typeof raw === 'string' ? raw : JSON.stringify(raw);
+    out.push({ key, value: shortenKeyParam(key, full), fullValue: full });
+    if (out.length >= KEY_PARAM_MAX) break;
+  }
+  return out;
+}
+
+function shortenKeyParam(key: KeyParam['key'], full: string): string {
+  if (key === 'url') {
+    try {
+      const u = new URL(full);
+      const path = u.pathname.length > 24 ? u.pathname.slice(0, 24) + '…' : u.pathname;
+      return `${u.hostname}${path}`;
+    } catch {
+      return full.length > 40 ? full.slice(0, 40) + '…' : full;
+    }
+  }
+  if (key === 'filePath' || key === 'path') {
+    const parts = full.split(/[\\/]/);
+    const last = parts[parts.length - 1] || full;
+    return last.length > 32 ? last.slice(0, 32) + '…' : last;
+  }
+  // query / command
+  return full.length > 40 ? full.slice(0, 40) + '…' : full;
 }

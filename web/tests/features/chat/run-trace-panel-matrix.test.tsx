@@ -74,14 +74,15 @@ function assertNoNestedScrollClasses(className: string) {
 describe('RunTrace panel matrix (spec §8 / §9)', () => {
   describe('五类消息形态', () => {
     it('无工具仅 thinking：一个顶层摘要按钮，展开后 timeline 含 thinking 行', async () => {
-      // Arrange
+      // Arrange — 用流中文本触发 hasFinalText=true → 默认折叠
       const user = userEvent.setup();
       const message = assistantMessage([
         thinking({ id: 't1', thinking: 'plan the answer' }),
+        textBlock({ id: 'txt-1', text: 'partial answer' }),
       ]);
 
       // Act
-      render(<MessageBubble message={message} isStreaming={false} />);
+      render(<MessageBubble message={message} isStreaming={true} />);
 
       // Assert — 单一顶层入口
       const summaries = summaryExpandButtons();
@@ -96,20 +97,24 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       expect(summaries[0]).toHaveAttribute('aria-expanded', 'true');
       const list = screen.getByRole('list');
       expect(within(list).getAllByRole('listitem')).toHaveLength(1);
-      expect(within(list).getByText('思考已完成')).toBeInTheDocument();
+      // 左侧 StepLabel 身份文本（"思考"），由 StepLabel 独占渲染。
+      expect(within(list).getByText('思考')).toBeInTheDocument();
+      // button 内 firstLine：去掉「思考」前缀后剩「已完成」状态文字。
+      expect(within(list).getByText('已完成')).toBeInTheDocument();
     });
 
     it('仅 thinking 多个相邻：一个顶层摘要入口下保留三个可独立展开的步骤', async () => {
-      // Arrange
+      // Arrange — 流中 + 已有 partial text 触发 hasFinalText=true → 默认折叠
       const user = userEvent.setup();
       const message = assistantMessage([
         thinking({ id: 't1', thinking: 'first' }),
         thinking({ id: 't2', thinking: 'second' }),
         thinking({ id: 't3', thinking: 'third' }),
+        textBlock({ id: 'txt-1', text: 'partial answer' }),
       ]);
 
       // Act
-      render(<MessageBubble message={message} isStreaming={false} />);
+      render(<MessageBubble message={message} isStreaming={true} />);
 
       // Assert
       expect(summaryExpandButtons()).toHaveLength(1);
@@ -243,7 +248,7 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
 
   describe('a11y', () => {
     it('摘要按钮有 aria-expanded；步骤详情按钮有具体 aria-label；Enter 可切换展开', async () => {
-      // Arrange
+      // Arrange — 流中 + 已有 partial text 触发 hasFinalText=true → 默认折叠
       const user = userEvent.setup();
       const message = assistantMessage([
         thinking({ id: 't1', thinking: 'reason about fetch' }),
@@ -260,10 +265,10 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
           toolName: 'web_fetch',
           content: '{"ok":true}',
         }),
-        textBlock({ id: 'txt', text: 'done' }),
+        textBlock({ id: 'txt', text: 'partial done' }),
       ]);
 
-      render(<MessageBubble message={message} isStreaming={false} />);
+      render(<MessageBubble message={message} isStreaming={true} />);
       const summary = summaryExpandButtons()[0];
 
       // Assert — 摘要 a11y
@@ -396,7 +401,9 @@ describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 /
     expect(errButton!.getAttribute('aria-label')).toBe('查看 web_fetch 结果');
 
     // Assert — 状态位（meta = '失败'）在 text-danger span 内
-    const dangerMeta = container.querySelector(
+    // StepLabel 错误态身份文本同样是 text-danger（absolute left-3），
+    // 必须落在错误按钮子树内以排除身份文本节点。
+    const dangerMeta = errButton!.querySelector(
       'span.text-danger.tabular-nums',
     ) as HTMLElement | null;
     expect(dangerMeta).not.toBeNull();
@@ -424,8 +431,9 @@ describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 /
       ],
     });
 
+    // 默认折叠场景（isStreaming=true && hasFinalText=true）：summary 收起，timeline 未挂载
     const { container } = render(
-      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />,
     );
 
     // 先展开顶层摘要，timeline 才挂载
@@ -492,5 +500,158 @@ describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 /
     const queryPill = pills.find((p) => p.getAttribute('title') === '平潭岛');
     expect(queryPill).toBeDefined();
     expect(queryPill!.textContent).toBe('平潭岛');
+  });
+});
+
+/**
+ * spec §8.2 第二批：360 px 窄屏 / 多步骤身份文本 / 暗色模式。
+ *
+ * 设计前提（spec §4.1）：
+ *  - 每个 <li> 左侧 64px 容纳 StepLabel（最长 10 字符 mono）+ 右上徽章。
+ *  - 暗色模式依赖全局 `dark` class 切换 token；组件本身不引入硬编码颜色。
+ */
+describe('RunTracePanel spec §8.2 — 窄屏 / 多步骤 / 暗色模式', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    document.documentElement.classList.remove('dark');
+  });
+
+  it('§8.2.1 360 px 窄屏：节点身份文本 + keyParam pill 不溢出，无 scrollWidth > clientWidth', () => {
+    // Arrange — 长 toolName + 长 url pill，验证横向不溢出
+    vi.stubGlobal('innerWidth', 360);
+    Object.defineProperty(window, 'innerWidth', { value: 360, configurable: true });
+
+    const longUrl = 'https://example.com/very/long/path/' + 'x'.repeat(40);
+    const trace = _vm({
+      status: 'running',
+      summaryLabel: '正在执行 获取网页',
+      toolCount: 1,
+      completedCount: 0,
+      steps: [
+        _tool({
+          id: 'tc-narrow-360',
+          toolName: 'super_long_tool',
+          actionLabel: '获取网页',
+          status: 'streaming',
+          inputPreview: 'example.com',
+          keyParams: [
+            { key: 'url', value: 'example.com/very/long/path/…', fullValue: longUrl },
+            { key: 'query', value: '平潭岛', fullValue: '平潭岛' },
+          ],
+        }),
+      ],
+    });
+
+    // Act — 真实容器宽度 360px
+    const { container } = render(
+      <div style={{ width: 360, padding: 0 }}>
+        <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />
+      </div>,
+    );
+
+    // Assert — RunTracePanel 根无横向溢出
+    const panel = container.querySelector('[data-run-trace]') as HTMLElement;
+    expect(panel).not.toBeNull();
+    expect(panel.scrollWidth).toBe(panel.clientWidth);
+
+    // Assert — 每个 <li> 无横向溢出
+    const listItems = container.querySelectorAll('ol > li');
+    listItems.forEach((li) => {
+      const el = li as HTMLElement;
+      expect(el.scrollWidth).toBe(el.clientWidth);
+    });
+
+    // Assert — pill + StepLabel 身份文本都存在
+    expect(screen.getByText('super_long')).toBeInTheDocument();
+    const pills = container.querySelectorAll('span.font-mono.bg-primary\\/10');
+    expect(pills.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('§8.2.2 多步骤：3+ 步骤时各节点身份文本并列可见', () => {
+    // Arrange
+    const trace = _vm({
+      steps: [
+        _tool({ id: 's1', toolName: 'web_search', actionLabel: '搜索网页' }),
+        _thinking({ id: 't1', detail: 'reason one' }),
+        _tool({ id: 's2', toolName: 'web_fetch', actionLabel: '获取网页' }),
+        _thinking({ id: 't2', detail: 'reason two' }),
+      ],
+      toolCount: 2,
+      completedCount: 4,
+      summaryLabel: '已完成 4 个步骤 · 2 个工具',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert — 4 个 <li> 都在 timeline 内
+    const items = container.querySelectorAll('ol > li');
+    expect(items).toHaveLength(4);
+
+    // Assert — 节点身份文本并列可见（spec §4.1：tool 显示 toolName，thinking 显示「思考」）
+    const withinList = within(screen.getByRole('list'));
+    expect(withinList.getAllByText('web_search').length).toBeGreaterThanOrEqual(1);
+    expect(withinList.getAllByText('web_fetch').length).toBeGreaterThanOrEqual(1);
+    // thinking 节点：使用 getAllByText 收集所有「思考」实例（每个 thinking 行一个）
+    const thinkingIdentityTexts = container.querySelectorAll(
+      'span.font-mono[title="思考"]',
+    );
+    expect(thinkingIdentityTexts.length).toBe(2);
+  });
+
+  it('§8.2.3 暗色模式：document.documentElement 含 dark class 时，徽章 / 文本 token 类仍存在', () => {
+    // Arrange — 启用暗色模式
+    document.documentElement.classList.add('dark');
+
+    const trace = _vm({
+      status: 'error',
+      errorCount: 1,
+      summaryLabel: '完成，但有 1 个步骤失败',
+      toolCount: 1,
+      completedCount: 0,
+      steps: [
+        _tool({
+          id: 'tc-dark',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'error',
+          isError: true,
+          resultDetail: 'dark mode body',
+        }),
+      ],
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={false} />,
+    );
+
+    // Assert — token 类（text-danger / bg-danger-bg / bg-surface）仍生效
+    // 暗色模式由全局 token 接管颜色值；这里只断言「类名在 dark 下未丢失」。
+    const errorBtn = container.querySelector(
+      'ol > li button.border-danger\\/40.bg-danger-bg',
+    ) as HTMLElement | null;
+    expect(errorBtn).not.toBeNull();
+    expect(errorBtn!.className).toContain('border-danger/40');
+    expect(errorBtn!.className).toContain('bg-danger-bg');
+
+    // 错误徽章：StepLabel 右侧 bg-surface text-danger 类保留
+    const errorBadge = container.querySelector('span.bg-surface.text-danger');
+    expect(errorBadge).not.toBeNull();
+    // 内部 AlertCircle 图标存在
+    expect(errorBadge!.querySelector('.lucide-circle-alert')).not.toBeNull();
+
+    // 节点身份文本 token 类（text-danger）保留
+    const identitySpan = container.querySelector(
+      'span.font-mono[title="web_fetch"]',
+    );
+    expect(identitySpan).not.toBeNull();
+    expect(identitySpan!.className).toContain('text-danger');
+    expect(identitySpan!.className).toContain('font-mono');
+
+    // 暗色标记已注入（避免静默跳过断言）
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
   });
 });

@@ -33,6 +33,11 @@ export interface RunTracePanelProps {
   isStreaming: boolean;
   /** 该消息是否已产出最终 text，用于自动折叠时机 */
   hasFinalText: boolean;
+  /**
+   * 切消息/会话的强 reset 钩子；message.id 即可。
+   * 变化时强制重置 userOverride / expanded / openStepIds（spec §4.3）。
+   */
+  resetKey?: string;
 }
 
 function shouldAutoExpand(
@@ -40,8 +45,9 @@ function shouldAutoExpand(
   hasFinalText: boolean,
   errorCount: number,
 ): boolean {
-  if (!hasFinalText && errorCount > 0) return true;
+  if (errorCount > 0) return true;
   if (isStreaming && !hasFinalText) return true;
+  if (!isStreaming && errorCount === 0) return true;
   return false;
 }
 
@@ -49,6 +55,7 @@ export function RunTracePanel({
   trace,
   isStreaming,
   hasFinalText,
+  resetKey,
 }: RunTracePanelProps) {
   const timelineId = useId();
   const [userOverride, setUserOverride] = useState(false);
@@ -63,6 +70,16 @@ export function RunTracePanel({
     if (isStreaming && hasFinalText) return;
     setExpanded(shouldAutoExpand(isStreaming, hasFinalText, trace.errorCount));
   }, [isStreaming, hasFinalText, trace.errorCount, userOverride]);
+
+  // 切换 message / 会话时强制重置所有 UI 状态（spec §4.3）。
+  // 不依赖 props 变化，仅按 resetKey 触发。
+  useEffect(() => {
+    setUserOverride(false);
+    setExpanded(shouldAutoExpand(isStreaming, hasFinalText, trace.errorCount));
+    setOpenStepIds(new Set());
+    // resetKey 是身份 key；其余闭包值用于重算默认展开。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey]);
 
   if (!hasTraceSteps(trace)) return null;
 
@@ -222,14 +239,14 @@ function TraceRowCard({
   }`;
 
   return (
-    <li className="relative min-w-0 pl-[34px] pr-2">
-      {/* 虚线贯穿节点中心（left≈19px，节点中心≈20px） */}
+    <li className="relative min-w-0 pl-[72px] pr-2">
+      {/* 虚线贯穿节点徽章附近（spec §4.1：left-[68px]）；timeline 列宽 pl-[72px] */}
       <span
         aria-hidden
         data-trace-line
-        className="pointer-events-none absolute bottom-0 left-[19px] top-0 border-l border-dashed border-text-muted/30"
+        className="pointer-events-none absolute bottom-0 left-[68px] top-0 border-l border-dashed border-text-muted/30"
       />
-      <StepNode step={step} />
+      <StepLabel step={step} />
       {hasDetail ? (
         <button
           type="button"
@@ -266,36 +283,68 @@ function TraceRowCard({
   );
 }
 
-function StepNode({ step }: { step: TraceStep }) {
+const STEP_LABEL_MAX_CHARS = 10;
+
+function StepLabel({ step }: { step: TraceStep }) {
   const isRunning = step.status === 'streaming' || step.status === 'pending';
   const isError =
     step.status === 'error' || (step.kind === 'tool' && step.isError);
   const isDone = step.status === 'done' && !isError;
 
-  let nodeClass =
-    'absolute left-3 top-2.5 z-[1] flex h-4 w-4 items-center justify-center rounded-full border border-border bg-surface text-text-muted';
+  // 身份文本（spec §4.1）：tool 显示 toolName，thinking 显示「思考」；超 10 字符截断 + title
+  const rawIdentity = step.kind === 'tool' ? step.toolName : '思考';
+  const identityText =
+    rawIdentity.length > STEP_LABEL_MAX_CHARS
+      ? rawIdentity.slice(0, STEP_LABEL_MAX_CHARS)
+      : rawIdentity;
+
+  // 身份文本颜色（spec §4.1）
+  let textColor = 'text-text-muted';
+  if (isError) textColor = 'text-danger';
+  else if (isRunning) textColor = 'text-primary';
+  else if (isDone && step.kind === 'tool') textColor = 'text-green-700';
+
+  // 右上徽章（spec §4.1）：保留原 StepNode 的 bg-surface 圆点视觉，缩为 h-3 w-3
+  let badgeClass =
+    'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-text-muted';
   if (isError) {
-    nodeClass =
-      'absolute left-3 top-2.5 z-[1] flex h-4 w-4 items-center justify-center rounded-full border border-danger/45 bg-surface text-danger';
+    badgeClass =
+      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-danger';
   } else if (isRunning) {
-    nodeClass =
-      'absolute left-3 top-2.5 z-[1] flex h-4 w-4 items-center justify-center rounded-full border border-primary/45 bg-surface text-primary';
+    badgeClass =
+      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-primary';
   } else if (isDone && step.kind === 'tool') {
-    nodeClass =
-      'absolute left-3 top-2.5 z-[1] flex h-4 w-4 items-center justify-center rounded-full border border-green-600/45 bg-surface text-green-600';
+    badgeClass =
+      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-green-700';
+  }
+
+  // thinking done / 默认兜底走 muted 圆点；spec §4.1 表末行 thinking done 显式要求 ✓ Check，
+  // 但 thinking error 沿用 AlertCircle 即可。
+  let badgeContent: ReactNode;
+  if (isRunning) {
+    badgeContent = <Loader2 className="h-2 w-2 animate-spin" />;
+  } else if (isError) {
+    badgeContent = <AlertCircle className="h-2 w-2" />;
+  } else if (isDone && step.kind === 'tool') {
+    badgeContent = <Check className="h-2 w-2" strokeWidth={2.5} />;
+  } else if (isDone && step.kind === 'thinking') {
+    badgeContent = <Check className="h-2 w-2" strokeWidth={2.5} />;
+  } else {
+    badgeContent = <span className="block h-1 w-1 rounded-full bg-text-muted" />;
   }
 
   return (
-    <span className={nodeClass} aria-hidden>
-      {isRunning ? (
-        <Loader2 className="h-2.5 w-2.5 animate-spin" />
-      ) : isError ? (
-        <AlertCircle className="h-2.5 w-2.5" />
-      ) : isDone && step.kind === 'tool' ? (
-        <Check className="h-2.5 w-2.5" strokeWidth={2.5} />
-      ) : (
-        <span className="block h-1.5 w-1.5 rounded-full bg-text-muted" />
-      )}
+    <span
+      aria-hidden
+      className="pointer-events-none absolute left-3 top-1.5 z-[1] flex items-center gap-1"
+    >
+      <span
+        title={rawIdentity}
+        className={`block max-w-[56px] truncate font-mono text-[11px] tabular-nums ${textColor}`}
+      >
+        {identityText}
+      </span>
+      <span className={badgeClass}>{badgeContent}</span>
     </span>
   );
 }
@@ -317,13 +366,17 @@ function ThinkingStepRow({
     step.status !== 'streaming' &&
     step.status !== 'pending';
 
+  // 「思考」二字由左侧 StepLabel 独占；button 内 firstLine 去掉「思考」前缀，
+  // 只显示 step.label 的「已完成 / 正在思考」等状态部分，避免与左侧身份文本重复。
+  const labelWithoutThinkPrefix = step.label.replace(/^思考/, '');
+
   const firstLine = (
     <>
       <span
         data-trace-step="thinking"
         className="shrink-0 text-[13px] font-medium text-text"
       >
-        {step.label}
+        {labelWithoutThinkPrefix}
       </span>
       <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
         {/* thinking 行无输入参数；inputPreview 兜底位留空，让状态位 + chevron 始终右靠 */}
@@ -395,9 +448,8 @@ function ToolStepRow({
 
   const firstLine = (
     <>
-      <span className="shrink-0 text-[13px] font-medium text-text">
-        {step.actionLabel}
-      </span>
+      {/* actionLabel 由左侧 StepLabel 独占（toolName 已显示）；button 内 firstLine
+          直接从 keyParams / inputPreview 开始，避免「工具名」重复渲染 */}
       {keyParams.map((p) => (
         <span
           key={p.key}

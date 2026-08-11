@@ -13,6 +13,8 @@ import {
   toolActionLabel,
   formatDuration,
   formatInputPreview,
+  extractKeyParams,
+  type KeyParam,
   type RunTraceViewModel,
 } from '@/features/chat/runTrace';
 
@@ -446,5 +448,88 @@ describe('toolActionLabel / formatDuration / formatInputPreview', () => {
     expect(step.resultPreview).toBe(expected);
     expect(step.resultPreview!.length).toBe(160);
     expect(step.resultDetail).toBe(content);
+  });
+});
+
+describe('extractKeyParams / keyParams', () => {
+  it('[extractKeyParams] [空 input 返回空数组]', () => {
+    expect(extractKeyParams(undefined)).toEqual([]);
+    expect(extractKeyParams({})).toEqual([]);
+  });
+
+  it('[extractKeyParams] [5 个 key 按 url>filePath>query>command>path 顺序且封顶 2]', () => {
+    const out = extractKeyParams({
+      url: 'https://example.com/abc',
+      filePath: '/tmp/data.json',
+      query: '平潭岛',
+      command: 'ls -la',
+      path: '/etc/conf',
+    });
+    expect(out).toHaveLength(2);
+    expect(out.map((k: KeyParam) => k.key)).toEqual(['url', 'filePath']);
+    expect(out[0]?.fullValue).toBe('https://example.com/abc');
+    expect(out[1]?.fullValue).toBe('/tmp/data.json');
+  });
+
+  it('[extractKeyParams] [非字符串值 JSON.stringify 写入 fullValue 且 value 取其截断]', () => {
+    const out = extractKeyParams({ url: { a: 1 } });
+    expect(out).toHaveLength(1);
+    expect(out[0]?.key).toBe('url');
+    expect(out[0]?.fullValue).toBe('{"a":1}');
+    expect(typeof out[0]?.value).toBe('string');
+  });
+
+  it('[extractKeyParams] [截断规则:url 取 host+path(path 24)、filePath/path 取 basename(32)、query/command 取 40]', () => {
+    const longPath = '/' + 'a'.repeat(40) + '/inner';
+    const longFile = '/very/deep/dir/' + 'x'.repeat(40) + '.json';
+    const longQuery = 'q'.repeat(60);
+    const longCmd = 'c'.repeat(60);
+    const out = extractKeyParams({
+      url: `https://example.com${longPath}`,
+      filePath: longFile,
+      query: longQuery,
+      command: longCmd,
+      path: longFile,
+    });
+    const urlP = out.find((k) => k.key === 'url');
+    const fileP = out.find((k) => k.key === 'filePath');
+    // url: hostname + pathname 前 24 字符 + '…'
+    expect(urlP?.value.startsWith('example.com')).toBe(true);
+    expect(urlP?.value.endsWith('…')).toBe(true);
+    expect(urlP?.value.length).toBeLessThanOrEqual('example.com'.length + 25);
+    // filePath: 取最后一段，超过 32 截断
+    expect(fileP?.value.endsWith('…')).toBe(true);
+    expect(fileP?.value.length).toBeLessThanOrEqual(33);
+  });
+
+  it('[extractKeyParams] [非 URL 字符串按 40 截断回落]', () => {
+    const junk = 'not a url :: ' + 'z'.repeat(50);
+    const out = extractKeyParams({ url: junk });
+    expect(out).toHaveLength(1);
+    expect(out[0]?.value).toBe(junk.slice(0, 40) + '…');
+    expect(out[0]?.fullValue).toBe(junk);
+  });
+
+  it('[buildRunTrace] [tool_call 段带 keyParams 且跳过空值] [同时存在 url+query]', () => {
+    const blocks: Block[] = [
+      toolCall({
+        id: 'c1',
+        toolId: 'call-1',
+        toolName: 'web_search',
+        input: { url: 'https://example.com/foo/bar', query: '平潭岛' },
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    const step = vm.steps[0];
+    expect(step.kind).toBe('tool');
+    if (step.kind !== 'tool') return;
+    expect(step.keyParams).toBeDefined();
+    expect(step.keyParams).toHaveLength(2);
+    expect(step.keyParams![0]?.key).toBe('url');
+    expect(step.keyParams![0]?.fullValue).toBe('https://example.com/foo/bar');
+    expect(step.keyParams![1]?.key).toBe('query');
+    // inputPreview 仍保留（fallback 语义）
+    expect(step.inputPreview).toBeDefined();
   });
 });

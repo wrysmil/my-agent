@@ -85,6 +85,7 @@ export function MessageBubble({
                 trace={trace}
                 isStreaming={isStreaming}
                 hasFinalText={hasFinalText}
+                resetKey={message.id}
               />
             )}
 

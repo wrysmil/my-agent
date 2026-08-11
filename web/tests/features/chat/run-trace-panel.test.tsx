@@ -74,8 +74,8 @@ describe('RunTracePanel', () => {
       summaryLabel: '已完成 4 个步骤 · 1 个工具',
     });
 
-    // Act
-    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+    // Act — 用 isStreaming=true && hasFinalText=true 触发「默认折叠」（spec §4.2）
+    render(<RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />);
 
     // Assert
     const expandButtons = screen.getAllByRole('button', { expanded: false });
@@ -100,9 +100,9 @@ describe('RunTracePanel', () => {
       summaryLabel: '已完成 3 个步骤 · 0 个工具',
     });
 
-    // Act
+    // Act — 用 isStreaming=true && hasFinalText=true 触发默认折叠
     const { container } = render(
-      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />,
     );
     await user.click(screen.getByRole('button', { name: /已完成 3 个步骤/ }));
     const thinkingButtons = screen.getAllByRole('button', { name: '查看思考过程' });
@@ -167,14 +167,14 @@ describe('RunTracePanel', () => {
     expect(screen.getByRole('list')).toBeInTheDocument();
   });
 
-  it('默认折叠：不挂载步骤 DOM，展开后才渲染 timeline', async () => {
-    // Arrange
+  it('默认折叠：isStreaming=true && hasFinalText=true && errorCount=0 时不挂载 timeline', async () => {
+    // Arrange — spec §4.2：仅当「运行中已结束 final 等待下一轮」时才折叠
     const user = userEvent.setup();
     const trace = vm({ status: 'done' });
 
     // Act
     const { container } = render(
-      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />,
     );
 
     // Assert
@@ -309,10 +309,10 @@ describe('RunTracePanel', () => {
   });
 
   it('键盘：聚焦摘要按钮后 Enter 可切换 aria-expanded', async () => {
-    // Arrange
+    // Arrange — 默认折叠场景需要 isStreaming=true && hasFinalText=true
     const user = userEvent.setup();
     render(
-      <RunTracePanel trace={vm()} isStreaming={false} hasFinalText={true} />,
+      <RunTracePanel trace={vm()} isStreaming={true} hasFinalText={true} />,
     );
     const summary = screen.getByRole('button', { expanded: false });
     summary.focus();
@@ -383,7 +383,8 @@ describe('RunTracePanel', () => {
       summaryLabel: '已完成 1 个步骤 · 0 个工具',
     });
 
-    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+    // 默认折叠：isStreaming=true && hasFinalText=true
+    render(<RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />);
     await user.click(screen.getByRole('button', { name: /已完成 1 个步骤/ }));
 
     const preview = screen.getByText(/completed reasoning body/);
@@ -422,8 +423,11 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
       <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />,
     );
 
-    // Assert — pill 出现在统一卡片里
-    const pills = container.querySelectorAll('span.font-mono.text-primary');
+    // Assert — pill 出现在统一卡片里。StepLabel 同样含 font-mono，需用
+    // bg-primary/10 + border-primary/20 区分 keyParam pill 与身份文本节点。
+    const pills = container.querySelectorAll(
+      'span.font-mono.bg-primary\\/10',
+    );
     expect(pills.length).toBeGreaterThanOrEqual(1);
     const pill = pills[0]!;
     expect(pill.getAttribute('title')).toBe(url);
@@ -467,7 +471,10 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
     expect(errorBtn!.className).toContain('bg-danger-bg');
 
     // Assert — 状态位文本（meta = '失败'）渲染在 text-danger 中
-    const metaSpan = container.querySelector('span.text-danger.tabular-nums');
+    // StepLabel 错误态身份文本也是 text-danger，需在按钮/div 内部查找以排除左侧身份文本节点。
+    const metaSpan = errorBtn!.querySelector(
+      'span.text-danger.tabular-nums',
+    ) as HTMLElement | null;
     expect(metaSpan).not.toBeNull();
     expect(metaSpan!.textContent).toBe('失败');
   });
@@ -526,12 +533,12 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
       summaryLabel: '已完成 1 个步骤 · 0 个工具',
     });
 
-    // Act
+    // Act — 默认折叠场景（isStreaming=true && hasFinalText=true）
     const { container } = render(
-      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />,
     );
 
-    // Assert — 展开前 timeline 未挂载，所以 DOM 不含任何紫框类
+    // Assert — 折叠态 DOM 不含紫框类
     const collapsedClassNames = Array.from(container.querySelectorAll('[class]'))
       .map((el) => el.className)
       .filter((c): c is string => typeof c === 'string')
@@ -576,9 +583,9 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
       summaryLabel: '已完成 1 个步骤 · 0 个工具',
     });
 
-    // Act
-    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
-    // 默认折叠（isStreaming=false && hasFinalText=true）→ 先点 summary 展开 panel
+    // Act — 默认折叠场景（isStreaming=true && hasFinalText=true）
+    render(<RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />);
+    // 先点 summary 展开 panel
     await user.click(screen.getByRole('button', { name: /已完成 1 个步骤/ }));
     // 再点 thinking 按钮展开 thinking detail
     const thinkingBtn = screen.getByRole('button', { name: '查看思考过程' });
@@ -594,5 +601,317 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
     // link 真实渲染为 <a href>
     const link = screen.getByText('GitHub').closest('a');
     expect(link?.getAttribute('href')).toBe('https://github.com');
+  });
+});
+
+/**
+ * spec §8.1 第二批：左侧时间线节点身份文本 + 右上徽章 + 默认展开策略 + resetKey。
+ *
+ * 设计前提（spec §4.1 / §4.2 / §4.3）：
+ *  - StepLabel 替换 StepNode：tool 节点显示 toolName，thinking 节点显示「思考」；
+ *    超长截断到 10 字符并设置 title 为全文。
+ *  - 默认展开：`errorCount>0` / `isStreaming && !hasFinalText` / `!isStreaming && errorCount===0`。
+ *    默认折叠：仅 `isStreaming && hasFinalText && errorCount===0`。
+ *  - resetKey 变化 → 强制重置 userOverride / expanded / openStepIds。
+ */
+describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / resetKey', () => {
+  it('§8.1.1 节点身份文本：tool 节点显示 toolName；thinking 节点显示「思考」', () => {
+    // Arrange
+    const trace = vm({
+      steps: [
+        thinking({ id: 't1', detail: 'reasoning' }),
+        tool({ id: 'tc1', toolName: 'write_file', actionLabel: '写文件' }),
+      ],
+      toolCount: 1,
+      completedCount: 2,
+      summaryLabel: '已完成 2 个步骤 · 1 个工具',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert — 左侧身份文本节点
+    expect(screen.getByText('write_file')).toBeInTheDocument();
+    const thinkingLabels = container.querySelectorAll(
+      'span.font-mono[title="思考"]',
+    );
+    expect(thinkingLabels.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('§8.1.1 超长截断：toolName > 10 字符时只渲染前 10 字符；title 含完整值', () => {
+    // Arrange
+    const longToolName = 'super_long_tool_name_xyz';
+    expect(longToolName.length).toBeGreaterThan(10);
+    const trace = vm({
+      steps: [
+        tool({
+          id: 'tc-long',
+          toolName: longToolName,
+          actionLabel: '超长工具名',
+        }),
+      ],
+      toolCount: 1,
+      completedCount: 1,
+      summaryLabel: '已完成 1 个步骤 · 1 个工具',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert — 渲染前 10 字符（'super_long'）
+    expect(screen.getByText('super_long')).toBeInTheDocument();
+    // title 属性含完整 toolName
+    const identitySpan = container.querySelector(
+      'span.font-mono[title]',
+    ) as HTMLElement | null;
+    expect(identitySpan).not.toBeNull();
+    expect(identitySpan!.getAttribute('title')).toBe(longToolName);
+    expect(identitySpan!.textContent).toBe('super_long');
+  });
+
+  it('§8.1.2 右上徽章：done tool → ✓ 绿；running tool → spinner；error → ⚠ 红；thinking done → ✓ 灰', () => {
+    // Arrange
+    const trace = vm({
+      steps: [
+        thinking({ id: 't-done', detail: 'reasoned' }),
+        tool({ id: 'tc-done', toolName: 'web_search', actionLabel: '搜索' }),
+        tool({
+          id: 'tc-run',
+          toolName: 'web_fetch',
+          actionLabel: '获取',
+          status: 'streaming',
+        }),
+        tool({
+          id: 'tc-err',
+          toolName: 'web_fetch',
+          actionLabel: '获取',
+          status: 'error',
+          isError: true,
+        }),
+      ],
+      toolCount: 3,
+      completedCount: 2,
+      errorCount: 1,
+      summaryLabel: '完成，但有 1 个步骤失败',
+      status: 'error',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={false} />,
+    );
+
+    // Assert — 通过 <li> 上下文定位徽章（spec §4.1：右上角 h-3 w-3 圆点）
+    const items = Array.from(
+      container.querySelectorAll('ol > li'),
+    ) as HTMLElement[];
+    expect(items.length).toBe(4);
+
+    // 1) thinking done → ✓ 灰（Check + bg-surface text-text-muted）
+    const thinkingBadge = items[0]!.querySelector('span.bg-surface');
+    expect(thinkingBadge).not.toBeNull();
+    expect(thinkingBadge!.querySelector('.lucide-check')).not.toBeNull();
+
+    // 2) tool done → ✓ 绿
+    const doneBadge = items[1]!.querySelector('span.bg-surface');
+    expect(doneBadge).not.toBeNull();
+    expect(doneBadge!.className).toContain('text-green-700');
+    expect(doneBadge!.querySelector('.lucide-check')).not.toBeNull();
+
+    // 3) tool running → spinner (Loader2 含 animate-spin)
+    const runningBadge = items[2]!.querySelector('span.bg-surface');
+    expect(runningBadge).not.toBeNull();
+    expect(runningBadge!.querySelector('.animate-spin')).not.toBeNull();
+
+    // 4) tool error → ⚠ 红
+    const errorBadge = items[3]!.querySelector('span.bg-surface');
+    expect(errorBadge).not.toBeNull();
+    expect(errorBadge!.className).toContain('text-danger');
+    expect(errorBadge!.querySelector('.lucide-circle-alert')).not.toBeNull();
+  });
+
+  it('§8.1.3 <li> padding：className 含 pl-[72px]，不含 pl-[34px]', () => {
+    // Arrange
+    const trace = vm({
+      steps: [
+        thinking({ id: 't1', detail: 'a' }),
+        tool({ id: 'tc1', toolName: 'web_fetch', actionLabel: '获取' }),
+      ],
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert
+    const items = Array.from(
+      container.querySelectorAll('ol > li'),
+    ) as HTMLElement[];
+    expect(items.length).toBeGreaterThan(0);
+    items.forEach((li) => {
+      expect(li.className).toContain('pl-[72px]');
+      expect(li.className).not.toContain('pl-[34px]');
+    });
+  });
+
+  it('§8.1.4 默认展开：isStreaming=false + errorCount=0 时 timeline 容器 hidden=false', () => {
+    // Arrange — spec §4.2 修订：已完成无错误 → 默认展开
+    const trace = vm({ status: 'done' });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert — 顶层摘要按钮 aria-expanded=true
+    expect(
+      screen.getByRole('button', { expanded: true }),
+    ).toBeInTheDocument();
+    // 内部 timeline 容器 hidden=false
+    const timelineEl = container.querySelector('[id^="_r_"], [id]');
+    const timelineDiv = container.querySelector(
+      '[data-run-trace] > div:not([data-run-trace])',
+    ) as HTMLElement | null;
+    expect(timelineDiv).not.toBeNull();
+    expect(timelineDiv!.hasAttribute('hidden')).toBe(false);
+    // timeline <ol> 实际挂载
+    expect(screen.getByRole('list')).toBeInTheDocument();
+  });
+
+  it('§8.1.5 默认折叠：仅 isStreaming=true && hasFinalText=true && errorCount=0 时折叠', () => {
+    // Arrange
+    const trace = vm({ status: 'done', errorCount: 0 });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />,
+    );
+
+    // Assert — 顶层摘要按钮 aria-expanded=false，timeline 隐藏
+    expect(
+      screen.getByRole('button', { expanded: false }),
+    ).toBeInTheDocument();
+    const timelineDiv = container.querySelector(
+      '[data-run-trace] > div:not([data-run-trace])',
+    ) as HTMLElement | null;
+    expect(timelineDiv).not.toBeNull();
+    expect(timelineDiv!.hasAttribute('hidden')).toBe(true);
+    expect(screen.queryByRole('list')).not.toBeInTheDocument();
+  });
+
+  it('§8.1.6 userOverride：手动点折叠后，effect 不会自动拉回展开', async () => {
+    // Arrange — 流中无 final 时默认展开
+    const user = userEvent.setup();
+    const trace = vm({ status: 'done' });
+    const { rerender } = render(
+      <RunTracePanel
+        trace={trace}
+        isStreaming={true}
+        hasFinalText={false}
+        resetKey="rk-1"
+      />,
+    );
+    expect(
+      screen.getByRole('button', { expanded: true }),
+    ).toBeInTheDocument();
+
+    // Act — 用户手动折叠
+    await user.click(screen.getByRole('button', { expanded: true }));
+    expect(
+      screen.getByRole('button', { expanded: false }),
+    ).toBeInTheDocument();
+
+    // Act — rerender props 让 effect 再跑一次（hasFinalText 切换不会触发 default-expand）
+    rerender(
+      <RunTracePanel
+        trace={trace}
+        isStreaming={true}
+        hasFinalText={true}
+        resetKey="rk-1"
+      />,
+    );
+
+    // Assert — 仍折叠（userOverride 阻断自动展开）
+    expect(
+      screen.getByRole('button', { expanded: false }),
+    ).toBeInTheDocument();
+
+    // Act — 变回 hasFinalText=false（应自动展开），但 userOverride 仍阻断
+    rerender(
+      <RunTracePanel
+        trace={trace}
+        isStreaming={true}
+        hasFinalText={false}
+        resetKey="rk-1"
+      />,
+    );
+
+    // Assert — 仍保持折叠，effect 未把状态拉回
+    expect(
+      screen.getByRole('button', { expanded: false }),
+    ).toBeInTheDocument();
+  });
+
+  it('§8.1.7 resetKey 变化：openStepIds / userOverride / expanded 被重置', async () => {
+    // Arrange — 流中无 final 时默认展开，便于操作 step 详情
+    const user = userEvent.setup();
+    const trace = vm({
+      steps: [
+        tool({
+          id: 'tc1',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'done',
+          resultDetail: 'r1',
+        }),
+      ],
+      toolCount: 1,
+      completedCount: 1,
+    });
+    const { rerender } = render(
+      <RunTracePanel
+        trace={trace}
+        isStreaming={true}
+        hasFinalText={false}
+        resetKey="msg-1"
+      />,
+    );
+
+    const summaryBtn = () =>
+      screen.getAllByRole('button').find((b) => b.hasAttribute('aria-controls'))!;
+
+    // Act — 展开步骤详情：点工具行 button
+    const stepBtn = screen.getByRole('button', { name: /查看 web_fetch 结果/ });
+    await user.click(stepBtn);
+    expect(stepBtn).toHaveAttribute('aria-expanded', 'true');
+
+    // Act — 折叠顶层摘要（建立 userOverride）
+    expect(summaryBtn()).toHaveAttribute('aria-expanded', 'true');
+    await user.click(summaryBtn());
+    expect(summaryBtn()).toHaveAttribute('aria-expanded', 'false');
+
+    // Act — 切换 resetKey：rerender 时换 key → spec §4.3 effect 重置三个状态
+    rerender(
+      <RunTracePanel
+        trace={trace}
+        isStreaming={true}
+        hasFinalText={false}
+        resetKey="msg-2"
+      />,
+    );
+
+    // Assert — 重置后：
+    //   1) expanded 按新状态重算（isStreaming=true && !hasFinalText → 展开）
+    expect(summaryBtn()).toHaveAttribute('aria-expanded', 'true');
+    //   2) openStepIds 被清空 → 工具行 button 的 aria-expanded=false
+    const stepBtnAfter = screen.getByRole('button', {
+      name: /查看 web_fetch 结果/,
+    });
+    expect(stepBtnAfter).toHaveAttribute('aria-expanded', 'false');
   });
 });

@@ -6,15 +6,27 @@
  *   2. 进行中且无 final → CycleCard 渲染含 GeneratingIndicator
  *   3. 进行中且有 final（部分流）→ CycleCard 渲染含 final，**无** GeneratingIndicator
  *   4. 多次 run → 2 个独立 CycleCard，user bubble 不进 CycleCard
+ *   5. resetKey 透传：MessageBubble 渲染时 RunTracePanel 接收的 resetKey === message.id
  *
  * 注意：Markdown 组件是 lazy import + Suspense fallback。
  *   - 测试里要用 findByText / waitFor，等 Suspense 解析完再断言 final markdown 文本。
  *   - text 断言使用 exactText matcher，绕过 react-markdown 把中文切成多 span 的副作用。
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import type { ChatMessage } from '@/features/chat/types';
+
+// RunTracePanel spy：用 vi.mock 替换实际组件，记录最后一次调用 props，
+// 让 message-bubble-cycle 测试能断言 resetKey 透传（spec §8.1 第 7 项）。
+// spy 渲染为 null，避免破坏 MessageBubble 的布局依赖。
+const runTracePanelSpy: (props: unknown) => void = vi.fn();
+vi.mock('@/components/chat/RunTracePanel', () => ({
+  RunTracePanel: (props: unknown) => {
+    runTracePanelSpy(props);
+    return null;
+  },
+}));
 
 function makeAssistantMessage(opts: {
   hasThinking?: boolean;
@@ -178,5 +190,60 @@ describe('MessageBubble · cycle grouping', () => {
       expect(cards[0]?.textContent ?? '').toContain('第一轮完成。');
       expect(cards[1]?.textContent ?? '').toContain('第二轮完成。');
     });
+  });
+});
+
+describe('MessageBubble · resetKey 透传 (spec §8.1 第 7 项)', () => {
+  beforeEach(() => {
+    (runTracePanelSpy as unknown as { mockClear: () => void }).mockClear();
+  });
+
+  afterEach(() => {
+    (runTracePanelSpy as unknown as { mockClear: () => void }).mockClear();
+  });
+
+  it('渲染 MessageBubble → RunTracePanel 收到的 props.resetKey === message.id', async () => {
+    // Arrange — 用 tool_call 让 showTrace=true，触发 RunTracePanel 调用
+    const msg: ChatMessage = {
+      id: 'msg-cycle-reset-42',
+      role: 'assistant',
+      blocks: [
+        {
+          id: 'msg-cycle-reset-42-c1',
+          type: 'tool_call',
+          status: 'done',
+          toolId: 'tool-1',
+          toolName: 'web_fetch',
+          inputRaw: '{}',
+          input: {},
+        },
+        {
+          id: 'msg-cycle-reset-42-r1',
+          type: 'tool_result',
+          status: 'done',
+          toolCallId: 'tool-1',
+          toolName: 'web_fetch',
+          content: 'result',
+          isError: false,
+        },
+      ],
+    };
+
+    // Act
+    render(<MessageBubble message={msg} isStreaming={false} />);
+
+    // Assert — spy 至少被调用一次；最后一次调用的 props.resetKey === message.id
+    await waitFor(() => {
+      expect(runTracePanelSpy).toHaveBeenCalled();
+    });
+    const mockFn = runTracePanelSpy as unknown as {
+      mock: { calls: unknown[][] };
+    };
+    const lastCallArgs = mockFn.mock.calls.at(-1) ?? [];
+    const lastCallProps = lastCallArgs[0] as
+      | { resetKey?: string }
+      | undefined;
+    expect(lastCallProps).toBeDefined();
+    expect(lastCallProps!.resetKey).toBe('msg-cycle-reset-42');
   });
 });
