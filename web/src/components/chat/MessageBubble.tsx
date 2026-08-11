@@ -1,6 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { ThinkingDots } from './ThinkingDots';
+import { CycleCard } from './CycleCard';
+import { GeneratingIndicator } from './GeneratingIndicator';
 import { RunTracePanel } from './RunTracePanel';
 import { buildRunTrace, hasTraceSteps } from '@/features/chat/runTrace';
 import type { ChatMessage } from '@/features/chat/types';
@@ -15,10 +16,12 @@ function MarkdownFallback() {
 /**
  * MessageBubble — 聊天气泡组件。
  *
- * assistant 分层：
- *   1. ThinkingDots — 流式且尚无 trace / 最终 text 时的极短暂 fallback
- *   2. RunTracePanel — 过程时间线（思考 / 工具）
- *   3. Final Markdown — 过程容器外的正文区（无强卡片边框）
+ * assistant 分层（全部包在 CycleCard 内，详见 spec § 4.2）：
+ *   1. RunTracePanel — 过程时间线（思考 / 工具）
+ *   2. Final Markdown — 正文区
+ *   3. GeneratingIndicator — 仅 isStreaming && !hasFinalText 时显示，转圈下移到 final 之后
+ *
+ * user 消息：保持原 user bubble 样式（不进 CycleCard）。
  */
 export function MessageBubble({
   message,
@@ -44,7 +47,9 @@ export function MessageBubble({
     aborted,
   });
   const showTrace = hasTraceSteps(trace);
-  const showThinkingDots = isStreaming && !showTrace && !hasFinalText;
+  // 转圈 + 「AI 仍在生成中」下移到 final 之后；仅当还没产出 final 时显示。
+  // （删除了原 ThinkingDots：trace 出现后其占位无意义。）
+  const showGeneratingIndicator = isStreaming && !hasFinalText;
 
   // user 消息没有任何文本/内容时不渲染空气泡（避免流断开时显示空蓝色占位）
   const isEmptyUserMessage = role === 'user' && !message.text && !textContent;
@@ -74,9 +79,7 @@ export function MessageBubble({
         {role === 'user' ? (
           <div className="whitespace-pre-wrap break-words">{message.text || textContent}</div>
         ) : (
-          <div className="space-y-2">
-            {showThinkingDots && <ThinkingDots />}
-
+          <CycleCard>
             {showTrace && (
               <RunTracePanel
                 trace={trace}
@@ -95,19 +98,8 @@ export function MessageBubble({
               </Suspense>
             )}
 
-            {/* Token 用量：仅开发入口，不删 message.usage 数据 */}
-            {(import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV === true &&
-              !isStreaming &&
-              message.usage &&
-              message.usage.totalTokens > 0 && (
-                <details className="text-[10px] text-text-muted/50 pt-1">
-                  <summary className="cursor-pointer select-none">用量</summary>
-                  <div className="text-right pt-0.5">
-                    {message.usage.inputTokens} → {message.usage.outputTokens} tokens
-                  </div>
-                </details>
-              )}
-          </div>
+            {showGeneratingIndicator && <GeneratingIndicator />}
+          </CycleCard>
         )}
       </div>
 
