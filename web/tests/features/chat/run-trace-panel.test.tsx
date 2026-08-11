@@ -1,7 +1,7 @@
 /**
  * RunTracePanel 组件测试
  *
- * 覆盖：默认展开策略、userOverride、空 trace、合并步骤、键盘与无障碍。
+ * 覆盖：默认展开策略、userOverride、空 trace、独立思考步骤、键盘与无障碍。
  */
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
@@ -21,7 +21,6 @@ function thinking(
     status: 'done',
     label: '思考已完成',
     detail: 'reasoning…',
-    mergedCount: 1,
     ...overrides,
   };
 }
@@ -41,7 +40,7 @@ function tool(
 function vm(overrides: Partial<RunTraceViewModel> = {}): RunTraceViewModel {
   return {
     steps: [
-      thinking({ id: 't1', mergedCount: 2, detail: 'a\nb' }),
+      thinking({ id: 't1', detail: 'a' }),
       tool({
         id: 'tc1',
         toolName: 'web_fetch',
@@ -61,16 +60,18 @@ function vm(overrides: Partial<RunTraceViewModel> = {}): RunTraceViewModel {
 }
 
 describe('RunTracePanel', () => {
-  it('摘要按钮：多个 thinking 合并后顶层只有一个 aria-expanded 按钮', () => {
+  it('摘要按钮：多个 thinking 步骤仍只有一个顶层入口', () => {
     // Arrange
     const trace = vm({
       steps: [
-        thinking({ id: 't1', mergedCount: 3, detail: 'one\ntwo\nthree' }),
+        thinking({ id: 't1', detail: 'one' }),
+        thinking({ id: 't2', detail: 'two' }),
+        thinking({ id: 't3', detail: 'three' }),
         tool({ id: 'tc1', toolName: 'web_search', actionLabel: '搜索网页' }),
       ],
       toolCount: 1,
-      completedCount: 2,
-      summaryLabel: '已完成 2 个步骤 · 1 个工具',
+      completedCount: 4,
+      summaryLabel: '已完成 4 个步骤 · 1 个工具',
     });
 
     // Act
@@ -83,6 +84,56 @@ describe('RunTracePanel', () => {
     );
     expect(summaryButtons).toHaveLength(1);
     expect(summaryButtons[0]).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('独立思考块：连续三个 thinking 可分别展开且具有视觉区分类', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    const trace = vm({
+      steps: [
+        thinking({ id: 't1', detail: 'first detail' }),
+        thinking({ id: 't2', detail: 'second detail' }),
+        thinking({ id: 't3', detail: 'third detail' }),
+      ],
+      toolCount: 0,
+      completedCount: 3,
+      summaryLabel: '已完成 3 个步骤 · 0 个工具',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+    await user.click(screen.getByRole('button', { name: /已完成 3 个步骤/ }));
+    const thinkingButtons = screen.getAllByRole('button', { name: '查看思考过程' });
+    await user.click(thinkingButtons[0]);
+    await user.click(thinkingButtons[2]);
+
+    // Assert
+    expect(thinkingButtons).toHaveLength(3);
+    expect(thinkingButtons[0]).toHaveAttribute('aria-expanded', 'true');
+    expect(thinkingButtons[1]).toHaveAttribute('aria-expanded', 'false');
+    expect(thinkingButtons[2]).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('first detail').tagName).toBe('PRE');
+    expect(container.querySelectorAll('pre')).toHaveLength(2);
+    expect(screen.getByText('third detail').tagName).toBe('PRE');
+
+    const thinkingRows = container.querySelectorAll('[data-trace-step="thinking"]');
+    expect(thinkingRows).toHaveLength(3);
+    thinkingRows.forEach((row) => {
+      expect(row.className).toContain('bg-primary/5');
+      expect(row.className).toContain('border-primary/45');
+    });
+
+    const panel = container.querySelector('[data-run-trace]');
+    expect(panel?.className).toContain('bg-surface');
+    expect(panel?.className).toContain('border-border/80');
+
+    const classNames = Array.from(container.querySelectorAll('[class]'))
+      .map((element) => element.className)
+      .filter((className): className is string => typeof className === 'string')
+      .join(' ');
+    expect(classNames).not.toMatch(/\/(?:15|25|50)\b|\bbg-surface\/40\b/);
   });
 
   it('默认展开：运行中且无最终 text 时 timeline 可见', () => {
@@ -109,16 +160,26 @@ describe('RunTracePanel', () => {
     expect(screen.getByRole('list')).toBeInTheDocument();
   });
 
-  it('默认折叠：历史完成态不展示 timeline', () => {
+  it('默认折叠：不挂载步骤 DOM，展开后才渲染 timeline', async () => {
     // Arrange
+    const user = userEvent.setup();
     const trace = vm({ status: 'done' });
 
     // Act
-    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
 
     // Assert
-    expect(screen.getByRole('button', { expanded: false })).toBeInTheDocument();
+    const summary = screen.getByRole('button', { expanded: false });
+    expect(summary).toBeInTheDocument();
     expect(screen.queryByRole('list')).not.toBeInTheDocument();
+    expect(container.querySelector('[data-trace-step]')).not.toBeInTheDocument();
+
+    await user.click(summary);
+
+    expect(screen.getByRole('list')).toBeInTheDocument();
+    expect(container.querySelector('[data-trace-step]')).toBeInTheDocument();
   });
 
   it('用户手动折叠后：props 变为完成态仍保持折叠（不被自动策略覆盖）', async () => {

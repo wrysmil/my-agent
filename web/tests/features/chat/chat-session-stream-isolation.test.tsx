@@ -544,6 +544,113 @@ describe('chat session stream isolation regressions', () => {
     ]);
   });
 
+  it('restores internal compaction summaries as thinking without losing run content', async () => {
+    // Arrange
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(historyResponse('A', 7, [
+      {
+        id: 'user-a',
+        role: 'user',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{ id: 'user-a:0', type: 'text', text: 'question' }],
+      },
+      {
+        id: 'active-checkpoint',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{
+          id: 'active-checkpoint:0',
+          type: 'text',
+          text: '[Active checkpoint summary (epoch 3)]: internal checkpoint\ncheckpoint follow-up',
+        }],
+      },
+      {
+        id: 'history-summary',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{
+          id: 'history-summary:0',
+          type: 'text',
+          text: '[History summary for turns 1,2]: internal archive\narchive follow-up',
+        }],
+      },
+      {
+        id: 'assistant-tool-step',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [
+          { id: 'thinking-a', type: 'thinking', thinking: 'real reasoning' },
+          { id: 'tool-a', type: 'tool_use', name: 'web_fetch', input: {} },
+        ],
+      },
+      {
+        id: 'tool-result-row',
+        role: 'user',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{
+          id: 'result:tool-a',
+          type: 'tool_result',
+          toolUseId: 'tool-a',
+          name: 'web_fetch',
+          content: 'real tool result',
+        }],
+      },
+      {
+        id: 'assistant-final',
+        role: 'assistant',
+        runId: 'run-a',
+        turnId: 1,
+        content: [{
+          id: 'assistant-final:0',
+          type: 'text',
+          text: '[Active checkpoint summary epoch 3]: user-visible near match\nfinal answer',
+        }],
+      },
+    ]));
+
+    // Act
+    const { result } = renderHook(() => useChatStream('A'));
+    await waitFor(() => expect(result.current.historyLoaded).toBe(true));
+
+    const assistant = result.current.messages.find(
+      (message) => message.role === 'assistant',
+    );
+    const restoredText = assistant?.blocks
+      .filter((block) => block.type === 'text')
+      .map((block) => block.text)
+      .join('\n') ?? '';
+    const restoredThinking = assistant?.blocks
+      .filter((block) => block.type === 'thinking')
+      .map((block) => block.thinking) ?? [];
+
+    // Assert
+    expect(result.current.messages).toHaveLength(2);
+    expect(assistant?.messageId).toBe('assistant-final');
+    expect(assistant?.blocks.map((block) => block.type)).toEqual([
+      'thinking',
+      'thinking',
+      'thinking',
+      'tool_call',
+      'tool_result',
+      'text',
+    ]);
+    expect(restoredThinking).toEqual([
+      ' internal checkpoint\ncheckpoint follow-up',
+      ' internal archive\narchive follow-up',
+      'real reasoning',
+    ]);
+    expect(restoredText).not.toContain('[Active checkpoint summary (epoch 3)]:');
+    expect(restoredText).not.toContain('[History summary for turns 1,2]:');
+    expect(restoredText).toContain(
+      '[Active checkpoint summary epoch 3]: user-visible near match',
+    );
+    expect(restoredText).toContain('final answer');
+  });
+
   it('removes orphan runs when a session is removed and bounds terminal run metadata', () => {
     const store = useChatRuntimeStore.getState();
     store.ensureSession('A');

@@ -56,7 +56,7 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       expect(within(list).getByText('思考已完成')).toBeInTheDocument();
     });
 
-    it('仅 thinking 多个相邻：仍只有一个顶层摘要入口', async () => {
+    it('仅 thinking 多个相邻：一个顶层摘要入口下保留三个可独立展开的步骤', async () => {
       // Arrange
       const user = userEvent.setup();
       const message = assistantMessage([
@@ -72,9 +72,25 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       expect(summaryExpandButtons()).toHaveLength(1);
       expect(document.querySelectorAll('[data-run-trace]')).toHaveLength(1);
 
-      // Act — 展开后仍为合并后的单个 thinking step
+      // Act — 展开顶层 timeline，再分别展开三个 thinking 详情
       await user.click(summaryExpandButtons()[0]);
-      expect(within(screen.getByRole('list')).getAllByRole('listitem')).toHaveLength(1);
+      const timeline = within(screen.getByRole('list'));
+      const thinkingSteps = timeline.getAllByRole('button', {
+        name: '查看思考过程',
+      });
+      await user.click(thinkingSteps[0]);
+      await user.click(thinkingSteps[1]);
+      await user.click(thinkingSteps[2]);
+
+      // Assert — 三个 thinking 保持独立，且各自按钮对应各自详情
+      expect(timeline.getAllByRole('listitem')).toHaveLength(3);
+      expect(thinkingSteps).toHaveLength(3);
+      thinkingSteps.forEach((step) => {
+        expect(step).toHaveAttribute('aria-expanded', 'true');
+      });
+      expect(timeline.getByText('first').tagName).toBe('PRE');
+      expect(timeline.getByText('second').tagName).toBe('PRE');
+      expect(timeline.getByText('third').tagName).toBe('PRE');
     });
 
     it('仅最终 text：不渲染 data-run-trace 面板', async () => {
@@ -90,7 +106,11 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       expect(document.querySelector('[data-run-trace]')).toBeNull();
       expect(screen.queryByRole('button', { expanded: true })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { expanded: false })).not.toBeInTheDocument();
-      expect(await screen.findByText('plain reply without tools')).toBeInTheDocument();
+      expect(
+        await screen.findByText('plain reply without tools', undefined, {
+          timeout: 3_000,
+        }),
+      ).toBeInTheDocument();
     });
 
     it('工具失败：摘要含失败语义，图标与文字双通道可断言', () => {

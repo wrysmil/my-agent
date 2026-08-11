@@ -349,7 +349,7 @@ export function ChatPage() {
   const showTaskGrid = !sessionId && messages.length === 0 && !creating;
 
   return (
-    <div className="flex flex-col h-full min-h-0" data-testid="page-chat">
+    <div className="flex h-full min-h-0 flex-col bg-surface" data-testid="page-chat">
       {/* ── Header（Orkas chat-header 风格）──
           P1: 16px/600 标题 + 柔和状态指示器，顶部渐变装饰线 */}
       <div className="relative shrink-0 border-b border-border bg-surface">

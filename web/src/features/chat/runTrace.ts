@@ -19,8 +19,6 @@ export interface ThinkingTraceStep {
   label: string;
   /** 完整 reasoning；二次展开时显示 */
   detail?: string;
-  /** 被合并的相邻 thinking block 数量，≥1 */
-  mergedCount: number;
 }
 
 export interface ToolTraceStep {
@@ -117,13 +115,6 @@ function thinkingLabel(status: BlockStatus): string {
   return '思考已完成';
 }
 
-function mergeThinkingStatus(current: BlockStatus, next: BlockStatus): BlockStatus {
-  if (next === 'streaming' || current === 'streaming') return 'streaming';
-  if (next === 'error' || current === 'error') return 'error';
-  if (next === 'pending' || current === 'pending') return 'pending';
-  return 'done';
-}
-
 // ============================================================
 // buildRunTrace / hasTraceSteps（契约 §3 / §4）
 // ============================================================
@@ -139,22 +130,13 @@ export function buildRunTrace(
     if (block.type === 'text') continue;
 
     if (block.type === 'thinking') {
-      const prev = steps[steps.length - 1];
-      if (prev && prev.kind === 'thinking') {
-        prev.mergedCount += 1;
-        prev.detail = prev.detail ? `${prev.detail}\n${block.thinking}` : block.thinking;
-        prev.status = mergeThinkingStatus(prev.status, block.status);
-        prev.label = thinkingLabel(prev.status);
-      } else {
-        steps.push({
-          id: block.id,
-          kind: 'thinking',
-          status: block.status,
-          label: thinkingLabel(block.status),
-          detail: block.thinking || undefined,
-          mergedCount: 1,
-        });
-      }
+      steps.push({
+        id: block.id,
+        kind: 'thinking',
+        status: block.status,
+        label: thinkingLabel(block.status),
+        detail: block.thinking || undefined,
+      });
       continue;
     }
 

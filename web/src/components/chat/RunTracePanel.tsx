@@ -83,20 +83,20 @@ export function RunTracePanel({
   return (
     <div
       data-run-trace
-      className="rounded-xl border border-border/80 bg-surface-hover/30 overflow-hidden"
+      className="overflow-hidden rounded-xl border border-border/80 bg-surface"
     >
       <button
         type="button"
         aria-expanded={expanded}
         aria-controls={timelineId}
         onClick={togglePanel}
-        className="flex w-full min-h-11 items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-text-muted transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
+        className="flex min-h-11 w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-[13px] text-text-muted transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset"
       >
         <SummaryIcon status={trace.status} isStreaming={isStreaming} />
         <span aria-live="polite" className="min-w-0 flex-1 truncate text-text">
           {trace.summaryLabel}
         </span>
-        <span className="shrink-0 tabular-nums text-xs text-text-muted">
+        <span className="hidden shrink-0 tabular-nums text-xs text-text-muted sm:inline">
           {metaParts.join(' · ')}
         </span>
         <ChevronDown
@@ -110,22 +110,24 @@ export function RunTracePanel({
       <div
         id={timelineId}
         hidden={!expanded}
-        className="border-t border-border/80 px-2 pb-2.5 pt-1.5"
+        className="border-t border-border/80 px-2 pb-2.5 pt-2"
       >
         {/*
           步骤正文不对父级/历史 live region 增量播报：reasoning 预览默认 aria-hidden，
           完整详情仅在用户二次展开后暴露（按钮本身仍可键盘聚焦）。
         */}
-        <ol className="m-0 list-none p-0 [&>li:first-child>[data-trace-line]]:top-[18px] [&>li:last-child>[data-trace-line]]:bottom-[calc(100%-18px)]">
-          {trace.steps.map((step) => (
-            <TraceStepRow
-              key={step.id}
-              step={step}
-              detailOpen={openStepIds.has(step.id)}
-              onToggleDetail={() => toggleStep(step.id)}
-            />
-          ))}
-        </ol>
+        {expanded && (
+          <ol className="m-0 list-none p-0 [&>li:first-child>[data-trace-line]]:top-[18px] [&>li:last-child>[data-trace-line]]:bottom-[calc(100%-18px)]">
+            {trace.steps.map((step) => (
+              <TraceStepRow
+                key={step.id}
+                step={step}
+                detailOpen={openStepIds.has(step.id)}
+                onToggleDetail={() => toggleStep(step.id)}
+              />
+            ))}
+          </ol>
+        )}
       </div>
     </div>
   );
@@ -200,7 +202,7 @@ function TimelineItem({
   children: ReactNode;
 }) {
   return (
-    <li className="relative pl-[34px] pr-2">
+    <li className="relative min-w-0 pl-[34px] pr-2">
       {/* 虚线贯穿节点中心（left≈19px，节点中心≈20px） */}
       <span
         aria-hidden
@@ -293,18 +295,24 @@ function ThinkingStepRow({
       {hasDetail ? (
         <button
           type="button"
+          data-trace-step="thinking"
           aria-expanded={detailOpen}
           aria-label="查看思考过程"
           onClick={onToggleDetail}
-          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-0 py-1.5 text-left transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className="my-1 flex min-h-11 w-full min-w-0 flex-nowrap items-center gap-x-2 rounded-lg border border-primary/45 bg-primary/5 px-2.5 py-1.5 text-left transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
         >
           {row}
         </button>
       ) : (
-        <div className="flex min-h-9 w-full items-center gap-2 py-1.5">{row}</div>
+        <div
+          data-trace-step="thinking"
+          className="my-1 flex min-h-11 w-full min-w-0 flex-nowrap items-center gap-x-2 rounded-lg border border-primary/45 bg-primary/5 px-2.5 py-1.5"
+        >
+          {row}
+        </div>
       )}
       {detailOpen && step.detail && (
-        <pre className="mb-2 mt-0.5 whitespace-pre-wrap break-words rounded-lg border border-border/80 bg-surface-hover/40 px-3 py-2.5 font-mono text-xs leading-relaxed text-text-muted">
+        <pre className="mb-2 mt-1 max-w-full whitespace-pre-wrap break-words rounded-lg border border-primary/45 bg-primary/5 px-3 py-2.5 font-mono text-xs leading-relaxed text-text-muted">
           {step.detail}
         </pre>
       )}
@@ -325,39 +333,52 @@ function ToolStepRow({
   const isRunning = step.status === 'streaming' || step.status === 'pending';
   const isError = step.isError || step.status === 'error';
 
+  // 状态位只放定长文案；结果摘要另起一行，避免长文本撑破行宽
   let meta = '';
   if (isRunning) meta = '执行中…';
   else if (isError) meta = '失败';
-  else if (step.resultPreview) meta = step.resultPreview;
   else if (step.durationMs != null) meta = formatDuration(step.durationMs);
   else if (step.status === 'done') meta = '已完成';
 
+  const showResultPreview = Boolean(step.resultPreview) && !detailOpen;
+
   const row = (
     <>
-      <span className="shrink-0 text-[13px] text-text-muted">{step.actionLabel}</span>
-      {step.inputPreview && (
+      <span className="flex w-full min-w-0 items-center gap-x-2">
+        <span className="shrink-0 text-[13px] text-text-muted">{step.actionLabel}</span>
         <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
-          {step.inputPreview}
+          {step.inputPreview ?? ''}
         </span>
-      )}
-      {!step.inputPreview && <span className="min-w-0 flex-1" />}
-      <span
-        className={`shrink-0 text-xs tabular-nums ${
-          isError ? 'text-danger' : 'text-text-muted'
-        }`}
-      >
-        {meta}
-      </span>
-      {hasDetail && (
-        <ChevronDown
-          className={`h-3.5 w-3.5 shrink-0 text-text-muted/70 transition-transform duration-200 ${
-            detailOpen ? 'rotate-180' : ''
+        <span
+          className={`shrink-0 text-xs tabular-nums ${
+            isError ? 'text-danger' : 'text-text-muted'
           }`}
-          aria-hidden
-        />
+        >
+          {meta}
+        </span>
+        {hasDetail && (
+          <ChevronDown
+            className={`h-3.5 w-3.5 shrink-0 text-text-muted/70 transition-transform duration-200 ${
+              detailOpen ? 'rotate-180' : ''
+            }`}
+            aria-hidden
+          />
+        )}
+      </span>
+      {showResultPreview && (
+        <span
+          className={`block w-full min-w-0 truncate text-xs ${
+            isError ? 'text-danger/70' : 'text-text-muted/60'
+          }`}
+        >
+          {step.resultPreview}
+        </span>
       )}
     </>
   );
+
+  const rowClass =
+    'flex min-h-11 w-full min-w-0 flex-col justify-center gap-y-0.5 rounded-lg px-2.5 py-1.5';
 
   return (
     <TimelineItem step={step}>
@@ -367,12 +388,12 @@ function ToolStepRow({
           aria-expanded={detailOpen}
           aria-label={`查看 ${step.toolName} 结果`}
           onClick={onToggleDetail}
-          className="flex min-h-11 w-full items-center gap-2 rounded-lg px-0 py-1.5 text-left transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          className={`${rowClass} text-left transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
         >
           {row}
         </button>
       ) : (
-        <div className="flex min-h-9 w-full items-center gap-2 py-1.5">{row}</div>
+        <div className={rowClass}>{row}</div>
       )}
       {detailOpen && step.resultDetail && (
         <pre

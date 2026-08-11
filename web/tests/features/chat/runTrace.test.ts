@@ -1,7 +1,7 @@
 /**
  * runTrace 纯函数派生层单元测试（WU-01）。
  *
- * 覆盖：call/result 配对、孤儿 result、thinking 合并、text 过滤、
+ * 覆盖：call/result 配对、孤儿 result、thinking 独立派生、text 过滤、
  * 契约 §4 摘要文案 7 分支、hasTraceSteps、工具名映射与格式化迁移。
  */
 
@@ -130,7 +130,7 @@ describe('buildRunTrace', () => {
       expect(vm.toolCount).toBe(1);
     });
 
-    it('[buildRunTrace] [合并相邻 thinking 并累加 mergedCount] [连续 thinking]', () => {
+    it('[buildRunTrace] [连续 thinking 分别派生且字段不串联] [连续三个 thinking]', () => {
       // Arrange
       const blocks: Block[] = [
         thinking({ id: 't1', thinking: 'first', status: 'done' }),
@@ -142,17 +142,33 @@ describe('buildRunTrace', () => {
       const vm = buildRunTrace(blocks, { isStreaming: true, streamState: 'thinking' });
 
       // Assert
-      expect(vm.steps).toHaveLength(1);
-      const step = vm.steps[0];
-      expect(step.kind).toBe('thinking');
-      if (step.kind !== 'thinking') return;
-      expect(step.mergedCount).toBe(3);
-      expect(step.detail).toBe('first\nsecond\nthird');
-      expect(step.status).toBe('streaming');
-      expect(step.label).toBe('正在思考');
+      expect(vm.steps).toHaveLength(3);
+      expect(vm.steps).toEqual([
+        {
+          id: 't1',
+          kind: 'thinking',
+          status: 'done',
+          label: '思考已完成',
+          detail: 'first',
+        },
+        {
+          id: 't2',
+          kind: 'thinking',
+          status: 'done',
+          label: '思考已完成',
+          detail: 'second',
+        },
+        {
+          id: 't3',
+          kind: 'thinking',
+          status: 'streaming',
+          label: '正在思考',
+          detail: 'third',
+        },
+      ]);
     });
 
-    it('[buildRunTrace] [被工具隔开的 thinking 不合并] [thinking-tool-thinking]', () => {
+    it('[buildRunTrace] [工具两侧 thinking 仍分别派生] [thinking-tool-thinking]', () => {
       // Arrange
       const blocks: Block[] = [
         thinking({ id: 't1', thinking: 'before', status: 'done' }),
@@ -176,12 +192,10 @@ describe('buildRunTrace', () => {
       expect(vm.steps[1].kind).toBe('tool');
       expect(vm.steps[2].kind).toBe('thinking');
       if (vm.steps[0].kind === 'thinking') {
-        expect(vm.steps[0].mergedCount).toBe(1);
         expect(vm.steps[0].detail).toBe('before');
         expect(vm.steps[0].label).toBe('思考已完成');
       }
       if (vm.steps[2].kind === 'thinking') {
-        expect(vm.steps[2].mergedCount).toBe(1);
         expect(vm.steps[2].detail).toBe('after');
       }
     });

@@ -114,6 +114,13 @@ interface SessionHistoryResponse {
 // 历史解析
 // ============================================================
 
+function internalCompactionSummaryDetail(text: string): string | null {
+  const match = text.match(
+    /^(?:\[Active checkpoint summary \(epoch \d+\)\]|\[History summary for turns \d+(?:,\d+)*\]):([\s\S]*)$/,
+  );
+  return match ? match[1] : null;
+}
+
 function parseHistoryBlocks(
   m: SerializedMsg,
 ): Block[] {
@@ -127,10 +134,18 @@ function parseHistoryBlocks(
     switch (cb.type) {
       case 'text':
         if (cb.text) {
-          blocks.push({
-            id: nextBlockId(), type: 'text', status: 'done',
-            text: cb.text, blockId,
-          });
+          const summaryDetail = internalCompactionSummaryDetail(cb.text);
+          blocks.push(
+            summaryDetail === null
+              ? {
+                  id: nextBlockId(), type: 'text', status: 'done',
+                  text: cb.text, blockId,
+                }
+              : {
+                  id: nextBlockId(), type: 'thinking', status: 'done',
+                  thinking: summaryDetail, collapsed: true, blockId,
+                },
+          );
         }
         break;
       case 'thinking':
@@ -197,6 +212,7 @@ function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
         ? `turn:${m.turnId}`
         : null;
     const blocks = parseHistoryBlocks(m);
+
     const existingIndex =
       groupKey === null ? undefined : assistantIndexByRun.get(groupKey);
 
