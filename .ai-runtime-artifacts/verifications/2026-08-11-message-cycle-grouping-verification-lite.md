@@ -8,6 +8,9 @@ commits:
   - dee3d45 feat(chat): add CycleCard and GeneratingIndicator primitives
   - 67d7a56 feat(chat): wrap assistant in CycleCard, drop ThinkingDots, move spinner after final
   - 98f5a47 test(chat): cover CycleCard, GeneratingIndicator and MessageBubble cycle grouping
+  - a903a59 docs(chat): add collective test report for cycle grouping batch
+  - 7445fda docs(chat): add verification lite for cycle grouping batch
+  - 90ad254 feat(chat): cycle/run-trace card bg white + thinking detail Markdown
 ---
 
 # 1. 命令验证
@@ -30,7 +33,7 @@ pnpm -C web run test --run
 
 ```text
 Test Files  1 failed | 35 passed (36)
-     Tests  2 failed | 254 passed (256)
+     Tests  2 failed | 256 passed (258)
 ```
 
 **新批 11 个用例全绿**：`cycle-card.test.tsx (3)` + `generating-indicator.test.tsx (4)` + `message-bubble-cycle.test.tsx (4)`。
@@ -58,12 +61,15 @@ pnpm -C web run lint:eslint
 | 多次 run | `/#/chat/gconv-322a6fc4314d` | `.ai-runtime-artifacts/verifications/cycle-grouping-multi2.png` |
 | 单 run | `/#/chat/gconv-7d18591cceb8` | `.ai-runtime-artifacts/verifications/cycle-grouping-verified.png` |
 | 空会话 | `/#/chat/gconv-b9627ede70be` | `.ai-runtime-artifacts/verifications/cycle-grouping-empty.png` |
+| **白色卡片**（增量） | `/#/chat/gconv-322a6fc4314d` | `.ai-runtime-artifacts/verifications/cycle-grouping-white.png` |
 
 **视觉确认**：
 - ✓ 多次 run 各自被独立 CycleCard 包裹（左侧 3px 主色竖条 + 浅色容器 + 圆角阴影）
+- ✓ **CycleCard + RunTracePanel 容器均为纯白 `bg-white`**（卡片感更强；边框 + 阴影勾出轮廓）
 - ✓ 不再有「消息复制」观感（每条 assistant 都是独立块）
 - ✓ 「AI 仍在生成中…」提示在 final markdown **之后**
 - ✓ ThinkingDots 完全移除（无顶部转圈）
+- ✓ **thinking detail 用 Markdown 渲染**（行内代码 / 列表 / 链接 / 加粗全部支持，原 `<pre>` 已移除）
 - ✓ user 消息保持原 user bubble 样式（未进入 CycleCard）
 
 # 2. References 检查
