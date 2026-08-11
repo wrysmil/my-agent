@@ -8,7 +8,7 @@
  * 方案：`.ai-runtime-artifacts/specs/2026-08-10-chat-run-trace-panel-spec.md` §4 / §6 / §7
  */
 
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useEffect, useId, useState, lazy, Suspense, type ReactNode } from 'react';
 import {
   AlertCircle,
   Check,
@@ -16,9 +16,11 @@ import {
   CircleStop,
   Loader2,
 } from 'lucide-react';
+import { Markdown } from './Markdown';
 import {
   formatDuration,
   hasTraceSteps,
+  type KeyParam,
   type RunTraceViewModel,
   type ThinkingTraceStep,
   type ToolTraceStep,
@@ -83,7 +85,7 @@ export function RunTracePanel({
   return (
     <div
       data-run-trace
-      className="overflow-hidden rounded-xl border border-border/80 bg-surface"
+      className="overflow-hidden rounded-xl border border-border/80 bg-white"
     >
       <button
         type="button"
@@ -194,13 +196,31 @@ function TraceStepRow({
   );
 }
 
-function TimelineItem({
+function TraceRowCard({
   step,
-  children,
+  detailOpen,
+  onToggleDetail,
+  firstLine,
+  secondLine,
+  detailPre,
 }: {
   step: TraceStep;
-  children: ReactNode;
+  detailOpen: boolean;
+  onToggleDetail: () => void;
+  firstLine: ReactNode;
+  secondLine?: ReactNode;
+  detailPre?: ReactNode;
 }) {
+  const isError =
+    step.status === 'error' || (step.kind === 'tool' && step.isError);
+  const hasDetail =
+    step.kind === 'thinking'
+      ? Boolean(step.detail)
+      : Boolean(step.resultDetail);
+  const baseClass = `flex min-h-11 w-full min-w-0 flex-col justify-center gap-y-0.5 rounded-lg border px-2.5 py-1.5 ${
+    isError ? 'border-danger/40 bg-danger-bg' : 'border-border bg-white'
+  }`;
+
   return (
     <li className="relative min-w-0 pl-[34px] pr-2">
       {/* 虚线贯穿节点中心（left≈19px，节点中心≈20px） */}
@@ -210,7 +230,38 @@ function TimelineItem({
         className="pointer-events-none absolute bottom-0 left-[19px] top-0 border-l border-dashed border-text-muted/30"
       />
       <StepNode step={step} />
-      {children}
+      {hasDetail ? (
+        <button
+          type="button"
+          aria-expanded={detailOpen}
+          aria-label={
+            step.kind === 'thinking' ? '查看思考过程' : `查看 ${step.toolName} 结果`
+          }
+          onClick={onToggleDetail}
+          className={`${baseClass} text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+        >
+          <div className="flex w-full min-w-0 items-center gap-x-2">
+            {firstLine}
+          </div>
+          {secondLine && (
+            <div className="block w-full min-w-0 truncate text-xs text-text-muted/60">
+              {secondLine}
+            </div>
+          )}
+        </button>
+      ) : (
+        <div className={baseClass}>
+          <div className="flex w-full min-w-0 items-center gap-x-2">
+            {firstLine}
+          </div>
+          {secondLine && (
+            <div className="block w-full min-w-0 truncate text-xs text-text-muted/60">
+              {secondLine}
+            </div>
+          )}
+        </div>
+      )}
+      {detailOpen && detailPre}
     </li>
   );
 }
@@ -265,16 +316,18 @@ function ThinkingStepRow({
     !detailOpen &&
     step.status !== 'streaming' &&
     step.status !== 'pending';
-  const row = (
+
+  const firstLine = (
     <>
-      <span className="shrink-0 text-[13px] text-text-muted">{step.label}</span>
       <span
-        className="min-w-0 flex-1 truncate text-xs text-text-muted/60"
-        aria-hidden={showPreview || undefined}
+        data-trace-step="thinking"
+        className="shrink-0 text-[13px] font-medium text-text"
       >
-        {showPreview
-          ? step.detail!.replace(/\s+/g, ' ').trim().slice(0, 80)
-          : null}
+        {step.label}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
+        {/* thinking 行无输入参数；inputPreview 兜底位留空，让状态位 + chevron 始终右靠 */}
+        {''}
       </span>
       <span className="shrink-0 text-xs tabular-nums text-text-muted">
         {hasDetail ? (detailOpen ? '收起' : '查看') : step.status === 'done' ? '已完成' : ''}
@@ -290,33 +343,27 @@ function ThinkingStepRow({
     </>
   );
 
+  const secondLine = showPreview ? (
+    <span aria-hidden={showPreview || undefined}>
+      {step.detail!.replace(/\s+/g, ' ').trim().slice(0, 80)}
+    </span>
+  ) : null;
+
+  const detailPre = step.detail ? (
+    <div className="mb-2 mt-1 max-w-full overflow-hidden rounded-lg border border-border/80 bg-surface-hover/40 px-3 py-2.5 text-xs leading-relaxed text-text-muted">
+      <Markdown text={step.detail} compact />
+    </div>
+  ) : null;
+
   return (
-    <TimelineItem step={step}>
-      {hasDetail ? (
-        <button
-          type="button"
-          data-trace-step="thinking"
-          aria-expanded={detailOpen}
-          aria-label="查看思考过程"
-          onClick={onToggleDetail}
-          className="my-1 flex min-h-11 w-full min-w-0 flex-nowrap items-center gap-x-2 rounded-lg border border-primary/45 bg-primary/5 px-2.5 py-1.5 text-left transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
-        >
-          {row}
-        </button>
-      ) : (
-        <div
-          data-trace-step="thinking"
-          className="my-1 flex min-h-11 w-full min-w-0 flex-nowrap items-center gap-x-2 rounded-lg border border-primary/45 bg-primary/5 px-2.5 py-1.5"
-        >
-          {row}
-        </div>
-      )}
-      {detailOpen && step.detail && (
-        <pre className="mb-2 mt-1 max-w-full whitespace-pre-wrap break-words rounded-lg border border-primary/45 bg-primary/5 px-3 py-2.5 font-mono text-xs leading-relaxed text-text-muted">
-          {step.detail}
-        </pre>
-      )}
-    </TimelineItem>
+    <TraceRowCard
+      step={step}
+      detailOpen={detailOpen}
+      onToggleDetail={onToggleDetail}
+      firstLine={firstLine}
+      secondLine={secondLine}
+      detailPre={detailPre}
+    />
   );
 }
 
@@ -342,70 +389,85 @@ function ToolStepRow({
 
   const showResultPreview = Boolean(step.resultPreview) && !detailOpen;
 
-  const row = (
+  // 关键参数 pill：按 KEY_PARAM_ORDER 取前 2 项，超过 2 个时以 +N 溢出提示
+  const keyParams: KeyParam[] = step.keyParams ?? [];
+  const extraKeyCount = countExtraKeyParams(step.keyParams);
+
+  const firstLine = (
     <>
-      <span className="flex w-full min-w-0 items-center gap-x-2">
-        <span className="shrink-0 text-[13px] text-text-muted">{step.actionLabel}</span>
-        <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
-          {step.inputPreview ?? ''}
-        </span>
-        <span
-          className={`shrink-0 text-xs tabular-nums ${
-            isError ? 'text-danger' : 'text-text-muted'
-          }`}
-        >
-          {meta}
-        </span>
-        {hasDetail && (
-          <ChevronDown
-            className={`h-3.5 w-3.5 shrink-0 text-text-muted/70 transition-transform duration-200 ${
-              detailOpen ? 'rotate-180' : ''
-            }`}
-            aria-hidden
-          />
-        )}
+      <span className="shrink-0 text-[13px] font-medium text-text">
+        {step.actionLabel}
       </span>
-      {showResultPreview && (
+      {keyParams.map((p) => (
         <span
-          className={`block w-full min-w-0 truncate text-xs ${
-            isError ? 'text-danger/70' : 'text-text-muted/60'
-          }`}
+          key={p.key}
+          title={p.fullValue}
+          aria-label={`${p.key}=${p.fullValue}`}
+          className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 font-mono text-[11.5px] text-primary"
         >
-          {step.resultPreview}
+          {p.value}
         </span>
+      ))}
+      {extraKeyCount > 0 && (
+        <span className="text-xs text-text-muted">+{extraKeyCount}</span>
+      )}
+      <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
+        {keyParams.length === 0 ? (step.inputPreview ?? '') : ''}
+      </span>
+      <span
+        className={`shrink-0 text-xs tabular-nums ${
+          isError ? 'text-danger' : 'text-text-muted'
+        }`}
+      >
+        {meta}
+      </span>
+      {hasDetail && (
+        <ChevronDown
+          className={`h-3.5 w-3.5 shrink-0 text-text-muted/70 transition-transform duration-200 ${
+            detailOpen ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        />
       )}
     </>
   );
 
-  const rowClass =
-    'flex min-h-11 w-full min-w-0 flex-col justify-center gap-y-0.5 rounded-lg px-2.5 py-1.5';
+  const secondLine = showResultPreview ? (
+    <span className={isError ? 'text-danger/70' : 'text-text-muted/60'}>
+      {step.resultPreview}
+    </span>
+  ) : null;
+
+  const detailPre = step.resultDetail ? (
+    <pre
+      className={`mb-2 mt-0.5 whitespace-pre-wrap break-words rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed ${
+        isError
+          ? 'border-danger/20 bg-danger/5 text-danger/90'
+          : 'border-border/80 bg-surface-hover/40 text-text-muted'
+      }`}
+    >
+      {step.resultDetail}
+    </pre>
+  ) : null;
 
   return (
-    <TimelineItem step={step}>
-      {hasDetail ? (
-        <button
-          type="button"
-          aria-expanded={detailOpen}
-          aria-label={`查看 ${step.toolName} 结果`}
-          onClick={onToggleDetail}
-          className={`${rowClass} text-left transition-colors hover:bg-surface-hover/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
-        >
-          {row}
-        </button>
-      ) : (
-        <div className={rowClass}>{row}</div>
-      )}
-      {detailOpen && step.resultDetail && (
-        <pre
-          className={`mb-2 mt-0.5 whitespace-pre-wrap break-words rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed ${
-            isError
-              ? 'border-danger/20 bg-danger/5 text-danger/90'
-              : 'border-border/80 bg-surface-hover/40 text-text-muted'
-          }`}
-        >
-          {step.resultDetail}
-        </pre>
-      )}
-    </TimelineItem>
+    <TraceRowCard
+      step={step}
+      detailOpen={detailOpen}
+      onToggleDetail={onToggleDetail}
+      firstLine={firstLine}
+      secondLine={secondLine}
+      detailPre={detailPre}
+    />
   );
+}
+
+/**
+ * 已知 `keyParams` 已被派生层截到 ≤ KEY_PARAM_MAX（=2）；但旧 fixtures / 未来放宽时仍可能 ≥ 3，
+ * 此处仅做兜底：当传入数组长度大于可见 pill 数时计算溢出。
+ */
+function countExtraKeyParams(keyParams: KeyParam[] | undefined): number {
+  if (!keyParams) return 0;
+  const KEY_PARAM_MAX = 2;
+  return Math.max(0, keyParams.length - KEY_PARAM_MAX);
 }

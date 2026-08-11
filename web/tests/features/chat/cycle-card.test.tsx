@@ -34,6 +34,19 @@ describe('CycleCard', () => {
     expect(bar?.className ?? '').toContain('bg-gradient-to-b');
   });
 
+  it('容器背景为白色（bg-white）', () => {
+    // Arrange
+    const { container } = render(
+      <CycleCard>
+        <span>x</span>
+      </CycleCard>,
+    );
+
+    // Assert
+    const root = container.firstElementChild;
+    expect(root?.className ?? '').toContain('bg-white');
+  });
+
   it('容器本身不在 tab 流（无 tabindex / 无按钮）', () => {
     // Arrange
     const { container } = render(

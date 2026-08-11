@@ -4,7 +4,7 @@
  * 覆盖：默认展开策略、userOverride、空 trace、独立思考步骤、键盘与无障碍。
  */
 import { describe, it, expect } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RunTracePanel } from '@/components/chat/RunTracePanel';
 import type {
@@ -114,19 +114,26 @@ describe('RunTracePanel', () => {
     expect(thinkingButtons[0]).toHaveAttribute('aria-expanded', 'true');
     expect(thinkingButtons[1]).toHaveAttribute('aria-expanded', 'false');
     expect(thinkingButtons[2]).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByText('first detail').tagName).toBe('PRE');
-    expect(container.querySelectorAll('pre')).toHaveLength(2);
-    expect(screen.getByText('third detail').tagName).toBe('PRE');
+    // detail 文本出现在展开区（Markdown 渲染；不再要求 tagName=PRE）
+    expect(screen.getByText('first detail')).toBeTruthy();
+    expect(screen.getByText('third detail')).toBeTruthy();
 
     const thinkingRows = container.querySelectorAll('[data-trace-step="thinking"]');
     expect(thinkingRows).toHaveLength(3);
     thinkingRows.forEach((row) => {
-      expect(row.className).toContain('bg-primary/5');
-      expect(row.className).toContain('border-primary/45');
+      // thinking 行已统一进 TraceRowCard（spec §6.4 移除紫框）
+      expect(row.className).not.toContain('bg-primary/5');
+      expect(row.className).not.toContain('border-primary/45');
     });
 
+    // 三个 thinking 共享同一卡片样式（统一信息卡 spec §4.1；容器为 bg-white）
+    const unifiedCards = container.querySelectorAll(
+      'ol li button.border-border.bg-white, ol li div.border-border.bg-white',
+    );
+    expect(unifiedCards.length).toBeGreaterThanOrEqual(3);
+
     const panel = container.querySelector('[data-run-trace]');
-    expect(panel?.className).toContain('bg-surface');
+    expect(panel?.className).toContain('bg-white');
     expect(panel?.className).toContain('border-border/80');
 
     const classNames = Array.from(container.querySelectorAll('[class]'))
@@ -384,6 +391,208 @@ describe('RunTracePanel', () => {
 
     await user.click(screen.getByRole('button', { name: '查看思考过程' }));
     expect(screen.getByText(detail)).toBeInTheDocument();
-    expect(screen.getByText(detail).tagName).toBe('PRE');
+  });
+});
+
+describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
+  it('工具行渲染 pill：title=fullValue，className 含 bg-primary/10 / border-primary/20', () => {
+    // Arrange
+    const url = 'https://example.com/foo/bar';
+    const trace = vm({
+      status: 'running',
+      summaryLabel: '正在执行 获取网页',
+      steps: [
+        tool({
+          id: 'tc-pill',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'streaming',
+          inputPreview: 'example.com/foo/bar',
+          keyParams: [
+            { key: 'url', value: 'example.com/foo/bar', fullValue: url },
+          ],
+        }),
+      ],
+      toolCount: 1,
+      completedCount: 0,
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />,
+    );
+
+    // Assert — pill 出现在统一卡片里
+    const pills = container.querySelectorAll('span.font-mono.text-primary');
+    expect(pills.length).toBeGreaterThanOrEqual(1);
+    const pill = pills[0]!;
+    expect(pill.getAttribute('title')).toBe(url);
+    expect(pill.className).toContain('border-primary/20');
+    expect(pill.className).toContain('bg-primary/10');
+    expect(pill.textContent).toBe('example.com/foo/bar');
+  });
+
+  it('错误态整行带 border-danger/40 bg-danger-bg；状态位文本为 text-danger', () => {
+    // Arrange
+    const trace = vm({
+      status: 'error',
+      errorCount: 1,
+      summaryLabel: '完成，但有 1 个步骤失败',
+      steps: [
+        tool({
+          id: 'tc-err',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'error',
+          isError: true,
+          resultPreview: '请求失败',
+          resultDetail: 'stack trace here',
+        }),
+      ],
+      toolCount: 1,
+      completedCount: 0,
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={false} />,
+    );
+
+    // Assert — 错误按钮整体带 danger 边框与背景
+    const errorBtn = container.querySelector(
+      'li button.border-danger\\/40.bg-danger-bg, li div.border-danger\\/40.bg-danger-bg',
+    );
+    expect(errorBtn).not.toBeNull();
+    expect(errorBtn!.className).toContain('border-danger/40');
+    expect(errorBtn!.className).toContain('bg-danger-bg');
+
+    // Assert — 状态位文本（meta = '失败'）渲染在 text-danger 中
+    const metaSpan = container.querySelector('span.text-danger.tabular-nums');
+    expect(metaSpan).not.toBeNull();
+    expect(metaSpan!.textContent).toBe('失败');
+  });
+
+  it('窄屏（< 360px）下工具行不出现横向滚动：scrollWidth === clientWidth', () => {
+    // Arrange
+    const longUrl = 'https://example.com/very/long/path/' + 'x'.repeat(40);
+    const trace = vm({
+      status: 'running',
+      summaryLabel: '正在执行 获取网页',
+      steps: [
+        tool({
+          id: 'tc-narrow',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'streaming',
+          inputPreview: 'example.com',
+          keyParams: [
+            { key: 'url', value: 'example.com/very/long/path/…', fullValue: longUrl },
+            { key: 'query', value: '平潭岛', fullValue: '平潭岛' },
+          ],
+        }),
+      ],
+      toolCount: 1,
+      completedCount: 0,
+    });
+
+    // Act — 真实宽度 360px
+    const { container } = render(
+      <div style={{ width: 360, padding: 0 }}>
+        <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />
+      </div>,
+    );
+
+    // Assert — RunTracePanel 根、timeline <li> 与 pill 父按钮均无横向溢出
+    const panel = container.querySelector('[data-run-trace]') as HTMLElement;
+    expect(panel).not.toBeNull();
+    expect(panel.scrollWidth).toBe(panel.clientWidth);
+
+    const listItems = container.querySelectorAll('ol > li');
+    listItems.forEach((li) => {
+      const el = li as HTMLElement;
+      expect(el.scrollWidth).toBe(el.clientWidth);
+    });
+  });
+
+  it('thinking 行不再带 bg-primary/5 / border-primary/45 紫框', () => {
+    // Arrange
+    const trace = vm({
+      status: 'done',
+      steps: [
+        thinking({ id: 't-no-purple', detail: 'reason body' }),
+      ],
+      toolCount: 0,
+      completedCount: 1,
+      summaryLabel: '已完成 1 个步骤 · 0 个工具',
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // Assert — 展开前 timeline 未挂载，所以 DOM 不含任何紫框类
+    const collapsedClassNames = Array.from(container.querySelectorAll('[class]'))
+      .map((el) => el.className)
+      .filter((c): c is string => typeof c === 'string')
+      .join(' ');
+    expect(collapsedClassNames).not.toMatch(/\bbg-primary\/5\b/);
+    expect(collapsedClassNames).not.toMatch(/\bborder-primary\/45\b/);
+
+    // 展开 summary 让 thinking 行渲染
+    const summary = screen.getByRole('button', { name: /已完成 1 个步骤/ });
+    act(() => {
+      summary.click();
+    });
+
+    // Assert — 展开后 DOM 内任何 element 的 className 仍不再含紫框类
+    const expandedClassNames = Array.from(container.querySelectorAll('[class]'))
+      .map((el) => el.className)
+      .filter((c): c is string => typeof c === 'string')
+      .join(' ');
+    expect(expandedClassNames).not.toMatch(/\bbg-primary\/5\b/);
+    expect(expandedClassNames).not.toMatch(/\bborder-primary\/45\b/);
+
+    // thinking 行的承载卡片应改为统一信息卡（含 border-border + bg-white）
+    const li = container.querySelector('ol > li');
+    expect(li).not.toBeNull();
+    const innerHtml = li!.innerHTML;
+    expect(innerHtml).toMatch(/\bborder-border\b/);
+    expect(innerHtml).toMatch(/\bbg-white\b/);
+  });
+
+  it('thinking 步骤展开后用 Markdown 渲染 detail（不再用 <pre> 平铺）', async () => {
+    // Arrange
+    const user = userEvent.setup();
+    // 含 markdown 语法的 detail：列表 + 行内代码 + 链接 + 加粗
+    const detail =
+      '- 调研 [GitHub](https://github.com) 上的开源项目\n- 跑通 `npm test`\n\n核心结论：**Ollama + Jan** 最稳。';
+    const trace = vm({
+      steps: [
+        thinking({ id: 't-md', detail }),
+      ],
+      toolCount: 0,
+      completedCount: 1,
+      summaryLabel: '已完成 1 个步骤 · 0 个工具',
+    });
+
+    // Act
+    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+    // 默认折叠（isStreaming=false && hasFinalText=true）→ 先点 summary 展开 panel
+    await user.click(screen.getByRole('button', { name: /已完成 1 个步骤/ }));
+    // 再点 thinking 按钮展开 thinking detail
+    const thinkingBtn = screen.getByRole('button', { name: '查看思考过程' });
+    await user.click(thinkingBtn);
+
+    // Assert
+    // <pre> 已不再渲染 detail（改 Markdown 渲染）
+    expect(document.querySelector('pre')).toBeNull();
+    // Markdown 列表 / 行内代码 / 加粗存在
+    expect(screen.getByText('GitHub')).toBeTruthy();
+    expect(screen.getByText('npm test')).toBeTruthy();
+    expect(screen.getByText(/Ollama \+ Jan/)).toBeTruthy();
+    // link 真实渲染为 <a href>
+    const link = screen.getByText('GitHub').closest('a');
+    expect(link?.getAttribute('href')).toBe('https://github.com');
   });
 });

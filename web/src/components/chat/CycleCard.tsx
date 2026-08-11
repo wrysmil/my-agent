@@ -21,7 +21,7 @@ export interface CycleCardProps {
 
 export function CycleCard({ children }: CycleCardProps) {
   return (
-    <div className="relative mt-3 first:mt-0 rounded-xl border border-border/80 bg-surface shadow-sm">
+    <div className="relative mt-3 first:mt-0 rounded-xl border border-border/80 bg-white shadow-sm">
       <span
         aria-hidden
         className="pointer-events-none absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-primary to-primary/50"

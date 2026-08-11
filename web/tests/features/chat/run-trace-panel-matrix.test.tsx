@@ -4,10 +4,16 @@
  * 覆盖：五类消息形态、历史与实时同构、a11y、响应式口径（无 overflow-x/y / max-h-）。
  * 优先经 MessageBubble 端到端接线；不改业务实现。
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MessageBubble } from '@/components/chat/MessageBubble';
+import { RunTracePanel } from '@/components/chat/RunTracePanel';
+import type {
+  RunTraceViewModel,
+  ThinkingTraceStep,
+  ToolTraceStep,
+} from '@/features/chat/runTrace';
 import { buildRunTrace } from '@/features/chat/runTrace';
 import {
   assistantMessage,
@@ -17,6 +23,43 @@ import {
   toolCall,
   toolResult,
 } from './runTraceFixtures';
+
+// —— §7.2 第三组专用 helper（与 WU-02 同套 vm/tool/thinking 风格） ——
+function _thinking(
+  overrides: Partial<ThinkingTraceStep> & Pick<ThinkingTraceStep, 'id'>,
+): ThinkingTraceStep {
+  return {
+    kind: 'thinking',
+    status: 'done',
+    label: '思考已完成',
+    detail: 'reasoning…',
+    ...overrides,
+  };
+}
+
+function _tool(
+  overrides: Partial<ToolTraceStep> & Pick<ToolTraceStep, 'id' | 'toolName'>,
+): ToolTraceStep {
+  return {
+    kind: 'tool',
+    status: 'done',
+    actionLabel: overrides.actionLabel ?? overrides.toolName,
+    isError: false,
+    ...overrides,
+  };
+}
+
+function _vm(overrides: Partial<RunTraceViewModel> = {}): RunTraceViewModel {
+  return {
+    steps: [],
+    toolCount: 0,
+    completedCount: 0,
+    errorCount: 0,
+    summaryLabel: '',
+    status: 'done',
+    ...overrides,
+  };
+}
 
 function summaryExpandButtons() {
   return screen.getAllByRole('button').filter((btn) => btn.hasAttribute('aria-controls'));
@@ -88,9 +131,11 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       thinkingSteps.forEach((step) => {
         expect(step).toHaveAttribute('aria-expanded', 'true');
       });
-      expect(timeline.getByText('first').tagName).toBe('PRE');
-      expect(timeline.getByText('second').tagName).toBe('PRE');
-      expect(timeline.getByText('third').tagName).toBe('PRE');
+      // detail 走 Markdown 渲染（不再用 <pre> 平铺）
+      expect(timeline.getByText('first')).toBeTruthy();
+      expect(timeline.getByText('second')).toBeTruthy();
+      expect(timeline.getByText('third')).toBeTruthy();
+      expect(document.querySelector('pre')).toBeNull();
     });
 
     it('仅最终 text：不渲染 data-run-trace 面板', async () => {
@@ -266,5 +311,186 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
         assertNoNestedScrollClasses(className);
       },
     );
+  });
+});
+
+describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 / pill', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('窄屏 360px 工具行不出现横向滚动：scrollWidth ≈ clientWidth（误差 ≤1）', () => {
+    // Arrange — 视口 mock 到 360，渲染包含长 url pill 的工具行
+    vi.stubGlobal('innerWidth', 360);
+    Object.defineProperty(window, 'innerWidth', { value: 360, configurable: true });
+
+    const longUrl = 'https://example.com/very/long/path/' + 'x'.repeat(40);
+    const trace = _vm({
+      status: 'running',
+      summaryLabel: '正在执行 获取网页',
+      toolCount: 1,
+      completedCount: 0,
+      steps: [
+        _tool({
+          id: 'tc-narrow',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'streaming',
+          inputPreview: 'example.com',
+          keyParams: [
+            { key: 'url', value: 'example.com/very/long/path/…', fullValue: longUrl },
+            { key: 'query', value: '平潭岛', fullValue: '平潭岛' },
+          ],
+        }),
+      ],
+    });
+
+    // Act — 真实容器宽度 360px
+    const { container } = render(
+      <div style={{ width: 360, padding: 0 }}>
+        <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />
+      </div>,
+    );
+
+    // Assert — 流式无 text 时自动展开 → tool 行 card 已渲染（无 resultDetail 时为 div，有则 button）
+    const toolRow = container.querySelector(
+      'ol > li > button, ol > li > div',
+    ) as HTMLElement | null;
+    expect(toolRow).not.toBeNull();
+    expect(Math.abs(toolRow!.scrollWidth - toolRow!.clientWidth)).toBeLessThanOrEqual(
+      1,
+    );
+  });
+
+  it('错误态：工具行按钮带 aria-label="查看 ${toolName} 结果"，状态位文本为 text-danger 类', () => {
+    // Arrange — 工具失败 → 错误默认展开
+    const trace = _vm({
+      status: 'error',
+      errorCount: 1,
+      summaryLabel: '完成，但有 1 个步骤失败',
+      toolCount: 1,
+      completedCount: 0,
+      steps: [
+        _tool({
+          id: 'tc-err',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'error',
+          isError: true,
+          resultPreview: '请求失败',
+          resultDetail: 'stack trace here',
+        }),
+      ],
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={false} />,
+    );
+
+    // Assert — 工具行按钮 aria-label 含 toolName + 动宾「查看 ${toolName} 结果」
+    const errButton = container.querySelector(
+      'ol > li button.border-danger\\/40.bg-danger-bg',
+    ) as HTMLButtonElement | null;
+    expect(errButton).not.toBeNull();
+    expect(errButton!.getAttribute('aria-label')).toBe('查看 web_fetch 结果');
+
+    // Assert — 状态位（meta = '失败'）在 text-danger span 内
+    const dangerMeta = container.querySelector(
+      'span.text-danger.tabular-nums',
+    ) as HTMLElement | null;
+    expect(dangerMeta).not.toBeNull();
+    expect(dangerMeta!.textContent).toBe('失败');
+  });
+
+  it('键盘 Enter 切换展开：focus 工具行按钮 → Enter → <pre> 出现 resultDetail 文本', async () => {
+    // Arrange — done 状态 + resultDetail，但未自动展开
+    const user = userEvent.setup();
+    const detailBody = 'resultDetail body for keyboard Enter toggle';
+    const trace = _vm({
+      status: 'done',
+      summaryLabel: '已完成 1 个步骤 · 1 个工具',
+      toolCount: 1,
+      completedCount: 1,
+      steps: [
+        _tool({
+          id: 'tc-kbd',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'done',
+          resultPreview: '1 个网页',
+          resultDetail: detailBody,
+        }),
+      ],
+    });
+
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
+    );
+
+    // 先展开顶层摘要，timeline 才挂载
+    const summary = screen.getByRole('button', { name: /已完成 1 个步骤/ });
+    await user.click(summary);
+
+    const toolBtn = container.querySelector(
+      'ol > li button',
+    ) as HTMLButtonElement | null;
+    expect(toolBtn).not.toBeNull();
+    expect(toolBtn!.getAttribute('aria-expanded')).toBe('false');
+
+    // Act — focus + Enter
+    toolBtn!.focus();
+    await user.keyboard('{Enter}');
+
+    // Assert — aria-expanded=true，<pre> 含 resultDetail
+    expect(toolBtn!.getAttribute('aria-expanded')).toBe('true');
+    const pre = container.querySelector('ol > li pre');
+    expect(pre).not.toBeNull();
+    expect(pre!.textContent).toContain(detailBody);
+  });
+
+  it('pill 渲染：tool 行带 url / query 时，DOM 中存在 font-mono + bg-primary/10 + title 属性的 span', () => {
+    // Arrange — 自动展开（流式 + 无 text）
+    const fullUrl = 'https://example.com/foo/bar';
+    const trace = _vm({
+      status: 'running',
+      summaryLabel: '正在执行 获取网页',
+      toolCount: 1,
+      completedCount: 0,
+      steps: [
+        _tool({
+          id: 'tc-pill',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+          status: 'streaming',
+          inputPreview: 'example.com/foo/bar',
+          keyParams: [
+            { key: 'url', value: 'example.com/foo/bar', fullValue: fullUrl },
+            { key: 'query', value: '平潭岛', fullValue: '平潭岛' },
+          ],
+        }),
+      ],
+    });
+
+    // Act
+    const { container } = render(
+      <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />,
+    );
+
+    // Assert — pill 同时具备 font-mono、bg-primary/10、title 属性
+    const pills = Array.from(
+      container.querySelectorAll('span.font-mono.bg-primary\\/10'),
+    ) as HTMLElement[];
+    expect(pills.length).toBeGreaterThanOrEqual(1);
+
+    const urlPill = pills.find((p) => p.getAttribute('title') === fullUrl);
+    expect(urlPill).toBeDefined();
+    expect(urlPill!.className).toContain('font-mono');
+    expect(urlPill!.className).toContain('bg-primary/10');
+    expect(urlPill!.getAttribute('title')).toBe(fullUrl);
+
+    const queryPill = pills.find((p) => p.getAttribute('title') === '平潭岛');
+    expect(queryPill).toBeDefined();
+    expect(queryPill!.textContent).toBe('平潭岛');
   });
 });
