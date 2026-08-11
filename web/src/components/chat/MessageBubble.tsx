@@ -109,7 +109,7 @@ export function MessageBubble({
             )}
 
             {showGeneratingIndicator && (
-              <div key={`${message.id}-gen`} className="self-start">
+              <div key={`${message.id}-gen`} data-testid="gen" className="self-start">
                 <GeneratingIndicator />
               </div>
             )}
