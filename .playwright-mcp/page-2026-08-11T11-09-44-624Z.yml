@@ -1,0 +1,127 @@
+- generic [ref=f65e3]:
+  - complementary [ref=f65e4]:
+    - generic [ref=f65e5]: my-agent
+    - navigation [ref=f65e6]:
+      - link "控制台" [ref=f65e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f65e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f65e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f65e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f65e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f65e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f65e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f65e39]:
+      - generic [ref=f65e40]:
+        - generic [ref=f65e41]: 历史会话
+        - button "新对话" [ref=f65e42]
+      - list [ref=f65e147]:
+        - listitem [ref=f65e148]:
+          - link "项目目录看看" [ref=f65e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f65e150]'
+        - listitem [ref=f65e154]:
+          - link "项目目录看看" [ref=f65e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f65e156]'
+        - listitem [ref=f65e160]:
+          - link "项目目录看看" [ref=f65e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f65e162]'
+        - listitem [ref=f65e166]:
+          - link "项目目录看看" [ref=f65e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f65e168]'
+        - listitem [ref=f65e172]:
+          - link "项目目录看看" [ref=f65e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f65e174]'
+        - listitem [ref=f65e178]:
+          - link "项目目录看看" [ref=f65e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f65e180]'
+        - listitem [ref=f65e184]:
+          - link "项目目录看看" [ref=f65e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f65e186]'
+        - listitem [ref=f65e190]:
+          - link "项目目录看看" [ref=f65e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f65e192]'
+        - listitem [ref=f65e196]:
+          - link "看看项目目录" [ref=f65e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f65e198]'
+        - listitem [ref=f65e202]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e204]'
+        - listitem [ref=f65e208]:
+          - link "帮我看看项目目录" [ref=f65e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f65e210]'
+        - listitem [ref=f65e214]:
+          - link "帮我看看项目目录" [ref=f65e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f65e216]'
+        - listitem [ref=f65e220]:
+          - link "帮我看看项目目录" [ref=f65e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f65e222]'
+        - listitem [ref=f65e226]:
+          - link "帮我看看当前项目目录" [ref=f65e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f65e228]'
+        - listitem [ref=f65e232]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-e14e25c5f758"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e234]'
+        - listitem [ref=f65e238]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-eeea44f04a8c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f65e240]'
+        - listitem [ref=f65e244]:
+          - link "你好" [ref=f65e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-0a932b3f7c90"
+          - 'button "删除: 你好" [ref=f65e246]'
+        - listitem [ref=f65e250]:
+          - link "你好" [ref=f65e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-a42c6ce9980a"
+          - 'button "删除: 你好" [ref=f65e252]'
+        - listitem [ref=f65e256]:
+          - link "你好" [ref=f65e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-ac3ee15b8c4c"
+          - 'button "删除: 你好" [ref=f65e258]'
+        - listitem [ref=f65e262]:
+          - link "研究开源 AI 桌面应用" [ref=f65e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f65e264]'
+  - generic [ref=f65e47]:
+    - banner [ref=f65e48]:
+      - generic [ref=f65e49]:
+        - button "Toggle theme" [ref=f65e50]
+        - button "Switch language" [ref=f65e57]
+        - generic [ref=f65e62]: K
+    - main [ref=f65e66]:
+      - generic [ref=f65e268]:
+        - heading "对话" [level=2] [ref=f65e276]
+        - generic [ref=f65e475]: 加载历史消息...
+        - log [ref=f65e478]:
+          - generic [ref=f65e484]:
+            - heading "开始对话" [level=3] [ref=f65e485]
+            - paragraph [ref=f65e486]: 在下方输入框输入消息，按 Enter 发送。Shift+Enter 换行。
+        - generic [ref=f65e488]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f65e490]
+          - generic [ref=f65e491]:
+            - button "添加附件" [ref=f65e493]
+            - button "选择模型" [ref=f65e497]
+            - generic [ref=f65e505]:
+              - generic [ref=f65e514]: Effort
+              - generic [ref=f65e515]: MED
+              - slider "Effort" [ref=f65e517] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f65e518]

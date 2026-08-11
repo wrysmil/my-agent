@@ -3,7 +3,7 @@ title: Run Trace UX 修订 — Execution Log
 date: 2026-08-11
 spec: .ai-runtime-artifacts/specs/2026-08-11-run-trace-ux-revision-spec.md
 plan: .ai-runtime-artifacts/plans/2026-08-11-run-trace-ux-revision-plan.md
-status: in_progress → ready for review
+status: completed (committed: bf5850e)
 ---
 
 # 1. WU 进度

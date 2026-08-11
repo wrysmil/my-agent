@@ -1,0 +1,127 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: my-agent
+    - navigation [ref=e6]:
+      - link "控制台" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]: 历史会话
+        - button "新对话" [ref=e42]
+      - list [ref=e147]:
+        - listitem [ref=e148]:
+          - link "研究开源 AI 桌面应用" [ref=e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e150]'
+        - listitem [ref=e154]:
+          - link "研究开源 AI 桌面应用" [ref=e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-7d18591cceb8"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e156]'
+        - listitem [ref=e160]:
+          - link "研究开源 AI 桌面应用" [ref=e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-c22f0b9df216"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e162]'
+        - listitem [ref=e166]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-183c6ca978b5"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e168]'
+        - listitem [ref=e172]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-de53b556c155"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e174]'
+        - listitem [ref=e178]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a1fce4620d7"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e180]'
+        - listitem [ref=e184]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-40b217ddb3ce"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e186]'
+        - listitem [ref=e190]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-2217ea6bcd15"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e192]'
+        - listitem [ref=e196]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-1997c1ce5842"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=e198]'
+        - listitem [ref=e202]:
+          - link "制作一份电商销售月报" [ref=e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-f7c41b334f8d"
+          - 'button "删除: 制作一份电商销售月报" [ref=e204]'
+        - listitem [ref=e208]:
+          - link "制作一份电商销售月报" [ref=e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-b3dfff32be41"
+          - 'button "删除: 制作一份电商销售月报" [ref=e210]'
+        - listitem [ref=e214]:
+          - link "制作一份电商销售月报" [ref=e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-042b734eae89"
+          - 'button "删除: 制作一份电商销售月报" [ref=e216]'
+        - listitem [ref=e220]:
+          - link "制作一份电商销售月报" [ref=e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-56fd0b955c3a"
+          - 'button "删除: 制作一份电商销售月报" [ref=e222]'
+        - listitem [ref=e226]:
+          - link "你好" [ref=e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-322a6fc4314d"
+          - 'button "删除: 你好" [ref=e228]'
+        - listitem [ref=e232]:
+          - link "你好" [ref=e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-7113ddb32e38"
+          - 'button "删除: 你好" [ref=e234]'
+        - listitem [ref=e238]:
+          - link "新会话" [ref=e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-063af9cbda3c"
+          - 'button "删除: 新会话" [ref=e240]'
+        - listitem [ref=e244]:
+          - link "用coder帮我写平潭旅游宣传页面" [ref=e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-8600741311f1"
+          - 'button "删除: 用coder帮我写平潭旅游宣传页面" [ref=e246]'
+        - listitem [ref=e250]:
+          - link "新会话" [ref=e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-e7fbc2889e25"
+          - 'button "删除: 新会话" [ref=e252]'
+        - listitem [ref=e256]:
+          - link "使用web_fetch 抓取下https..." [ref=e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-b9627ede70be"
+          - 'button "删除: 使用web_fetch 抓取下https..." [ref=e258]'
+        - listitem [ref=e262]:
+          - link "新会话" [ref=e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-c17a4a5208cb"
+          - 'button "删除: 新会话" [ref=e264]'
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Toggle theme" [ref=e50]
+        - button "Switch language" [ref=e57]
+        - generic [ref=e62]: K
+    - main [ref=e66]:
+      - generic [ref=e268]:
+        - heading "对话" [level=2] [ref=e276]
+        - generic [ref=e277]: 加载历史消息...
+        - log [ref=e282]:
+          - generic [ref=e288]:
+            - heading "开始对话" [level=3] [ref=e289]
+            - paragraph [ref=e290]: 在下方输入框输入消息，按 Enter 发送。Shift+Enter 换行。
+        - generic [ref=e292]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=e294]
+          - generic [ref=e295]:
+            - button "添加附件" [ref=e297]
+            - button "选择模型" [ref=e301]
+            - generic [ref=e309]:
+              - generic [ref=e318]: Effort
+              - generic [ref=e319]: MED
+              - slider "Effort" [ref=e321] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=e322]

@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Run Trace · v3 排版优化 · 单方案预览</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --surface-hover: rgba(0,0,0,.04);
+    --border: rgba(15,18,28,.10);
+    --border-soft: rgba(15,18,28,.06);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-fg: #ffffff;
+    --primary-soft: rgba(108,92,231,.10);
+    --danger: #d63b3b;
+    --danger-bg: rgba(214,59,59,.06);
+    --green: #16a34a;
+    --green-soft: rgba(22,163,74,.85);
+    --amber: #b45309;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+  header.page {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(247,247,248,.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.page .inner {
+    max-width: 1280px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  header.page h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+  header.page .legend {
+    font-size: 12px; color: var(--text-muted);
+    display: flex; gap: 14px; align-items: center;
+  }
+  header.page .legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 999px; margin-right: 6px; vertical-align: 1px; }
+  main {
+    max-width: 760px;
+    margin: 28px auto 80px;
+    padding: 0 24px;
+  }
+
+  /* === User message bubble === */
+  .msg { display: flex; gap: 12px; margin-bottom: 28px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble {
+    background: #eaf2ff; color: #0b2d6b;
+    padding: 12px 16px;
+    border-radius: 18px;
+    border-bottom-right-radius: 6px;
+    max-width: 80%;
+  }
+
+  /* === CycleCard: 容器边框 + 内 padding === */
+  .cycle-card {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
+    padding: 14px 14px 16px;       /* 适度加 padding（v2 是 12px 12px 12px）*/
+    max-width: 80%;
+  }
+
+  /* === RunTracePanel（trace 部分单独承载紫色侧条） === */
+  .run-trace {
+    position: relative;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  /* 紫色侧条仅贴在 RunTracePanel 左侧；final markdown 不再被覆盖 */
+  .run-trace::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--primary) 0%, rgba(108,92,231,.5) 100%);
+    pointer-events: none;
+  }
+  .run-trace .summary {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;            /* 略加 padding（v2 是 10px 14px）*/
+    width: 100%; border: 0; background: transparent;
+    text-align: left; cursor: pointer;
+    font-size: 13px;
+  }
+  .run-trace .summary:hover { background: var(--surface-hover); }
+  .run-trace .summary .label { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-trace .summary .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .run-trace .summary .chev { transition: transform .2s; color: var(--text-muted); }
+  .run-trace .summary[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .run-trace .icon-ok    { width: 16px; height: 16px; color: var(--green); flex: 0 0 auto; }
+  .run-trace .icon-spin  { width: 16px; height: 16px; color: var(--primary); flex: 0 0 auto; animation: spin 1s linear infinite; }
+  .run-trace .icon-err   { width: 16px; height: 16px; color: var(--danger); flex: 0 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .run-trace .timeline {
+    border-top: 1px solid var(--border);
+    padding: 12px 8px 14px;       /* v2 是 8px 8px 10px；略加 */
+  }
+  .run-trace .timeline ol {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 10px;     /* v2 是 2px；本轮放宽到 10px */
+  }
+
+  /* === Trace step row：padding 加大；左列留 72px 给身份文本 === */
+  .trace-row {
+    position: relative;
+    padding: 0 8px 0 72px;
+  }
+  .trace-row .line {
+    position: absolute;
+    left: 64px; top: 0; bottom: 0;
+    border-left: 1px dashed rgba(91,99,115,.30);
+    pointer-events: none;
+  }
+  .trace-row:first-child .line { top: 16px; }
+  .trace-row:last-child .line { bottom: calc(100% - 16px); }
+
+  /* === StepLabel（身份文本 + 徽章）：字号 12px、颜色弱化、徽章略大 === */
+  .step-label {
+    position: absolute;
+    left: 12px; top: 6px;            /* 微调到与按钮中部对齐 */
+    display: inline-flex; align-items: center; gap: 4px;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .step-label .id-text {
+    display: inline-block;
+    max-width: 56px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;                  /* v2 是 11px；本轮 12px */
+    font-weight: 500;                 /* v2 是默认 400；略加 */
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.005em;
+    color: var(--text-muted);         /* thinking 默认 muted */
+  }
+  .step-label.tool-done  .id-text { color: var(--green-soft); }
+  .step-label.tool-error .id-text { color: var(--danger); }
+  .step-label.tool-run   .id-text { color: var(--primary); }
+  .step-label .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px;         /* v2 是 12px；本轮 14px */
+    border-radius: 999px;
+    background: var(--surface);        /* 与卡片背景融合 */
+    color: var(--text-muted);
+  }
+  .step-label.tool-done  .badge { color: var(--green); }
+  .step-label.tool-error .badge { color: var(--danger); }
+  .step-label.tool-run   .badge { color: var(--primary); }
+  .step-label .badge svg { width: 10px; height: 10px; }
+
+  /* === Step row content card === */
+  .step-card {
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: 44px;                   /* v2 是 44px；保持 */
+    padding: 8px 10px;                  /* v2 是 6px 10px；略加 */
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    gap: 2px;
+  }
+  .step-card.error { border-color: rgba(214,59,59,.40); background: var(--danger-bg); }
+  .step-card .row1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .step-card .row1 .name { font-size: 13px; font-weight: 500; color: var(--text); flex: 0 0 auto; }
+  .step-card .row1 .pill {
+    display: inline-block;
+    padding: 2px 6px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    border: 1px solid rgba(108,92,231,.20);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11.5px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px;
+    flex: 0 0 auto;
+  }
+  .step-card .row1 .spacer { flex: 1 1 auto; min-width: 0; }
+  .step-card .row1 .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .step-card .row1 .chev { color: var(--text-muted); flex: 0 0 auto; transition: transform .2s; }
+  .step-card[aria-expanded="true"] .row1 .chev { transform: rotate(180deg); }
+  .step-card .row2 {
+    font-size: 12px; color: rgba(91,99,115,.65);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .step-card .detail {
+    margin-top: 6px; padding: 10px 12px;
+    background: rgba(0,0,0,.025);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: pre-wrap; word-break: break-word;
+  }
+
+  /* === Final markdown === */
+  .final-md {
+    margin-top: 12px;                    /* 与 trace 拉开距离 */
+    padding: 0 4px;
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+  .final-md h1, .final-md h2, .final-md h3 { margin: 16px 0 8px; font-weight: 600; }
+  .final-md h1 { font-size: 20px; }
+  .final-md h2 { font-size: 17px; }
+  .final-md h3 { font-size: 15px; }
+  .final-md p  { margin: 0 0 12px; }
+  .final-md ul, .final-md ol { margin: 0 0 12px 22px; padding: 0; }
+  .final-md li { margin: 4px 0; }
+  .final-md a { color: var(--primary); }
+  .final-md code {
+    background: rgba(0,0,0,.05);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  .final-md hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
+  .final-md blockquote { border-left: 3px solid var(--primary); padding-left: 12px; color: var(--text-muted); margin: 0 0 12px; }
+
+  /* === GeneratingIndicator === */
+  .gen-indicator {
+    display: flex; align-items: center; gap: 8px;
+    margin-top: 10px; padding-top: 10px;
+    border-top: 1px dashed var(--border);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .gen-indicator .spinner {
+    width: 14px; height: 14px; color: var(--primary); animation: spin 1s linear infinite;
+  }
+
+  /* === Dark mode preview toggle (visual only, no JS) === */
+  @media (prefers-color-scheme: dark) {
+    html, body { background: #0f1218; color: #e6e8ee; }
+    .msg.user .bubble { background: rgba(108,92,231,.18); color: #d6d3ff; }
+    .cycle-card, .run-trace, .step-card { background: #1a1d27; border-color: rgba(255,255,255,.08); }
+    .step-label .id-text { color: rgba(230,232,238,.7); }
+    .step-label .badge { background: #1a1d27; }
+    .step-card .row1 .name { color: #e6e8ee; }
+    .step-card .row2 { color: rgba(230,232,238,.5); }
+    .run-trace .summary .meta,
+    .run-trace .summary .label,
+    .step-card .row1 .meta,
+    .step-card .detail,
+    .final-md blockquote { color: rgba(230,232,238,.6); }
+    .final-md { color: #e6e8ee; }
+    .final-md code { background: rgba(255,255,255,.06); }
+    .step-card .detail { background: rgba(255,255,255,.04); }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>Run Trace · v3 排版优化</h1>
+    <span class="sub">单方案预览（move bar into trace · 松一点间距 · 工具名柔化）</span>
+    <span class="spacer"></span>
+    <span class="legend">
+      <span><span class="dot" style="background: var(--primary)"></span>紫色仅覆盖 trace</span>
+      <span><span class="dot" style="background: var(--green)"></span>工具名 green-700/85</span>
+      <span><span class="dot" style="background: var(--text-muted)"></span>思考 muted</span>
+    </span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ============== User message ============== -->
+  <div class="msg user">
+    <div class="bubble">帮我看看项目目录</div>
+  </div>
+
+  <!-- ============== Assistant message #1（已完成，13 步 · 9 工具，密集） ============== -->
+  <div class="msg assistant">
+    <div class="cycle-card">
+      <div class="run-trace">
+        <button class="summary" aria-expanded="true">
+          <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="label">已完成 13 个步骤 · 9 个工具</span>
+          <span class="meta">13 步 · 9 个工具</span>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="timeline">
+          <ol>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label think-done">
+                <span class="id-text">思考</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="false" aria-label="查看思考过程">
+                <div class="row1">
+                  <span class="name">已完成</span>
+                  <span class="spacer"></span>
+                  <span class="meta">查看</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="row2">用户想让我看一下项目目录的内容</div>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-done">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="true" aria-label="查看 list_files 结果">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill" title="D:\studyspace\project\my-agent">dirPath: D:\studyspace…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">已完成</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="row2">287154 bytes · estimated_token…</div>
+                <pre class="detail">&lt;persisted-output ref="bb9487dc0a8148b1" tool="list_files" size="287154" estimated_token…&gt;</pre>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-done">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="false" aria-label="查看 list_files 结果">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill">depth: 3 · dirPath: D:\…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">已完成</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="row2">8dd105bc7899d0 tool="list_files" size="287154"</div>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-done">
+                <span class="id-text">bash</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="true" aria-label="查看 bash 结果">
+                <div class="row1">
+                  <span class="name">bash</span>
+                  <span class="pill">dir /b /s D:\studyspace…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">已完成</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="row2">D:\studyspace\project\my-agent\…ai-runtime-artifa…</div>
+                <pre class="detail">D:\studyspace\project\my-agent\.agents
+D:\studyspace\project\my-agent\.ai-runtime-artifa…</pre>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-run">
+                <span class="id-text">bash</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="animation: spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="true" aria-label="查看 bash 结果">
+                <div class="row1">
+                  <span class="name">bash</span>
+                  <span class="pill">dir /b /s D:\studyspace…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">执行中</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-run">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="animation: spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="false">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill">depth: 4 · dirPath: …/src</span>
+                  <span class="spacer"></span>
+                  <span class="meta">执行中</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-run">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="animation: spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="false">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill">depth: 2 · dirPath: …/test</span>
+                  <span class="spacer"></span>
+                  <span class="meta">执行中</span>
+                </div>
+              </button>
+            </li>
+
+          </ol>
+        </div>
+      </div>
+
+      <div class="final-md">
+        <p>目录内容非常多（5359 项），主要是 <code>.git</code> 内部文件。让我过滤掉 git 目录，只看项目实际文件：输出按 git 对象去重了。让我用搜索来聚焦实际项目文件。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== Assistant message #2（已完成，2 步 · 1 工具） ============== -->
+  <div class="msg assistant">
+    <div class="cycle-card">
+      <div class="run-trace">
+        <button class="summary" aria-expanded="true">
+          <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <span class="label">已完成 2 个步骤 · 1 个工具</span>
+          <span class="meta">2 步 · 1 个工具</span>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="timeline">
+          <ol>
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label think-done">
+                <span class="id-text">思考</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="false" aria-label="查看思考过程">
+                <div class="row1">
+                  <span class="name">已完成</span>
+                  <span class="spacer"></span>
+                  <span class="meta">查看</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <div class="row2">用户想让我看项目目录结构，让我列出项目目录的内容。</div>
+              </button>
+            </li>
+
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-done">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card" aria-expanded="true" aria-label="查看 list_files 结果">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill">dirPath: D:\studyspace…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">已完成</span>
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+                <pre class="detail">&lt;persisted-output ref="bb9487dc0a8148b1" tool="list_files" size="287154" estimated_token…&gt;</pre>
+              </button>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="final-md">
+        <p>目录内容非常多（5359 项），主要是 <code>.git</code> 内部文件。让我过滤掉 git 目录，只看项目实际文件：输出按 git 对象去重了。让我用搜索来聚焦实际项目文件。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== Assistant message #3（正在执行） ============== -->
+  <div class="msg assistant">
+    <div class="cycle-card">
+      <div class="run-trace">
+        <button class="summary" aria-expanded="true">
+          <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+          <span class="label">正在执行 list_files</span>
+          <span class="meta">4 步 · 2 个工具</span>
+          <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="timeline">
+          <ol>
+            <li class="trace-row">
+              <span class="line"></span>
+              <span class="step-label tool-done">
+                <span class="id-text">list_file</span>
+                <span class="badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <button class="step-card">
+                <div class="row1">
+                  <span class="name">list_files</span>
+                  <span class="pill">dirPath: D:\studyspace…</span>
+                  <span class="spacer"></span>
+                  <span class="meta">已完成</span>
+                </div>
+              </button>
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="gen-indicator">
+        <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+        <span>AI 仍在生成中…</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+</body>
+</html>

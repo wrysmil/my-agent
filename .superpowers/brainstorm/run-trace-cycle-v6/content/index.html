@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Run Trace · v6 trace 窄气泡 + final 裸内容</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --border: rgba(15,18,28,.10);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-soft: rgba(108,92,231,.08);
+    --primary-soft-2: rgba(108,92,231,.14);
+    --danger: #d63b3b;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header.page {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(247,247,248,.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.page .inner {
+    max-width: 1280px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  header.page h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+
+  main {
+    max-width: 1280px;
+    margin: 28px auto 80px;
+    padding: 0 24px;
+  }
+  main > .col h2 {
+    font-size: 14px; font-weight: 600; margin: 0 0 16px; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  main > .col .desc { font-size: 12px; color: var(--text-muted); margin: -8px 0 24px; line-height: 1.5; }
+
+  .chat-list { display: flex; flex-direction: column; gap: 18px; }
+
+  /* === User message === */
+  .msg { display: flex; gap: 12px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble {
+    background: #eaf2ff; color: #0b2d6b;
+    padding: 12px 16px;
+    border-radius: 18px;
+    border-bottom-right-radius: 6px;
+    max-width: 80%;
+  }
+
+  /* === Assistant 双气泡布局 === */
+  .msg.assistant {
+    flex-direction: column;        /* trace 和 final 上下排列 */
+    align-items: stretch;
+  }
+
+  /* Trace bubble：左对齐，灰色背景区分工具感 */
+  .trace-bubble {
+    background: #f1f2f4;            /* 灰色背景，区分 final 文章感 */
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow-card);
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+    align-self: flex-start;        /* 左对齐 */
+    width: 100%;
+    max-width: 660px;              /* 比 final 略窄 */
+  }
+  .trace-bubble::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, var(--primary) 0%, rgba(108,92,231,.5) 100%);
+    pointer-events: none;
+  }
+
+  /* Final bubble：左对齐，无边框无气泡，裸内容 */
+  .final-bubble {
+    align-self: flex-start;        /* 左对齐 */
+    width: 100%;
+    max-width: 720px;              /* 宽 */
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.65;
+    padding: 4px 0;
+  }
+  .final-bubble p { margin: 0 0 12px; }
+  .final-bubble code {
+    background: rgba(0,0,0,.05);
+    padding: 1px 6px; border-radius: 4px;
+    font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12.5px;
+  }
+  .final-bubble table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  .final-bubble th, .final-bubble td {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .final-bubble th { background: rgba(0,0,0,.02); font-weight: 600; }
+
+  /* === RunTracePanel === */
+  .run-trace { width: 100%; }
+  .run-trace .summary {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    width: 100%; border: 0; background: transparent;
+    text-align: left; cursor: pointer;
+    font-size: 13px;
+  }
+  .run-trace .summary:hover { background: rgba(0,0,0,.03); }
+  .run-trace .summary .label { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-trace .summary .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .run-trace .summary .chev { transition: transform .2s; color: var(--text-muted); }
+  .run-trace .summary[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .run-trace .icon-ok    { width: 16px; height: 16px; color: #16a34a; flex: 0 0 auto; }
+  .run-trace .icon-spin  { width: 16px; height: 16px; color: var(--primary); flex: 0 0 auto; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .run-trace .timeline {
+    border-top: 1px solid var(--border);
+    padding: 6px 6px 8px;
+  }
+  .run-trace .timeline ol {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+
+  /* === step-card === */
+  .step-card {
+    display: flex; align-items: center; gap: 8px;
+    height: 32px;
+    width: 100%; min-width: 0;
+    padding: 0 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #ffffff;            /* step-card 白色，区分 trace 灰色容器 */
+    cursor: pointer; text-align: left;
+    overflow: hidden;
+  }
+  .step-card .name {
+    font-size: 13px; font-weight: 500; color: var(--text);
+    white-space: nowrap; flex: 0 0 auto;
+  }
+  .step-card .name-chip {
+    background: var(--primary-soft-2);
+    color: var(--primary);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 12.5px; font-weight: 500;
+    white-space: nowrap; flex: 0 0 auto;
+  }
+  .step-card .meta {
+    color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums;
+    flex: 0 0 auto;
+  }
+  .step-card .chev {
+    width: 14px; height: 14px; color: var(--text-muted);
+    transition: transform .2s; flex: 0 0 auto;
+  }
+  .step-card[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .step-card .dot {
+    width: 4px; height: 4px; border-radius: 999px;
+    background: var(--text-muted-2); flex: 0 0 auto;
+  }
+  .step-card.thinking .name { color: var(--text-muted); font-weight: 400; }
+
+  /* === 生成指示器（圆点，无文字） === */
+  .gen-indicator {
+    margin-top: 6px;
+    padding: 4px 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gen-indicator .spinner {
+    width: 14px; height: 14px; color: var(--primary); animation: spin 1s linear infinite;
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>Run Trace · v6 trace 灰色气泡 + final 裸内容</h1>
+    <span class="sub">trace 灰色背景气泡居左（660px）；final 居左（720px）无气泡无边框，裸内容铺在 chat 列表</span>
+    <span class="spacer"></span>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <h2>完整对话示例</h2>
+    <p class="desc">trace 居左（660px），只比 final 略窄；final 是无气泡的裸内容（720px），直接铺在 chat 列表里，靠段落样式本身表达层级。两者左缘对齐。</p>
+
+    <div class="chat-list">
+
+      <!-- User -->
+      <div class="msg user">
+        <div class="bubble">帮我看看项目目录</div>
+      </div>
+
+      <!-- Assistant 双气泡：trace 窄 + final 宽 -->
+      <div class="msg assistant">
+
+        <!-- 气泡 1：trace（窄） -->
+        <div class="trace-bubble">
+          <div class="run-trace">
+            <button class="summary" aria-expanded="true">
+              <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+              <span class="label">已完成 5 个步骤 · 2 个工具</span>
+              <span class="meta">5 步 · 2 个工具</span>
+              <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="timeline">
+              <ol>
+                <li>
+                  <button class="step-card thinking" aria-expanded="false">
+                    <span class="dot"></span>
+                    <span class="name">思考</span>
+                    <span class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </li>
+                <li>
+                  <button class="step-card" aria-expanded="false">
+                    <span class="name-chip">list_files</span>
+                    <span class="meta">已完成</span>
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </li>
+                <li>
+                  <button class="step-card thinking" aria-expanded="false">
+                    <span class="dot"></span>
+                    <span class="name">思考</span>
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </li>
+                <li>
+                  <button class="step-card" aria-expanded="false">
+                    <span class="name-chip">list_files</span>
+                    <span class="meta">已完成</span>
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </li>
+                <li>
+                  <button class="step-card thinking" aria-expanded="false">
+                    <span class="dot"></span>
+                    <span class="name">思考</span>
+                    <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+
+        <!-- 气泡 2：final markdown（宽） -->
+        <div class="final-bubble">
+          <p>项目目录内容非常多（5359 项），主要是 <code>.git</code> 内部文件。让我过滤掉 git 目录，只看项目实际文件。</p>
+          <table>
+            <thead>
+              <tr><th>文件</th><th>说明</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>package.json</code></td><td>Node/TS 项目配置</td></tr>
+              <tr><td><code>tsconfig.json</code></td><td>TypeScript 编译配置</td></tr>
+              <tr><td><code>vitest.config.ts</code></td><td>测试框架配置</td></tr>
+              <tr><td><code>config.json</code></td><td>项目运行时配置</td></tr>
+              <tr><td><code>AGENTS.md</code> / <code>CLAUDE.md</code></td><td>Agent 行为规则/指令</td></tr>
+              <tr><td><code>manage.ps1</code> / <code>manage.sh</code></td><td>项目管理脚本</td></tr>
+            </tbody>
+          </table>
+          <p>核心源码在 <code>src/</code> 目录，包含 CLI、Web UI 和技能系统。</p>
+        </div>
+
+      </div>
+
+      <!-- 第二轮：正在生成 -->
+      <div class="msg user">
+        <div class="bubble">anthropic 那个 api 是哪个参数控制最大 token</div>
+      </div>
+
+      <div class="msg assistant">
+        <div class="trace-bubble">
+          <div class="run-trace">
+            <button class="summary" aria-expanded="true">
+              <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+              <span class="label">正在执行 list_files</span>
+              <span class="meta">3 步 · 1 个工具</span>
+              <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+            <div class="timeline">
+              <ol>
+                <li>
+                  <button class="step-card">
+                    <span class="name-chip">list_files</span>
+                    <span class="meta">已完成</span>
+                  </button>
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+        <div class="gen-indicator">
+          <svg class="spinner" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.55"/></svg>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+</body>
+</html>

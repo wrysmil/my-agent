@@ -1,0 +1,134 @@
+- generic [active] [ref=f47e1]:
+  - banner [ref=f47e2]:
+    - generic [ref=f47e3]:
+      - heading "Run Trace · v4 中文动作名 + 默认折叠 · A/B 对比" [level=1] [ref=f47e4]
+      - generic [ref=f47e5]: 两列对比：A 极简 / B 名字高亮 + 单行结果预览
+      - generic [ref=f47e6]:
+        - generic [ref=f47e7]: 紫色仅覆盖 trace
+        - generic [ref=f47e9]: 默认 step 折叠
+  - main [ref=f47e11]:
+    - generic [ref=f47e12]:
+      - heading "A · 极简 + 完全折叠" [level=2] [ref=f47e13]
+      - paragraph [ref=f47e14]: step 卡片默认只显示 actionLabel + meta；点开后看 keyParams + 完整结果。中文「写入文件」sans 13px。
+      - generic [ref=f47e15]: 帮我看看项目目录
+      - generic [ref=f47e18]:
+        - generic [ref=f47e19]:
+          - button "已完成 13 个步骤 · 9 个工具 13 步 · 9 个工具" [expanded] [ref=f47e20] [cursor=pointer]:
+            - generic [ref=f47e23]: 已完成 13 个步骤 · 9 个工具
+            - generic [ref=f47e24]: 13 步 · 9 个工具
+          - list [ref=f47e28]:
+            - listitem [ref=f47e29]:
+              - button "查看 思考" [ref=f47e30] [cursor=pointer]:
+                - generic [ref=f47e31]: 思考
+                - generic [ref=f47e32]: 已完成
+            - listitem [ref=f47e35]:
+              - button "查看 列出文件 结果" [expanded] [ref=f47e36] [cursor=pointer]:
+                - generic [ref=f47e37]: 列出文件
+                - generic [ref=f47e38]: 已完成
+              - generic [ref=f47e41]:
+                - generic [ref=f47e42]:
+                  - generic [ref=f47e43]: "dirPath:"
+                  - generic [ref=f47e44]: D:\studyspace\project\my-agent
+                - generic [ref=f47e45]:
+                  - generic [ref=f47e46]: "depth:"
+                  - generic [ref=f47e47]: "3"
+                - generic [ref=f47e48]:
+                  - generic [ref=f47e49]: "size:"
+                  - generic [ref=f47e50]: 287154 bytes · estimated_token…
+                - generic [ref=f47e51]: —
+                - generic [ref=f47e52]: <persisted-output ref="bb9487dc0a8148b1" tool="list_files" size="287154">
+            - listitem [ref=f47e53]:
+              - button "查看 列出文件 结果" [ref=f47e54] [cursor=pointer]:
+                - generic [ref=f47e55]: 列出文件
+                - generic [ref=f47e56]: 已完成
+            - listitem [ref=f47e59]:
+              - button "查看 执行命令 结果" [ref=f47e60] [cursor=pointer]:
+                - generic [ref=f47e61]: 执行命令
+                - generic [ref=f47e62]: 已完成
+            - listitem [ref=f47e65]:
+              - button "查看 执行命令 结果" [ref=f47e66] [cursor=pointer]:
+                - generic [ref=f47e67]: 执行命令
+                - generic [ref=f47e68]: 失败
+            - listitem [ref=f47e71]:
+              - button "列出文件 执行中" [ref=f47e72] [cursor=pointer]:
+                - generic [ref=f47e75]: 列出文件
+                - generic [ref=f47e76]: 执行中
+        - paragraph [ref=f47e80]:
+          - text: 目录内容非常多（5359 项），主要是
+          - code [ref=f47e81]: .git
+          - text: 内部文件。让我过滤掉 git 目录，只看项目实际文件：输出按 git 对象去重了。让我用搜索来聚焦实际项目文件。
+      - generic [ref=f47e83]:
+        - generic [ref=f47e84]:
+          - button "正在执行 列出文件 4 步 · 2 个工具" [expanded] [ref=f47e85] [cursor=pointer]:
+            - generic [ref=f47e88]: 正在执行 列出文件
+            - generic [ref=f47e89]: 4 步 · 2 个工具
+          - list [ref=f47e93]:
+            - listitem [ref=f47e94]:
+              - button "列出文件 已完成" [ref=f47e95] [cursor=pointer]:
+                - generic [ref=f47e96]: 列出文件
+                - generic [ref=f47e97]: 已完成
+        - generic [ref=f47e98]: AI 仍在生成中…
+    - generic [ref=f47e102]:
+      - heading "B · 名字高亮 + 单行结果预览" [level=2] [ref=f47e103]
+      - paragraph [ref=f47e104]: 中文「写入文件」用 primary 色 chip 化（视觉锚点）；默认保留一行 result preview。点开后看 keyParams + 完整结果。
+      - generic [ref=f47e105]: 帮我看看项目目录
+      - generic [ref=f47e108]:
+        - generic [ref=f47e109]:
+          - button "已完成 13 个步骤 · 9 个工具 13 步 · 9 个工具" [expanded] [ref=f47e110] [cursor=pointer]:
+            - generic [ref=f47e113]: 已完成 13 个步骤 · 9 个工具
+            - generic [ref=f47e114]: 13 步 · 9 个工具
+          - list [ref=f47e118]:
+            - listitem [ref=f47e119]:
+              - button "查看 思考" [ref=f47e120] [cursor=pointer]:
+                - generic [ref=f47e121]: 思考
+                - generic [ref=f47e122]: 已完成
+            - listitem [ref=f47e125]:
+              - button "查看 列出文件 结果" [expanded] [ref=f47e126] [cursor=pointer]:
+                - generic [ref=f47e127]: 列出文件
+                - generic [ref=f47e128]: 已列出 287154 bytes · estimated_token…
+                - generic [ref=f47e129]: 已完成
+              - generic [ref=f47e132]:
+                - generic [ref=f47e133]:
+                  - generic [ref=f47e134]: "dirPath:"
+                  - generic [ref=f47e135]: D:\studyspace\project\my-agent
+                - generic [ref=f47e136]:
+                  - generic [ref=f47e137]: "depth:"
+                  - generic [ref=f47e138]: "3"
+                - generic [ref=f47e139]: —
+                - generic [ref=f47e140]: <persisted-output ref="bb9487dc0a8148b1" tool="list_files" size="287154">
+            - listitem [ref=f47e141]:
+              - button "查看 列出文件 结果" [ref=f47e142] [cursor=pointer]:
+                - generic [ref=f47e143]: 列出文件
+                - generic [ref=f47e144]: 已列出 depth 3 dirPath D:\…
+                - generic [ref=f47e145]: 已完成
+            - listitem [ref=f47e148]:
+              - button "查看 执行命令 结果" [ref=f47e149] [cursor=pointer]:
+                - generic [ref=f47e150]: 执行命令
+                - generic [ref=f47e151]: D:\studyspace\project\my-agent\.agents
+                - generic [ref=f47e152]: 已完成
+            - listitem [ref=f47e155]:
+              - button "查看 执行命令 结果" [ref=f47e156] [cursor=pointer]:
+                - generic [ref=f47e157]: 执行命令
+                - generic [ref=f47e158]: 命令未找到
+                - generic [ref=f47e159]: 失败
+            - listitem [ref=f47e162]:
+              - 'button "列出文件 depth: 4 dirPath …/src 执行中" [ref=f47e163] [cursor=pointer]':
+                - generic [ref=f47e166]: 列出文件
+                - generic [ref=f47e167]: "depth: 4 dirPath …/src"
+                - generic [ref=f47e168]: 执行中
+        - paragraph [ref=f47e172]:
+          - text: 目录内容非常多（5359 项），主要是
+          - code [ref=f47e173]: .git
+          - text: 内部文件。让我过滤掉 git 目录，只看项目实际文件：输出按 git 对象去重了。让我用搜索来聚焦实际项目文件。
+      - generic [ref=f47e175]:
+        - generic [ref=f47e176]:
+          - button "正在执行 列出文件 4 步 · 2 个工具" [expanded] [ref=f47e177] [cursor=pointer]:
+            - generic [ref=f47e180]: 正在执行 列出文件
+            - generic [ref=f47e181]: 4 步 · 2 个工具
+          - list [ref=f47e185]:
+            - listitem [ref=f47e186]:
+              - button "列出文件 已列出 … 已完成" [ref=f47e187] [cursor=pointer]:
+                - generic [ref=f47e188]: 列出文件
+                - generic [ref=f47e189]: 已列出 …
+                - generic [ref=f47e190]: 已完成
+        - generic [ref=f47e191]: AI 仍在生成中…

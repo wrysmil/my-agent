@@ -1,0 +1,281 @@
+- generic [ref=f4e3]:
+  - complementary [ref=f4e4]:
+    - generic [ref=f4e5]: my-agent
+    - navigation [ref=f4e6]:
+      - link "控制台" [ref=f4e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f4e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f4e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f4e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f4e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f4e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f4e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f4e39]:
+      - generic [ref=f4e40]:
+        - generic [ref=f4e41]: 历史会话
+        - button "新对话" [ref=f4e42]
+      - list [ref=f4e125]:
+        - listitem [ref=f4e126]:
+          - link "研究开源 AI 桌面应用" [ref=f4e127] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e128]'
+        - listitem [ref=f4e132]:
+          - link "研究开源 AI 桌面应用" [ref=f4e133] [cursor=pointer]:
+            - /url: "#/chat/gconv-7d18591cceb8"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e134]'
+        - listitem [ref=f4e138]:
+          - link "研究开源 AI 桌面应用" [ref=f4e139] [cursor=pointer]:
+            - /url: "#/chat/gconv-c22f0b9df216"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e140]'
+        - listitem [ref=f4e144]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e145] [cursor=pointer]:
+            - /url: "#/chat/gconv-183c6ca978b5"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e146]'
+        - listitem [ref=f4e150]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e151] [cursor=pointer]:
+            - /url: "#/chat/gconv-de53b556c155"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e152]'
+        - listitem [ref=f4e156]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e157] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a1fce4620d7"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e158]'
+        - listitem [ref=f4e162]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e163] [cursor=pointer]:
+            - /url: "#/chat/gconv-40b217ddb3ce"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e164]'
+        - listitem [ref=f4e168]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e169] [cursor=pointer]:
+            - /url: "#/chat/gconv-2217ea6bcd15"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e170]'
+        - listitem [ref=f4e174]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e175] [cursor=pointer]:
+            - /url: "#/chat/gconv-1997c1ce5842"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e176]'
+        - listitem [ref=f4e180]:
+          - link "制作一份电商销售月报" [ref=f4e181] [cursor=pointer]:
+            - /url: "#/chat/gconv-f7c41b334f8d"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e182]'
+        - listitem [ref=f4e186]:
+          - link "制作一份电商销售月报" [ref=f4e187] [cursor=pointer]:
+            - /url: "#/chat/gconv-b3dfff32be41"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e188]'
+        - listitem [ref=f4e192]:
+          - link "制作一份电商销售月报" [ref=f4e193] [cursor=pointer]:
+            - /url: "#/chat/gconv-042b734eae89"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e194]'
+        - listitem [ref=f4e198]:
+          - link "制作一份电商销售月报" [ref=f4e199] [cursor=pointer]:
+            - /url: "#/chat/gconv-56fd0b955c3a"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e200]'
+        - listitem [ref=f4e204]:
+          - link "你好" [ref=f4e205] [cursor=pointer]:
+            - /url: "#/chat/gconv-322a6fc4314d"
+          - 'button "删除: 你好" [ref=f4e206]'
+        - listitem [ref=f4e210]:
+          - link "你好" [ref=f4e211] [cursor=pointer]:
+            - /url: "#/chat/gconv-7113ddb32e38"
+          - 'button "删除: 你好" [ref=f4e212]'
+        - listitem [ref=f4e216]:
+          - link "新会话" [ref=f4e217] [cursor=pointer]:
+            - /url: "#/chat/gconv-063af9cbda3c"
+          - 'button "删除: 新会话" [ref=f4e218]'
+        - listitem [ref=f4e222]:
+          - link "用coder帮我写平潭旅游宣传页面" [ref=f4e223] [cursor=pointer]:
+            - /url: "#/chat/gconv-8600741311f1"
+          - 'button "删除: 用coder帮我写平潭旅游宣传页面" [ref=f4e224]'
+        - listitem [ref=f4e228]:
+          - link "新会话" [ref=f4e229] [cursor=pointer]:
+            - /url: "#/chat/gconv-e7fbc2889e25"
+          - 'button "删除: 新会话" [ref=f4e230]'
+        - listitem [ref=f4e234]:
+          - link "使用web_fetch 抓取下https..." [ref=f4e235] [cursor=pointer]:
+            - /url: "#/chat/gconv-b9627ede70be"
+          - 'button "删除: 使用web_fetch 抓取下https..." [ref=f4e236]'
+        - listitem [ref=f4e240]:
+          - link "新会话" [ref=f4e241] [cursor=pointer]:
+            - /url: "#/chat/gconv-c17a4a5208cb"
+          - 'button "删除: 新会话" [ref=f4e242]'
+  - generic [ref=f4e47]:
+    - banner [ref=f4e48]:
+      - generic [ref=f4e49]:
+        - button "Toggle theme" [ref=f4e50]
+        - button "Switch language" [ref=f4e57]
+        - generic [ref=f4e62]: K
+    - main [ref=f4e66]:
+      - generic [ref=f4e67]:
+        - heading "对话" [level=2] [ref=f4e75]
+        - log [ref=f4e81]:
+          - generic [ref=f4e82]:
+            - generic [ref=f4e246]: 研究开源 AI 桌面应用
+            - generic [ref=f4e251]:
+              - generic [ref=f4e254]:
+                - button "失败 完成，但有 1 个步骤失败 7 步 · 3 个工具" [ref=f4e256]:
+                  - img "失败" [ref=f4e257]
+                  - generic [ref=f4e259]: 完成，但有 1 个步骤失败
+                  - generic [ref=f4e260]: 7 步 · 3 个工具
+                - generic [ref=f4e264]:
+                  - paragraph [ref=f4e265]: 继续完成调研。我先补全 LobeHub 的数据，并核实几个关键项目的开源状态。 LobeHub 数据被截断，LM Studio 仓库不存在（确认其闭源）。用脚本提取关键字段： 数据已齐备。以下是完整的调研报告。
+                  - separator [ref=f4e266]
+                  - heading "开源 AI 桌面应用调研报告" [level=1] [ref=f4e267]
+                  - paragraph [ref=f4e268]:
+                    - strong [ref=f4e269]: 调研时间
+                    - text: ：2026-08-11 ｜
+                    - strong [ref=f4e270]: 数据来源
+                    - text: ：GitHub API / 官方仓库（star 数、许可证均为当日实时数据）
+                  - heading "结论先行" [level=2] [ref=f4e271]
+                  - paragraph [ref=f4e272]:
+                    - text: 开源 AI 桌面应用生态已经相当成熟，核心玩家分三类：
+                    - strong [ref=f4e273]: 本地推理引擎
+                    - text: （Ollama）、
+                    - strong [ref=f4e274]: 本地优先的桌面聊天客户端
+                    - text: （Jan、GPT4All）、
+                    - strong [ref=f4e275]: 多模型聚合客户端
+                    - text: （Chatbox、Cherry Studio），以及向
+                    - strong [ref=f4e276]: RAG / 多智能体平台
+                    - text: 演进的 AnythingLLM、LobeHub。若只选一个，
+                    - strong [ref=f4e277]: Ollama + Jan
+                    - text: 是最稳妥的本地组合；若主要用各家云端 API，
+                    - strong [ref=f4e278]: Cherry Studio 或 Chatbox
+                    - text: 体验最好。需注意两点：GPT4All 已一年多未更新；Jan、LobeHub、Cherry Studio 的许可证并非纯 MIT/Apache，商用前需核实条款。
+                  - heading "主流项目对比（按 star 数排序）" [level=2] [ref=f4e279]
+                  - table [ref=f4e280]:
+                    - rowgroup [ref=f4e281]:
+                      - row [ref=f4e282]:
+                        - columnheader "项目" [ref=f4e283]
+                        - columnheader "Star / Fork" [ref=f4e284]
+                        - columnheader "语言" [ref=f4e285]
+                        - columnheader "许可证" [ref=f4e286]
+                        - columnheader "定位" [ref=f4e287]
+                    - rowgroup [ref=f4e288]:
+                      - row [ref=f4e289]:
+                        - cell [ref=f4e290]:
+                          - strong [ref=f4e291]: Ollama
+                        - cell "178k / 17.3k" [ref=f4e292]
+                        - cell "Go" [ref=f4e293]
+                        - cell "MIT" [ref=f4e294]
+                        - cell "本地 LLM 运行引擎（命令行+API，生态核心）" [ref=f4e295]
+                      - row [ref=f4e296]:
+                        - cell [ref=f4e297]:
+                          - strong [ref=f4e298]: LobeHub
+                        - cell "81.5k / 15.8k" [ref=f4e299]
+                        - cell "TypeScript" [ref=f4e300]
+                        - cell "自定义*" [ref=f4e301]
+                        - cell "多智能体运营平台（Web 为主，有桌面版）" [ref=f4e302]
+                      - row [ref=f4e303]:
+                        - cell [ref=f4e304]:
+                          - strong [ref=f4e305]: GPT4All
+                        - cell "77.4k / 8.3k" [ref=f4e306]
+                        - cell "C++" [ref=f4e307]
+                        - cell "MIT" [ref=f4e308]
+                        - cell "本地跑模型的桌面 GUI，⚠️ 2025-05 后未更新" [ref=f4e309]
+                      - row [ref=f4e310]:
+                        - cell [ref=f4e311]:
+                          - strong [ref=f4e312]: AnythingLLM
+                        - cell "64.6k / 7.1k" [ref=f4e313]
+                        - cell "JavaScript" [ref=f4e314]
+                        - cell "MIT" [ref=f4e315]
+                        - cell "RAG 知识库 + 本地优先智能体（有桌面版）" [ref=f4e316]
+                      - row [ref=f4e317]:
+                        - cell [ref=f4e318]:
+                          - strong [ref=f4e319]: Cherry Studio
+                        - cell "50.2k / 4.8k" [ref=f4e320]
+                        - cell "TypeScript" [ref=f4e321]
+                        - cell "AGPL-3.0" [ref=f4e322]
+                        - cell "AI 生产力工作室，300+ 助手、智能体" [ref=f4e323]
+                      - row [ref=f4e324]:
+                        - cell [ref=f4e325]:
+                          - strong [ref=f4e326]: Jan
+                        - cell "44.0k / 3.0k" [ref=f4e327]
+                        - cell "TypeScript" [ref=f4e328]
+                        - cell "自定义*" [ref=f4e329]
+                        - cell "\"开源的 ChatGPT 替代品\"，100% 离线运行" [ref=f4e330]
+                      - row [ref=f4e331]:
+                        - cell [ref=f4e332]:
+                          - strong [ref=f4e333]: Chatbox
+                        - cell "41.4k / 4.2k" [ref=f4e334]
+                        - cell "TypeScript" [ref=f4e335]
+                        - cell "GPL-3.0" [ref=f4e336]
+                        - cell "通用 AI 客户端，聚合 Ollama/OpenAI/DeepSeek/Gemini 等" [ref=f4e337]
+                  - paragraph [ref=f4e338]: "* GitHub 标记为 NOASSERTION（非标准开源许可证），需自行查阅仓库 LICENSE 确认条款。"
+                  - heading "分类详解与选型建议" [level=2] [ref=f4e339]
+                  - paragraph [ref=f4e340]:
+                    - strong [ref=f4e341]: ① 本地推理引擎（基础设施，几乎必装）
+                  - list [ref=f4e342]:
+                    - listitem [ref=f4e343]:
+                      - strong [ref=f4e344]: Ollama
+                      - text: （MIT）：一键安装、命令行 + API 方式运行 Qwen、DeepSeek、Gemma、GLM 等开源模型，支持 OpenAI 兼容接口。它不是 GUI，但几乎所有开源桌面客户端都内置了对它的支持。想完全离线跑模型，它是第一选择。
+                  - paragraph [ref=f4e345]:
+                    - strong [ref=f4e346]: ② 本地优先的桌面 GUI
+                  - list [ref=f4e347]:
+                    - listitem [ref=f4e348]:
+                      - strong [ref=f4e349]: Jan
+                      - text: ：类 ChatGPT 界面，纯本地推理（基于 llama.cpp），也支持接远程 API。界面精美，Tauri 构建、体积小。注意其许可证带附加条款。
+                    - listitem [ref=f4e350]:
+                      - strong [ref=f4e351]: GPT4All
+                      - text: ：老牌本地 GUI，支持商用。但仓库最后推送是 2025-05-27，
+                      - strong [ref=f4e352]: 活跃度是明确风险
+                      - text: ，新模型支持可能滞后，选它前请确认自己的模型是否在支持列表内。
+                  - paragraph [ref=f4e353]:
+                    - strong [ref=f4e354]: ③ 多模型聚合客户端（接 API 为主，也可接本地）
+                  - list [ref=f4e355]:
+                    - listitem [ref=f4e356]:
+                      - strong [ref=f4e357]: Chatbox
+                      - text: （GPL-3.0）：界面最简洁的"万能客户端"，一个对话里混用多家模型，iOS/桌面/Web 全平台。GPL 对个人使用无影响。
+                    - listitem [ref=f4e358]:
+                      - strong [ref=f4e359]: Cherry Studio
+                      - text: （AGPL-3.0）：功能最重的国产项目，内置 300+ 助手模板、智能体（Claude Code、Codex、DeepSeek 等）、vibe coding 支持。AGPL 意味着你若二次开发并对外提供服务需开源，商用注意。
+                  - paragraph [ref=f4e360]:
+                    - strong [ref=f4e361]: ④ RAG / 智能体平台
+                  - list [ref=f4e362]:
+                    - listitem [ref=f4e363]:
+                      - strong [ref=f4e364]: AnythingLLM
+                      - text: （MIT，最宽松）：把文档喂给模型做知识库问答的成熟方案，支持向量库、多用户；适合企业或个人知识管理。
+                    - listitem [ref=f4e365]:
+                      - strong [ref=f4e366]: LobeHub
+                      - text: ：定位已从聊天演变为"AI 团队运营平台"（Agent Operator），功能最前沿但主要为 Web 形态，桌面端是封装壳。
+                  - paragraph [ref=f4e367]:
+                    - strong [ref=f4e368]: ⑤ 值得关注的新兴项目
+                    - text: （star 量级小，更新活跃）
+                  - list [ref=f4e369]:
+                    - listitem [ref=f4e370]:
+                      - strong [ref=f4e371]: talkio
+                      - text: （Tauri 2 + React）：本地优先的多模型群聊桌面应用，一个对话同时接入 GPT/Claude/Gemini/DeepSeek。
+                    - listitem [ref=f4e372]:
+                      - strong [ref=f4e373]: Chaty
+                      - text: （Rust + TS）：设备端 GGUF/MLX 模型 + 本地编码智能体 + RAG + 深度研究。
+                    - listitem [ref=f4e374]:
+                      - strong [ref=f4e375]: Soul-of-Waifu
+                      - text: ：带 Live2D/VRM 虚拟形象的 AI 角色扮演桌面应用（Python，1.2k star，昨日仍有更新）。
+                  - heading "需要留意的坑" [level=2] [ref=f4e376]
+                  - list [ref=f4e377]:
+                    - listitem [ref=f4e378]:
+                      - strong [ref=f4e379]: 许可证
+                      - text: ：GitHub 上 Jan、LobeHub 的许可证被标记为 NOASSERTION（自定义条款），Cherry Studio 是 AGPL；个人/内部使用无碍，但
+                      - strong [ref=f4e380]: 产品化、商用前务必核对 LICENSE 原文
+                      - text: 。最省心的商用选择是 MIT 的 AnythingLLM 和 Ollama。
+                    - listitem [ref=f4e381]:
+                      - strong [ref=f4e382]: 活跃度
+                      - text: ：GPT4All 14 个月无提交；Ollama、Cherry Studio、AnythingLLM 当日（2026-08-11）仍在推送，活跃度健康。
+                    - listitem [ref=f4e383]:
+                      - strong [ref=f4e384]: LM Studio 未纳入
+                      - text: ：其仓库不存在（
+                      - code [ref=f4e385]: lmstudio-ai/lmstudio
+                      - text: 返回 404），确认是闭源软件，只是免费分发，不符合"开源"标准。
+                  - paragraph [ref=f4e386]: 如果你有具体的使用场景（如完全离线、知识库、多模型聚合、商用），我可以基于此再给出针对性的配置建议。
+              - button "复制消息" [ref=f4e387]
+        - generic [ref=f4e91]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f4e93]
+          - generic [ref=f4e94]:
+            - button "添加附件" [ref=f4e96]
+            - button "选择模型" [ref=f4e100]
+            - generic [ref=f4e108]:
+              - generic [ref=f4e117]: Effort
+              - generic [ref=f4e118]: MED
+              - slider "Effort" [ref=f4e120] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f4e121]

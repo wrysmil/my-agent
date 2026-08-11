@@ -703,7 +703,7 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
     expect(size3Badges).toHaveLength(0);
   });
 
-  it('§8.1.3 v3.1 <li> 取消 pl-[112px]：简化为 flex 容器，由 step-card 内 before: 虚线承担', () => {
+  it('§8.1.3 v4 取消 step-card 内 before: 虚线：圆角变小，border 改为实线无 dashed 指示器', () => {
     // Arrange
     const trace = vm({
       steps: [
@@ -727,9 +727,12 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
       expect(li.className).not.toContain('pl-[112px]');
       expect(li.className).not.toContain('pl-[34px]');
     });
-    // step-card button 含 before: 虚线伪元素
-    const stepCard = container.querySelector('button[class*="before:border-dashed"]');
-    expect(stepCard).not.toBeNull();
+    // step-card button 不再含 before: 虚线伪元素（用户报告"还有虚线"，v4 移除）
+    const dashedStepCard = container.querySelector('button[class*="before:border-dashed"]');
+    expect(dashedStepCard).toBeNull();
+    // step-card button 使用 rounded-md（不是 rounded-lg，让实线边不再圆角切成"虚线"错觉）
+    const stepCard = container.querySelector('ol > li button');
+    expect(stepCard?.className).toContain('rounded-md');
   });
 
   it('§8.1.4 默认展开：isStreaming=false + errorCount=0 时 timeline 容器 hidden=false', () => {

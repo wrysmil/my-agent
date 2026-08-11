@@ -1,0 +1,196 @@
+- generic [ref=f44e3]:
+  - complementary [ref=f44e4]:
+    - generic [ref=f44e5]: my-agent
+    - navigation [ref=f44e6]:
+      - link "控制台" [ref=f44e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f44e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f44e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f44e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f44e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f44e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f44e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f44e39]:
+      - generic [ref=f44e40]:
+        - generic [ref=f44e41]: 历史会话
+        - button "新对话" [ref=f44e42]
+      - list [ref=f44e147]:
+        - listitem [ref=f44e148]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [active] [ref=f44e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-eeea44f04a8c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f44e150]'
+        - listitem [ref=f44e154]:
+          - link "你好" [ref=f44e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-0a932b3f7c90"
+          - 'button "删除: 你好" [ref=f44e156]'
+        - listitem [ref=f44e160]:
+          - link "你好" [ref=f44e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-a42c6ce9980a"
+          - 'button "删除: 你好" [ref=f44e162]'
+        - listitem [ref=f44e166]:
+          - link "你好" [ref=f44e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-ac3ee15b8c4c"
+          - 'button "删除: 你好" [ref=f44e168]'
+        - listitem [ref=f44e172]:
+          - link "研究开源 AI 桌面应用" [ref=f44e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f44e174]'
+        - listitem [ref=f44e178]:
+          - link "研究开源 AI 桌面应用" [ref=f44e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-7d18591cceb8"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f44e180]'
+        - listitem [ref=f44e184]:
+          - link "研究开源 AI 桌面应用" [ref=f44e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-c22f0b9df216"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f44e186]'
+        - listitem [ref=f44e190]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-183c6ca978b5"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e192]'
+        - listitem [ref=f44e196]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-de53b556c155"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e198]'
+        - listitem [ref=f44e202]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a1fce4620d7"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e204]'
+        - listitem [ref=f44e208]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-40b217ddb3ce"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e210]'
+        - listitem [ref=f44e214]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-2217ea6bcd15"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e216]'
+        - listitem [ref=f44e220]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f44e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-1997c1ce5842"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f44e222]'
+        - listitem [ref=f44e226]:
+          - link "制作一份电商销售月报" [ref=f44e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-f7c41b334f8d"
+          - 'button "删除: 制作一份电商销售月报" [ref=f44e228]'
+        - listitem [ref=f44e232]:
+          - link "制作一份电商销售月报" [ref=f44e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-b3dfff32be41"
+          - 'button "删除: 制作一份电商销售月报" [ref=f44e234]'
+        - listitem [ref=f44e238]:
+          - link "制作一份电商销售月报" [ref=f44e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-042b734eae89"
+          - 'button "删除: 制作一份电商销售月报" [ref=f44e240]'
+        - listitem [ref=f44e244]:
+          - link "制作一份电商销售月报" [ref=f44e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-56fd0b955c3a"
+          - 'button "删除: 制作一份电商销售月报" [ref=f44e246]'
+        - listitem [ref=f44e250]:
+          - link "你好" [ref=f44e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-322a6fc4314d"
+          - 'button "删除: 你好" [ref=f44e252]'
+        - listitem [ref=f44e256]:
+          - link "你好" [ref=f44e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-7113ddb32e38"
+          - 'button "删除: 你好" [ref=f44e258]'
+        - listitem [ref=f44e262]:
+          - link "新会话" [ref=f44e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-063af9cbda3c"
+          - 'button "删除: 新会话" [ref=f44e264]'
+  - generic [ref=f44e47]:
+    - banner [ref=f44e48]:
+      - generic [ref=f44e49]:
+        - button "Toggle theme" [ref=f44e50]
+        - button "Switch language" [ref=f44e57]
+        - generic [ref=f44e62]: K
+    - main [ref=f44e66]:
+      - generic [ref=f44e268]:
+        - heading "对话" [level=2] [ref=f44e276]
+        - log [ref=f44e428]:
+          - generic [ref=f44e429]:
+            - generic [ref=f44e430]: 帮我写一个小说，先写第一章节，小说为我再生化危机的世界中重生了
+            - generic [ref=f44e435]:
+              - generic [ref=f44e438]:
+                - generic [ref=f44e439]:
+                  - button "已完成 3 个步骤 · 1 个工具 3 步 · 1 个工具" [expanded] [ref=f44e440]:
+                    - generic [ref=f44e443]: 已完成 3 个步骤 · 1 个工具
+                    - generic [ref=f44e444]: 3 步 · 1 个工具
+                  - list [ref=f44e448]:
+                    - listitem [ref=f44e449]:
+                      - generic: 思考
+                      - button "查看思考过程" [ref=f44e450]:
+                        - generic [ref=f44e451]:
+                          - generic [ref=f44e452]: 已完成
+                          - generic [ref=f44e453]: 查看
+                        - generic [ref=f44e456]: 用户想要我写一个小说，主题是"在生化危机的世界中重生"，先写第一章节。这是一个创意写作任务，我需要写一个有趣的第一章。 让我构思一下这个小说： - 主角在现代世
+                    - listitem [ref=f44e457]:
+                      - generic: write_file
+                      - button "查看 write_file 结果" [ref=f44e458]:
+                        - generic [ref=f44e459]:
+                          - generic "filePath=D:\\studyspace\\project\\my-agent\\生化危途_第一章.md" [ref=f44e460]: 生化危途_第一章.md
+                          - generic [ref=f44e461]: 已完成
+                        - generic [ref=f44e464]: ✅ 已写入 生化危途_第一章.md (2.7 KB)
+                    - listitem [ref=f44e465]:
+                      - generic: 思考
+                      - button "查看思考过程" [ref=f44e466]:
+                        - generic [ref=f44e467]:
+                          - generic [ref=f44e468]: 已完成
+                          - generic [ref=f44e469]: 查看
+                        - generic [ref=f44e472]: 文件已写好。让我总结一下第一章的内容。
+                - generic [ref=f44e474]:
+                  - paragraph [ref=f44e475]:
+                    - text: 好的！我来为你创作这部小说。先写第一章，为你奠定整个故事的基调。 第一章已写好，保存在
+                    - code [ref=f44e476]: 生化危途_第一章.md
+                    - text: 。下面简要回顾：
+                  - separator [ref=f44e477]
+                  - paragraph [ref=f44e478]:
+                    - strong [ref=f44e479]: 《生化危途》· 第一章「醒来」
+                  - paragraph [ref=f44e480]:
+                    - strong [ref=f44e481]: 主角
+                    - text: ：陈末，前世是国内一名恐怖游戏主播，对《生化危机》系列了如指掌，死于一场车祸后，在陌生的躯体中醒来。
+                  - paragraph [ref=f44e482]:
+                    - strong [ref=f44e483]: 核心设定
+                    - text: ：
+                  - list [ref=f44e484]:
+                    - listitem [ref=f44e485]:
+                      - text: 主角发现自己身处
+                      - strong [ref=f44e486]: 1998 年的浣熊市
+                      - text: ，T 病毒爆发初期（或已爆发但尚未全面失控的阶段）
+                    - listitem [ref=f44e487]: 他拥有前世的完整记忆，对整个生化危机世界的事件走向、病毒机制、关键角色都一清二楚——这是他最大的生存资本
+                    - listitem [ref=f44e488]: 窗外空无一人，街道混乱，远处有黑烟，窗户玻璃上刻着"THE DEAD WALK. DON'T GO OUT AFTER DARK."
+                    - listitem [ref=f44e489]: 结尾一只丧尸已经出现在街角，向他所在的房间逼近
+                  - paragraph [ref=f44e490]:
+                    - strong [ref=f44e491]: 悬念埋下
+                    - text: ：
+                  - list [ref=f44e492]:
+                    - listitem [ref=f44e493]: 这具身体的原主人是谁？为什么出现在这间屋子里？虎口的旧伤疤意味着什么？
+                    - listitem [ref=f44e494]: 距离浣熊市被核弹抹平还剩多少时间？
+                    - listitem [ref=f44e495]: 陈末能否在末日全面降临前做好准备？
+                  - separator [ref=f44e496]
+                  - paragraph [ref=f44e497]: 如果你想继续写第二章，可以告诉我你希望往哪个方向走，比如：
+                  - list [ref=f44e498]:
+                    - listitem [ref=f44e499]:
+                      - strong [ref=f44e500]: 硬核生存流
+                      - text: ：搜刮物资、加固据点、遭遇其他幸存者
+                    - listitem [ref=f44e501]:
+                      - strong [ref=f44e502]: 剧情线推进
+                      - text: ：接触 S.T.A.R.S. 成员、安布雷拉的阴谋线
+                    - listitem [ref=f44e503]:
+                      - strong [ref=f44e504]: 爽文发育流
+                      - text: ：利用前世知识提前截胡关键资源/武器/安全屋
+                  - paragraph [ref=f44e505]: 你想让第二章走什么风格？
+              - button "复制消息" [ref=f44e506]
+        - generic [ref=f44e511]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f44e513]
+          - generic [ref=f44e514]:
+            - button "添加附件" [ref=f44e516]
+            - button "选择模型" [ref=f44e520]
+            - generic [ref=f44e528]:
+              - generic [ref=f44e537]: Effort
+              - generic [ref=f44e538]: MED
+              - slider "Effort" [ref=f44e540] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f44e541]

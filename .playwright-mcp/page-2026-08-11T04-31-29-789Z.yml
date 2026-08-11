@@ -1,0 +1,48 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: my-agent
+    - navigation [ref=e6]:
+      - link "控制台" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=e40]:
+      - generic [ref=e41]: 历史会话
+      - button "新对话" [ref=e42]
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Toggle theme" [ref=e50]
+        - button "Switch language" [ref=e57]
+        - generic [ref=e62]: K
+    - main [ref=e66]:
+      - generic [ref=e67]:
+        - generic [ref=e68]:
+          - heading "下午好，朋友" [level=1] [ref=e69]
+          - paragraph [ref=e70]: 想完成什么？描述任务，或选一个最近会话继续
+        - generic [ref=e71]:
+          - paragraph [ref=e79]: 会话总数
+          - paragraph [ref=e88]: 可用 Agent
+          - paragraph [ref=e97]: 可用 Skill
+          - paragraph [ref=e105]: 供应商
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - heading "快捷操作" [level=3] [ref=e108]
+            - generic [ref=e109]:
+              - button "新建对话" [ref=e110]
+              - button "添加模型供应商" [ref=e117]
+              - button "查看技能列表" [ref=e124]
+              - button "管理 Agent" [ref=e132]
+          - generic [ref=e141]:
+            - heading "最近会话" [level=3] [ref=e142]
+            - button "新建" [ref=e143]

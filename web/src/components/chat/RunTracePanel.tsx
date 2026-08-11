@@ -234,7 +234,7 @@ function TraceRowCard({
 }) {
   const isError =
     step.status === 'error' || (step.kind === 'tool' && step.isError);
-  const baseClass = `flex h-9 w-full min-w-0 items-center gap-x-2 rounded-lg border px-2.5 overflow-hidden ${
+  const baseClass = `flex h-9 w-full min-w-0 items-center gap-x-2 rounded-md border px-2.5 overflow-hidden ${
     isError ? 'border-danger/40 bg-danger-bg' : 'border-border bg-white'
   }`;
 
@@ -247,7 +247,7 @@ function TraceRowCard({
           step.kind === 'thinking' ? '查看思考过程' : `查看 ${step.toolName} 结果`
         }
         onClick={onToggleDetail}
-        className={`${baseClass} relative before:absolute before:left-2.5 before:top-0 before:bottom-0 before:border-l before:border-dashed before:border-text-muted/30 before:pointer-events-none text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+        className={`${baseClass} relative text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
       >
         <span className="min-w-0 flex-1 flex items-center gap-x-2">
           {stepLabel}

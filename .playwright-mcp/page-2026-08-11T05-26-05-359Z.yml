@@ -1,0 +1,191 @@
+- generic [ref=f4e3]:
+  - complementary [ref=f4e4]:
+    - generic [ref=f4e5]: my-agent
+    - navigation [ref=f4e6]:
+      - link "控制台" [ref=f4e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f4e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f4e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f4e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f4e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f4e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f4e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f4e39]:
+      - generic [ref=f4e40]:
+        - generic [ref=f4e41]: 历史会话
+        - button "新对话" [ref=f4e42]
+      - list [ref=f4e125]:
+        - listitem [ref=f4e126]:
+          - link "研究开源 AI 桌面应用" [ref=f4e127] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e128]'
+        - listitem [ref=f4e132]:
+          - link "研究开源 AI 桌面应用" [ref=f4e133] [cursor=pointer]:
+            - /url: "#/chat/gconv-7d18591cceb8"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e134]'
+        - listitem [ref=f4e138]:
+          - link "研究开源 AI 桌面应用" [ref=f4e139] [cursor=pointer]:
+            - /url: "#/chat/gconv-c22f0b9df216"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f4e140]'
+        - listitem [ref=f4e144]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e145] [cursor=pointer]:
+            - /url: "#/chat/gconv-183c6ca978b5"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e146]'
+        - listitem [ref=f4e150]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e151] [cursor=pointer]:
+            - /url: "#/chat/gconv-de53b556c155"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e152]'
+        - listitem [ref=f4e156]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e157] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a1fce4620d7"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e158]'
+        - listitem [ref=f4e162]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e163] [cursor=pointer]:
+            - /url: "#/chat/gconv-40b217ddb3ce"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e164]'
+        - listitem [ref=f4e168]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e169] [cursor=pointer]:
+            - /url: "#/chat/gconv-2217ea6bcd15"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e170]'
+        - listitem [ref=f4e174]:
+          - link "写一篇 AI 办公助手推荐社媒文章" [ref=f4e175] [cursor=pointer]:
+            - /url: "#/chat/gconv-1997c1ce5842"
+          - 'button "删除: 写一篇 AI 办公助手推荐社媒文章" [ref=f4e176]'
+        - listitem [ref=f4e180]:
+          - link "制作一份电商销售月报" [ref=f4e181] [cursor=pointer]:
+            - /url: "#/chat/gconv-f7c41b334f8d"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e182]'
+        - listitem [ref=f4e186]:
+          - link "制作一份电商销售月报" [ref=f4e187] [cursor=pointer]:
+            - /url: "#/chat/gconv-b3dfff32be41"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e188]'
+        - listitem [ref=f4e192]:
+          - link "制作一份电商销售月报" [ref=f4e193] [cursor=pointer]:
+            - /url: "#/chat/gconv-042b734eae89"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e194]'
+        - listitem [ref=f4e198]:
+          - link "制作一份电商销售月报" [ref=f4e199] [cursor=pointer]:
+            - /url: "#/chat/gconv-56fd0b955c3a"
+          - 'button "删除: 制作一份电商销售月报" [ref=f4e200]'
+        - listitem [ref=f4e204]:
+          - link "你好" [ref=f4e205] [cursor=pointer]:
+            - /url: "#/chat/gconv-322a6fc4314d"
+          - 'button "删除: 你好" [ref=f4e206]'
+        - listitem [ref=f4e210]:
+          - link "你好" [ref=f4e211] [cursor=pointer]:
+            - /url: "#/chat/gconv-7113ddb32e38"
+          - 'button "删除: 你好" [ref=f4e212]'
+        - listitem [ref=f4e216]:
+          - link "新会话" [ref=f4e217] [cursor=pointer]:
+            - /url: "#/chat/gconv-063af9cbda3c"
+          - 'button "删除: 新会话" [ref=f4e218]'
+        - listitem [ref=f4e222]:
+          - link "用coder帮我写平潭旅游宣传页面" [ref=f4e223] [cursor=pointer]:
+            - /url: "#/chat/gconv-8600741311f1"
+          - 'button "删除: 用coder帮我写平潭旅游宣传页面" [ref=f4e224]'
+        - listitem [ref=f4e228]:
+          - link "新会话" [ref=f4e229] [cursor=pointer]:
+            - /url: "#/chat/gconv-e7fbc2889e25"
+          - 'button "删除: 新会话" [ref=f4e230]'
+        - listitem [ref=f4e234]:
+          - link "使用web_fetch 抓取下https..." [ref=f4e235] [cursor=pointer]:
+            - /url: "#/chat/gconv-b9627ede70be"
+          - 'button "删除: 使用web_fetch 抓取下https..." [ref=f4e236]'
+        - listitem [ref=f4e240]:
+          - link "新会话" [ref=f4e241] [cursor=pointer]:
+            - /url: "#/chat/gconv-c17a4a5208cb"
+          - 'button "删除: 新会话" [ref=f4e242]'
+  - generic [ref=f4e47]:
+    - banner [ref=f4e48]:
+      - generic [ref=f4e49]:
+        - button "Toggle theme" [ref=f4e50]
+        - button "Switch language" [ref=f4e57]
+        - generic [ref=f4e62]: K
+    - main [ref=f4e66]:
+      - generic [ref=f4e67]:
+        - heading "对话" [level=2] [ref=f4e75]
+        - log [ref=f4e554]:
+          - generic [ref=f4e555]:
+            - generic [ref=f4e598]: 你好
+            - generic [ref=f4e603]:
+              - generic [ref=f4e606]:
+                - button "已完成 1 个步骤 · 0 个工具 1 步 · 0 个工具" [ref=f4e608]:
+                  - generic [ref=f4e611]: 已完成 1 个步骤 · 0 个工具
+                  - generic [ref=f4e612]: 1 步 · 0 个工具
+                - generic [ref=f4e616]:
+                  - paragraph [ref=f4e617]: 你好！我是你的 AI 助手，很高兴为你服务。😊
+                  - paragraph [ref=f4e618]: 我可以帮你处理各种任务，比如：
+                  - list [ref=f4e619]:
+                    - listitem [ref=f4e620]:
+                      - strong [ref=f4e621]: 代码开发
+                      - text: ：编写、调试、重构代码，处理项目文件
+                    - listitem [ref=f4e622]:
+                      - strong [ref=f4e623]: 文件处理
+                      - text: ：读写、编辑、搜索工作目录中的文件
+                    - listitem [ref=f4e624]:
+                      - strong [ref=f4e625]: 信息查询
+                      - text: ：搜索网络资料、抓取网页内容
+                    - listitem [ref=f4e626]:
+                      - strong [ref=f4e627]: 数据工作
+                      - text: ：分析数据、生成报告、处理 CSV/JSON 等
+                  - paragraph [ref=f4e628]:
+                    - text: 当前我的工作目录是
+                    - code [ref=f4e629]: D:\studyspace\project\my-agent
+                    - text: ，有任何需要处理的任务随时告诉我！
+              - button "复制消息" [ref=f4e630]
+            - generic [ref=f4e634]: 你好。，你是谁
+            - generic [ref=f4e639]:
+              - generic [ref=f4e642]:
+                - button "已完成 1 个步骤 · 0 个工具 1 步 · 0 个工具" [ref=f4e644]:
+                  - generic [ref=f4e647]: 已完成 1 个步骤 · 0 个工具
+                  - generic [ref=f4e648]: 1 步 · 0 个工具
+                - generic [ref=f4e652]:
+                  - paragraph [ref=f4e653]:
+                    - text: 你好！我是
+                    - strong [ref=f4e654]: AI Assistant
+                    - text: ，一个由大语言模型驱动的 AI 助手，可以帮你完成各种实际任务。
+                  - paragraph [ref=f4e655]: 简单介绍一下我能做什么：
+                  - list [ref=f4e656]:
+                    - listitem [ref=f4e657]:
+                      - strong [ref=f4e658]: 编程开发
+                      - text: ：编写、调试、重构代码，支持多种语言（Python、JavaScript、TypeScript 等）
+                    - listitem [ref=f4e659]:
+                      - strong [ref=f4e660]: 文件操作
+                      - text: ：在工作目录（当前为
+                      - code [ref=f4e661]: D:\studyspace\project\my-agent
+                      - text: ）中读写、编辑、搜索文件
+                    - listitem [ref=f4e662]:
+                      - strong [ref=f4e663]: 网络搜索
+                      - text: ：查询最新信息、抓取网页内容
+                    - listitem [ref=f4e664]:
+                      - strong [ref=f4e665]: 数据与文档
+                      - text: ：分析数据、撰写报告、处理各类文本文件
+                  - paragraph [ref=f4e666]: 我的特点：
+                  - list [ref=f4e667]:
+                    - listitem [ref=f4e668]:
+                      - strong [ref=f4e669]: 结论先行
+                      - text: ：直接给出答案和关键信息，再展开细节
+                    - listitem [ref=f4e670]:
+                      - strong [ref=f4e671]: 如实报告
+                      - text: ：成功或失败都会如实告知，不夸大、不隐瞒
+                    - listitem [ref=f4e672]:
+                      - strong [ref=f4e673]: 完整交付
+                      - text: ：需要完整内容时会全部产出，不省略
+                  - paragraph [ref=f4e674]: 有什么任务需要帮忙的，尽管说！
+              - button "复制消息" [ref=f4e675]
+        - generic [ref=f4e564]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f4e566]
+          - generic [ref=f4e567]:
+            - button "添加附件" [ref=f4e569]
+            - button "选择模型" [ref=f4e573]
+            - generic [ref=f4e581]:
+              - generic [ref=f4e590]: Effort
+              - generic [ref=f4e591]: MED
+              - slider "Effort" [ref=f4e593] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f4e594]

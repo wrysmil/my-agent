@@ -1,0 +1,118 @@
+- generic [active] [ref=f3e1]:
+  - banner [ref=f3e2]:
+    - generic [ref=f3e3]:
+      - heading "Run Trace · 一次循环分组 + 转圈位置" [level=1] [ref=f3e4]
+      - generic [ref=f3e5]: 同源数据，两种视觉策略对比。左侧方案 A，右侧方案 B。
+      - generic [ref=f3e6]:
+        - generic [ref=f3e7]: 方案 A · 旧顺序
+        - generic [ref=f3e8]: 方案 B · 转圈下移 + 包裹
+  - main [ref=f3e9]:
+    - generic [ref=f3e10]:
+      - heading "A 旧顺序 + 分隔线分组" [level=2] [ref=f3e11]:
+        - generic [ref=f3e12]: A
+        - text: 旧顺序 + 分隔线分组
+      - paragraph [ref=f3e13]:
+        - text: 保留
+        - code [ref=f3e14]: Thinking → Trace → Final
+        - text: 顺序；用更明显的间距 + 「循环 N」分隔条把两次 run 划开。
+      - generic [ref=f3e16]:
+        - generic [ref=f3e17]: 第 1 次循环 · 已完成
+        - generic [ref=f3e19]: 研究开源 AI 桌面应用
+        - generic [ref=f3e21] [cursor=pointer]:
+          - generic [ref=f3e24]: 已完成 14 个步骤 · 13 个工具
+          - generic [ref=f3e25]: 14 步 · 13 工具
+        - paragraph [ref=f3e28]: 下面是基于 2026-08-11 实时数据的调研报告。
+        - generic [ref=f3e29]:
+          - heading "结论先行" [level=2] [ref=f3e30]
+          - paragraph [ref=f3e31]: 开源 AI 桌面应用生态已相当成熟，核心玩家分三类：本地推理引擎、本地优先桌面聊天、多模型聚合客户端。
+          - list [ref=f3e32]:
+            - listitem [ref=f3e33]:
+              - strong [ref=f3e34]: Ollama + Jan
+              - text: ：最稳妥的本地组合
+            - listitem [ref=f3e35]:
+              - strong [ref=f3e36]: Cherry Studio
+              - text: ：国产 AGPL 工作室
+            - listitem [ref=f3e37]:
+              - strong [ref=f3e38]: AnythingLLM
+              - text: ：MIT 最宽松，适合企业知识库
+          - paragraph [ref=f3e39]:
+            - text: 需要注意的是
+            - code [ref=f3e40]: LM Studio
+            - text: 仓库不存在，确认其闭源。
+        - generic [ref=f3e42]: 第 2 次循环 · 进行中
+        - generic [ref=f3e44]: 继续完成调研，补充 LobeHub 数据
+        - generic [ref=f3e45]:
+          - generic [ref=f3e46] [cursor=pointer]:
+            - generic [ref=f3e48]: 正在执行 · 获取网页
+            - generic [ref=f3e49]: 18 步 · 13 工具
+          - list [ref=f3e53]:
+            - listitem [ref=f3e54]:
+              - generic [ref=f3e58]:
+                - generic [ref=f3e59]: 思考完成
+                - generic [ref=f3e60]: 我来研究一下开源 AI 桌面应用的现状…
+                - generic [ref=f3e61]: 已完成
+            - listitem [ref=f3e62]:
+              - generic [ref=f3e66]:
+                - generic [ref=f3e67]: web_fetch
+                - generic [ref=f3e68]: github.com/lobehub/lobe-chat
+                - generic [ref=f3e69]: 获取主页 HTML…
+                - generic [ref=f3e70]: 执行中…
+        - paragraph [ref=f3e71]: 我来研究一下开源 AI 桌面应用的现状。先搜索最新信息。Bing 结果不相关。换更精准的查询和来源。
+        - generic [ref=f3e72]: AI 仍在生成中…
+    - generic [ref=f3e74]:
+      - heading "B 转圈下移 + 整块包裹（推荐）" [level=2] [ref=f3e75]:
+        - generic [ref=f3e76]: B
+        - text: 转圈下移 + 整块包裹（推荐）
+      - paragraph [ref=f3e77]: 每个 run = 一张「循环卡」（左侧 3px 主色竖条 + 循环编号）。同一 run 内的 trace 与 final 视觉绑定；转圈与「AI 仍在生成」放在 final 之后，表示内容未完。
+      - generic [ref=f3e79]:
+        - generic [ref=f3e80]:
+          - generic [ref=f3e81]:
+            - generic [ref=f3e83]: 第 1 次循环 · 已完成
+            - generic [ref=f3e84]: 14 步 · 13 工具
+          - generic [ref=f3e85]: 研究开源 AI 桌面应用
+          - generic [ref=f3e87] [cursor=pointer]:
+            - generic [ref=f3e90]: 已完成 14 个步骤 · 13 个工具
+            - generic [ref=f3e91]: 14 步 · 13 工具
+          - generic [ref=f3e94]:
+            - paragraph [ref=f3e95]: 下面是基于 2026-08-11 实时数据的调研报告。
+            - heading "结论先行" [level=2] [ref=f3e96]
+            - paragraph [ref=f3e97]: 开源 AI 桌面应用生态已相当成熟，核心玩家分三类：本地推理引擎、本地优先桌面聊天、多模型聚合客户端。
+            - list [ref=f3e98]:
+              - listitem [ref=f3e99]:
+                - strong [ref=f3e100]: Ollama + Jan
+                - text: ：最稳妥的本地组合
+              - listitem [ref=f3e101]:
+                - strong [ref=f3e102]: Cherry Studio
+                - text: ：国产 AGPL 工作室
+              - listitem [ref=f3e103]:
+                - strong [ref=f3e104]: AnythingLLM
+                - text: ：MIT 最宽松，适合企业知识库
+            - paragraph [ref=f3e105]:
+              - text: 需要注意的是
+              - code [ref=f3e106]: LM Studio
+              - text: 仓库不存在，确认其闭源。
+        - generic [ref=f3e107]:
+          - generic [ref=f3e108]:
+            - generic [ref=f3e110]: 第 2 次循环 · 进行中
+            - generic [ref=f3e111]: 正在生成
+          - generic [ref=f3e113]: 继续完成调研，补充 LobeHub 数据
+          - generic [ref=f3e114]:
+            - generic [ref=f3e115] [cursor=pointer]:
+              - generic [ref=f3e117]: 正在执行 · 获取网页
+              - generic [ref=f3e118]: 18 步 · 13 工具
+            - list [ref=f3e122]:
+              - listitem [ref=f3e123]:
+                - generic [ref=f3e127]:
+                  - generic [ref=f3e128]: 思考完成
+                  - generic [ref=f3e129]: 我来研究一下开源 AI 桌面应用的现状…
+                  - generic [ref=f3e130]: 已完成
+              - listitem [ref=f3e131]:
+                - generic [ref=f3e135]:
+                  - generic [ref=f3e136]: web_fetch
+                  - generic [ref=f3e137]: github.com/lobehub/lobe-chat
+                  - generic [ref=f3e138]: 获取主页 HTML…
+                  - generic [ref=f3e139]: 执行中…
+          - paragraph [ref=f3e141]: 我来研究一下开源 AI 桌面应用的现状。先搜索最新信息。Bing 结果不相关。换更精准的查询和来源。GitHub 有初步结果。
+          - status [ref=f3e142]:
+            - generic [ref=f3e144]: AI 仍在生成中…
+  - contentinfo [ref=f3e145]: 颜色与排版参考项目设计 token；正文字体 Inter，等宽 JetBrains Mono。HTML 仅用于方案对比，不会进入生产。

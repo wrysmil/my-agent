@@ -1,0 +1,307 @@
+- generic [ref=f62e3]:
+  - complementary [ref=f62e4]:
+    - generic [ref=f62e5]: my-agent
+    - navigation [ref=f62e6]:
+      - link "控制台" [ref=f62e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f62e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f62e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f62e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f62e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f62e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f62e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f62e39]:
+      - generic [ref=f62e40]:
+        - generic [ref=f62e41]: 历史会话
+        - button "新对话" [ref=f62e42]
+      - list [ref=f62e147]:
+        - listitem [ref=f62e148]:
+          - link "项目目录看看" [active] [ref=f62e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f62e150]'
+        - listitem [ref=f62e154]:
+          - link "项目目录看看" [ref=f62e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f62e156]'
+        - listitem [ref=f62e160]:
+          - link "项目目录看看" [ref=f62e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f62e162]'
+        - listitem [ref=f62e166]:
+          - link "项目目录看看" [ref=f62e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f62e168]'
+        - listitem [ref=f62e172]:
+          - link "项目目录看看" [ref=f62e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f62e174]'
+        - listitem [ref=f62e178]:
+          - link "项目目录看看" [ref=f62e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f62e180]'
+        - listitem [ref=f62e184]:
+          - link "项目目录看看" [ref=f62e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f62e186]'
+        - listitem [ref=f62e190]:
+          - link "项目目录看看" [ref=f62e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f62e192]'
+        - listitem [ref=f62e196]:
+          - link "看看项目目录" [ref=f62e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f62e198]'
+        - listitem [ref=f62e202]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e204]'
+        - listitem [ref=f62e208]:
+          - link "帮我看看项目目录" [ref=f62e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f62e210]'
+        - listitem [ref=f62e214]:
+          - link "帮我看看项目目录" [ref=f62e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f62e216]'
+        - listitem [ref=f62e220]:
+          - link "帮我看看项目目录" [ref=f62e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f62e222]'
+        - listitem [ref=f62e226]:
+          - link "帮我看看当前项目目录" [ref=f62e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f62e228]'
+        - listitem [ref=f62e232]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-e14e25c5f758"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e234]'
+        - listitem [ref=f62e238]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-eeea44f04a8c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f62e240]'
+        - listitem [ref=f62e244]:
+          - link "你好" [ref=f62e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-0a932b3f7c90"
+          - 'button "删除: 你好" [ref=f62e246]'
+        - listitem [ref=f62e250]:
+          - link "你好" [ref=f62e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-a42c6ce9980a"
+          - 'button "删除: 你好" [ref=f62e252]'
+        - listitem [ref=f62e256]:
+          - link "你好" [ref=f62e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-ac3ee15b8c4c"
+          - 'button "删除: 你好" [ref=f62e258]'
+        - listitem [ref=f62e262]:
+          - link "研究开源 AI 桌面应用" [ref=f62e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f62e264]'
+  - generic [ref=f62e47]:
+    - banner [ref=f62e48]:
+      - generic [ref=f62e49]:
+        - button "Toggle theme" [ref=f62e50]
+        - button "Switch language" [ref=f62e57]
+        - generic [ref=f62e62]: K
+    - main [ref=f62e66]:
+      - generic [ref=f62e268]:
+        - heading "对话" [level=2] [ref=f62e276]
+        - log [ref=f62e870]:
+          - generic [ref=f62e871]:
+            - generic [ref=f62e872]: 项目目录看看
+            - generic [ref=f62e877]:
+              - generic [ref=f62e878]:
+                - generic [ref=f62e880]:
+                  - button "已完成 15 个步骤 · 10 个工具 15 步 · 10 个工具" [expanded] [ref=f62e881]:
+                    - generic [ref=f62e884]: 已完成 15 个步骤 · 10 个工具
+                    - generic [ref=f62e885]: 15 步 · 10 个工具
+                  - list [ref=f62e889]:
+                    - listitem [ref=f62e890]:
+                      - button "查看思考过程" [ref=f62e891]:
+                        - generic [ref=f62e892]: 思考
+                    - listitem [ref=f62e897]:
+                      - button "查看 list_files 结果" [ref=f62e898]:
+                        - generic [ref=f62e899]:
+                          - generic "list_files" [ref=f62e900]
+                          - generic [ref=f62e901]: 已完成
+                    - listitem [ref=f62e904]:
+                      - button "查看思考过程" [ref=f62e905]:
+                        - generic [ref=f62e906]: 思考
+                    - listitem [ref=f62e911]:
+                      - button "查看 read_file 结果" [ref=f62e912]:
+                        - generic [ref=f62e913]:
+                          - generic "read_file" [ref=f62e914]
+                          - generic [ref=f62e915]: 已完成
+                    - listitem [ref=f62e918]:
+                      - button "查看 read_file 结果" [ref=f62e919]:
+                        - generic [ref=f62e920]:
+                          - generic "read_file" [ref=f62e921]
+                          - generic [ref=f62e922]: 已完成
+                    - listitem [ref=f62e925]:
+                      - button "查看 list_files 结果" [ref=f62e926]:
+                        - generic [ref=f62e927]:
+                          - generic "list_files" [ref=f62e928]
+                          - generic [ref=f62e929]: 已完成
+                    - listitem [ref=f62e932]:
+                      - button "查看思考过程" [ref=f62e933]:
+                        - generic [ref=f62e934]: 思考
+                    - listitem [ref=f62e939]:
+                      - button "查看 read_file 结果" [ref=f62e940]:
+                        - generic [ref=f62e941]:
+                          - generic "read_file" [ref=f62e942]
+                          - generic [ref=f62e943]: 已完成
+                    - listitem [ref=f62e946]:
+                      - button "查看 read_file 结果" [ref=f62e947]:
+                        - generic [ref=f62e948]:
+                          - generic "read_file" [ref=f62e949]
+                          - generic [ref=f62e950]: 已完成
+                    - listitem [ref=f62e953]:
+                      - button "查看 read_file 结果" [ref=f62e954]:
+                        - generic [ref=f62e955]:
+                          - generic "read_file" [ref=f62e956]
+                          - generic [ref=f62e957]: 已完成
+                    - listitem [ref=f62e960]:
+                      - button "查看 list_files 结果" [ref=f62e961]:
+                        - generic [ref=f62e962]:
+                          - generic "list_files" [ref=f62e963]
+                          - generic [ref=f62e964]: 已完成
+                    - listitem [ref=f62e967]:
+                      - button "查看思考过程" [ref=f62e968]:
+                        - generic [ref=f62e969]: 思考
+                    - listitem [ref=f62e974]:
+                      - button "查看 bash 结果" [ref=f62e975]:
+                        - generic [ref=f62e976]:
+                          - generic "bash" [ref=f62e977]
+                          - generic [ref=f62e978]: 已完成
+                    - listitem [ref=f62e981]:
+                      - button "查看思考过程" [ref=f62e982]:
+                        - generic [ref=f62e983]: 思考
+                    - listitem [ref=f62e988]:
+                      - button "查看 bash 结果" [ref=f62e989]:
+                        - generic [ref=f62e990]:
+                          - generic "bash" [ref=f62e991]
+                          - generic [ref=f62e992]: 已完成
+                - generic [ref=f62e997]:
+                  - paragraph [ref=f62e998]:
+                    - text: 项目概览已整理完毕。这是一个
+                    - strong [ref=f62e999]: LLM Agent 运行时框架
+                    - text: （TypeScript/Node，从零搭建的学习项目），核心情况如下：
+                  - heading [level=2] [ref=f62e1000]:
+                    - text: 项目结构（
+                    - code [ref=f62e1001]: D:\studyspace\project\my-agent
+                    - text: ）
+                  - paragraph [ref=f62e1002]:
+                    - strong [ref=f62e1003]:
+                      - text: 运行时核心
+                      - code [ref=f62e1004]: src/
+                  - list [ref=f62e1005]:
+                    - listitem [ref=f62e1006]:
+                      - code [ref=f62e1007]: agent/
+                      - text: — 主循环、会话管理（
+                      - code [ref=f62e1008]: runner.ts
+                      - text: 93KB、
+                      - code [ref=f62e1009]: session.ts
+                      - text: 、
+                      - code [ref=f62e1010]: persistent-session.ts
+                      - text: ）
+                    - listitem [ref=f62e1011]:
+                      - code [ref=f62e1012]: providers/
+                      - text: — 多 Provider 适配：DeepSeek、OpenAI、Anthropic、Google、Grok、Mistral、Moonshot、Qwen，含 codec / thinking / 流式
+                    - listitem [ref=f62e1013]:
+                      - code [ref=f62e1014]: tools/
+                      - text: — 工具抽象层（bash 权限、catalog、tool-result 工具链，带测试）
+                    - listitem [ref=f62e1015]:
+                      - code [ref=f62e1016]: skills/
+                      - text: — Skill 加载与提示词模板
+                    - listitem [ref=f62e1017]:
+                      - code [ref=f62e1018]: cli/
+                      - text: — 数字彩菜单 CLI（1-6 色循环编号）
+                    - listitem [ref=f62e1019]:
+                      - code [ref=f62e1020]: web/server/
+                      - text: — HTTP/SSE 服务端（路由、SSE、CSP、优雅退出）
+                    - listitem [ref=f62e1021]:
+                      - code [ref=f62e1022]: config/
+                      - code [ref=f62e1023]: storage/
+                      - code [ref=f62e1024]: prompts/
+                      - code [ref=f62e1025]: shared/
+                      - code [ref=f62e1026]: orchestration/
+                      - text: — 配置、JSONL 持久化、提示词构建、编排
+                  - paragraph [ref=f62e1027]:
+                    - strong [ref=f62e1028]:
+                      - text: Web 前端
+                      - code [ref=f62e1029]: web/src/
+                    - text: — React + Vite + Tailwind + Zustand（react-markdown、rehype-sanitize 等）
+                  - paragraph [ref=f62e1030]:
+                    - strong [ref=f62e1031]:
+                      - text: Harness 工程层
+                      - code [ref=f62e1032]: harness-kit/
+                    - text: — 自主编码规范（routing、stage 门禁、产物契约），根目录
+                    - code [ref=f62e1033]: AGENTS.md
+                    - text: 是入口
+                  - paragraph [ref=f62e1034]:
+                    - strong [ref=f62e1035]: 测试
+                    - text: — 主要放在根
+                    - code [ref=f62e1036]: test/
+                    - text: （agent、providers、storage、orchestration、e2e 等），
+                    - code [ref=f62e1037]: src/tools/
+                    - text: 、
+                    - code [ref=f62e1038]: web/server/routes/
+                    - text: 内也有内联测试；根
+                    - code [ref=f62e1039]: tests/
+                    - text: 目录为空
+                  - paragraph [ref=f62e1040]:
+                    - strong [ref=f62e1041]: 其他
+                    - text: —
+                    - code [ref=f62e1042]: pingtan/
+                    - text: 、
+                    - code [ref=f62e1043]: world-map/
+                    - text: （含 index.html）、
+                    - code [ref=f62e1044]: skills/
+                    - text: （24 个领域 skill）、
+                    - code [ref=f62e1045]: .ai-runtime-artifacts/
+                    - text: （specs/plans/verifications 文档）、
+                    - code [ref=f62e1046]: docs/
+                    - text: （plan/spec）
+                  - heading "关键配置" [level=2] [ref=f62e1047]
+                  - list [ref=f62e1048]:
+                    - listitem [ref=f62e1049]:
+                      - code [ref=f62e1050]: config.json
+                      - text: — 默认 provider
+                      - code [ref=f62e1051]: deepseek
+                      - text: 、模型
+                      - code [ref=f62e1052]: deepseek-v4-pro
+                    - listitem [ref=f62e1053]:
+                      - code [ref=f62e1054]: .env.example
+                      - text: +
+                      - code [ref=f62e1055]: ~/.my-agent/providers.json
+                      - text: — API Key 管理（零环境变量）
+                    - listitem [ref=f62e1056]:
+                      - code [ref=f62e1057]: package.json
+                      - text: — 脚本：
+                      - code [ref=f62e1058]: chat
+                      - text: /
+                      - code [ref=f62e1059]: web
+                      - text: /
+                      - code [ref=f62e1060]: test
+                      - text: /
+                      - code [ref=f62e1061]: check
+                  - paragraph [ref=f62e1062]:
+                    - text: 当前
+                    - code [ref=f62e1063]: src/web
+                    - text: 用的是 React 版（README 里描述的 vanilla 版与现状不符，README 可能滞后于代码演进）。
+                  - paragraph [ref=f62e1064]: 需要我深入看某个模块，还是有什么具体任务？
+              - button "复制消息" [ref=f62e1065]
+        - generic [ref=f62e1070]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f62e1072]
+          - generic [ref=f62e1073]:
+            - button "添加附件" [ref=f62e1075]
+            - button "选择模型" [ref=f62e1079]
+            - generic [ref=f62e1087]:
+              - generic [ref=f62e1096]: Effort
+              - generic [ref=f62e1097]: MED
+              - slider "Effort" [ref=f62e1099] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f62e1100]
