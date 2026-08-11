@@ -1,6 +1,6 @@
-import { useState, lazy, Suspense } from 'react';
+import { Fragment, useState, lazy, Suspense } from 'react';
 import { Copy, Check } from 'lucide-react';
-import { CycleCard } from './CycleCard';
+import { TraceBubble } from './TraceBubble';
 import { GeneratingIndicator } from './GeneratingIndicator';
 import { RunTracePanel } from './RunTracePanel';
 import { buildRunTrace, hasTraceSteps } from '@/features/chat/runTrace';
@@ -16,12 +16,14 @@ function MarkdownFallback() {
 /**
  * MessageBubble — 聊天气泡组件。
  *
- * assistant 分层（全部包在 CycleCard 内，详见 spec § 4.2）：
- *   1. RunTracePanel — 过程时间线（思考 / 工具）
- *   2. Final Markdown — 正文区
- *   3. GeneratingIndicator — 仅 isStreaming && !hasFinalText 时显示，转圈下移到 final 之后
+ * v4 双布局（spec `.ai-runtime-artifacts/specs/2026-08-11-run-trace-dual-layout-spec.md` § 4.3）：
+ *   assistant 分支为三个独立 DOM 节点（不再共享单气泡容器）：
+ *     1. TraceBubble（灰色气泡，仅包 trace）
+ *     2. final markdown 裸内容节点（无边框/无背景/无气泡）
+ *     3. GeneratingIndicator（仅 isStreaming && !hasFinalText 时显示）
+ *   每个子节点独立 key（`${message.id}-{trace,final,gen}`），切会话时 React 识别稳定。
  *
- * user 消息：保持原 user bubble 样式（不进 CycleCard）。
+ * user 消息：保持原 user bubble 样式（不进 TraceBubble / 不进 final 节点）。
  */
 export function MessageBubble({
   message,
@@ -67,51 +69,62 @@ export function MessageBubble({
 
   return (
     <div
-      className={`flex ${role === 'user' ? 'justify-end' : 'justify-start'} group relative mb-4`}
+      className={`flex group relative mb-4 ${
+        role === 'user' ? 'justify-end' : 'flex-row items-start'
+      }`}
     >
-      <div
-        className={`max-w-[80%] min-w-0 ${
-          role === 'user'
-            ? 'bg-blue-50 text-blue-950 px-4 py-3 rounded-2xl rounded-br-md shadow-sm dark:bg-blue-900/30 dark:text-blue-100'
-            : ''
-        }`}
-      >
-        {role === 'user' ? (
+      {role === 'user' ? (
+        <div className="max-w-[80%] min-w-0 bg-blue-50 text-blue-950 px-4 py-3 rounded-2xl rounded-br-md shadow-sm dark:bg-blue-900/30 dark:text-blue-100">
           <div className="whitespace-pre-wrap break-words">{message.text || textContent}</div>
-        ) : (
-          <CycleCard>
+        </div>
+      ) : (
+        <Fragment>
+          <div className="flex flex-col items-stretch min-w-0 flex-1">
             {showTrace && (
-              <RunTracePanel
-                trace={trace}
-                isStreaming={isStreaming}
-                hasFinalText={hasFinalText}
-                resetKey={message.id}
-              />
+              <TraceBubble key={`${message.id}-trace`}>
+                <RunTracePanel
+                  key={message.id}
+                  trace={trace}
+                  isStreaming={isStreaming}
+                  hasFinalText={hasFinalText}
+                  resetKey={message.id}
+                />
+              </TraceBubble>
             )}
 
             {textBlocks.length > 0 && (
-              <Suspense fallback={<MarkdownFallback />}>
-                <div className="prose prose-sm max-w-none break-words">
-                  <Markdown
-                    text={textBlocks.map((b) => b.text).join('\n')}
-                  />
-                </div>
-              </Suspense>
+              <div
+                key={`${message.id}-final`}
+                data-testid="final-bubble"
+                className="w-full max-w-[720px] self-start"
+              >
+                <Suspense fallback={<MarkdownFallback />}>
+                  <div className="prose prose-sm max-w-none break-words">
+                    <Markdown
+                      text={textBlocks.map((b) => b.text).join('\n')}
+                    />
+                  </div>
+                </Suspense>
+              </div>
             )}
 
-            {showGeneratingIndicator && <GeneratingIndicator />}
-          </CycleCard>
-        )}
-      </div>
+            {showGeneratingIndicator && (
+              <div key={`${message.id}-gen`} className="self-start">
+                <GeneratingIndicator />
+              </div>
+            )}
+          </div>
 
-      {role === 'assistant' && textContent && (
-        <button
-          onClick={onCopy}
-          className="ml-2 self-end opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-hover shrink-0"
-          aria-label="复制消息"
-        >
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-        </button>
+          {textContent && (
+            <button
+              onClick={onCopy}
+              className="ml-2 mt-1 self-start opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-surface-hover shrink-0"
+              aria-label="复制消息"
+            >
+              {copied ? <Check size={14} /> : <Copy size={14} />}
+            </button>
+          )}
+        </Fragment>
       )}
     </div>
   );

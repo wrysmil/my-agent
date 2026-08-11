@@ -8,7 +8,7 @@
  * 方案：`.ai-runtime-artifacts/specs/2026-08-10-chat-run-trace-panel-spec.md` §4 / §6 / §7
  */
 
-import { useEffect, useId, useState, lazy, Suspense, type ReactNode } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import {
   AlertCircle,
   Check,
@@ -102,8 +102,12 @@ export function RunTracePanel({
   return (
     <div
       data-run-trace
-      className="overflow-hidden rounded-xl border border-border/80 bg-white"
+      className="relative overflow-hidden rounded-xl border border-border/80 bg-white"
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-primary to-primary/50"
+      />
       <button
         type="button"
         aria-expanded={expanded}
@@ -136,7 +140,7 @@ export function RunTracePanel({
           完整详情仅在用户二次展开后暴露（按钮本身仍可键盘聚焦）。
         */}
         {expanded && (
-          <ol className="m-0 list-none p-0 [&>li:first-child>[data-trace-line]]:top-[18px] [&>li:last-child>[data-trace-line]]:bottom-[calc(100%-18px)]">
+          <ol className="m-0 list-none p-0 space-y-2">
             {trace.steps.map((step) => (
               <TraceStepRow
                 key={step.id}
@@ -217,135 +221,45 @@ function TraceRowCard({
   step,
   detailOpen,
   onToggleDetail,
-  firstLine,
-  secondLine,
+  stepLabel,
   detailPre,
+  detailBody,
 }: {
   step: TraceStep;
   detailOpen: boolean;
   onToggleDetail: () => void;
-  firstLine: ReactNode;
-  secondLine?: ReactNode;
+  stepLabel: ReactNode;
   detailPre?: ReactNode;
+  detailBody?: ReactNode;
 }) {
   const isError =
     step.status === 'error' || (step.kind === 'tool' && step.isError);
-  const hasDetail =
-    step.kind === 'thinking'
-      ? Boolean(step.detail)
-      : Boolean(step.resultDetail);
-  const baseClass = `flex min-h-11 w-full min-w-0 flex-col justify-center gap-y-0.5 rounded-lg border px-2.5 py-1.5 ${
+  const baseClass = `flex h-9 w-full min-w-0 items-center gap-x-2 rounded-lg border px-2.5 overflow-hidden ${
     isError ? 'border-danger/40 bg-danger-bg' : 'border-border bg-white'
   }`;
 
   return (
-    <li className="relative min-w-0 pl-[72px] pr-2">
-      {/* 虚线贯穿节点徽章附近（spec §4.1：left-[68px]）；timeline 列宽 pl-[72px] */}
-      <span
-        aria-hidden
-        data-trace-line
-        className="pointer-events-none absolute bottom-0 left-[68px] top-0 border-l border-dashed border-text-muted/30"
-      />
-      <StepLabel step={step} />
-      {hasDetail ? (
-        <button
-          type="button"
-          aria-expanded={detailOpen}
-          aria-label={
-            step.kind === 'thinking' ? '查看思考过程' : `查看 ${step.toolName} 结果`
-          }
-          onClick={onToggleDetail}
-          className={`${baseClass} text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
-        >
-          <div className="flex w-full min-w-0 items-center gap-x-2">
-            {firstLine}
-          </div>
-          {secondLine && (
-            <div className="block w-full min-w-0 truncate text-xs text-text-muted/60">
-              {secondLine}
-            </div>
-          )}
-        </button>
-      ) : (
-        <div className={baseClass}>
-          <div className="flex w-full min-w-0 items-center gap-x-2">
-            {firstLine}
-          </div>
-          {secondLine && (
-            <div className="block w-full min-w-0 truncate text-xs text-text-muted/60">
-              {secondLine}
-            </div>
-          )}
+    <li className="relative min-w-0 pr-2">
+      <button
+        type="button"
+        aria-expanded={detailOpen}
+        aria-label={
+          step.kind === 'thinking' ? '查看思考过程' : `查看 ${step.toolName} 结果`
+        }
+        onClick={onToggleDetail}
+        className={`${baseClass} relative before:absolute before:left-2.5 before:top-0 before:bottom-0 before:border-l before:border-dashed before:border-text-muted/30 before:pointer-events-none text-left transition-colors hover:bg-surface-hover/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+      >
+        <span className="min-w-0 flex-1 flex items-center gap-x-2">
+          {stepLabel}
+        </span>
+      </button>
+      {detailOpen && (
+        <div className="mt-1 mb-2 space-y-1.5">
+          {detailBody}
+          {detailPre}
         </div>
       )}
-      {detailOpen && detailPre}
     </li>
-  );
-}
-
-const STEP_LABEL_MAX_CHARS = 10;
-
-function StepLabel({ step }: { step: TraceStep }) {
-  const isRunning = step.status === 'streaming' || step.status === 'pending';
-  const isError =
-    step.status === 'error' || (step.kind === 'tool' && step.isError);
-  const isDone = step.status === 'done' && !isError;
-
-  // 身份文本（spec §4.1）：tool 显示 toolName，thinking 显示「思考」；超 10 字符截断 + title
-  const rawIdentity = step.kind === 'tool' ? step.toolName : '思考';
-  const identityText =
-    rawIdentity.length > STEP_LABEL_MAX_CHARS
-      ? rawIdentity.slice(0, STEP_LABEL_MAX_CHARS)
-      : rawIdentity;
-
-  // 身份文本颜色（spec §4.1）
-  let textColor = 'text-text-muted';
-  if (isError) textColor = 'text-danger';
-  else if (isRunning) textColor = 'text-primary';
-  else if (isDone && step.kind === 'tool') textColor = 'text-green-700';
-
-  // 右上徽章（spec §4.1）：保留原 StepNode 的 bg-surface 圆点视觉，缩为 h-3 w-3
-  let badgeClass =
-    'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-text-muted';
-  if (isError) {
-    badgeClass =
-      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-danger';
-  } else if (isRunning) {
-    badgeClass =
-      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-primary';
-  } else if (isDone && step.kind === 'tool') {
-    badgeClass =
-      'flex h-3 w-3 items-center justify-center rounded-full bg-surface text-green-700';
-  }
-
-  // thinking done / 默认兜底走 muted 圆点；spec §4.1 表末行 thinking done 显式要求 ✓ Check，
-  // 但 thinking error 沿用 AlertCircle 即可。
-  let badgeContent: ReactNode;
-  if (isRunning) {
-    badgeContent = <Loader2 className="h-2 w-2 animate-spin" />;
-  } else if (isError) {
-    badgeContent = <AlertCircle className="h-2 w-2" />;
-  } else if (isDone && step.kind === 'tool') {
-    badgeContent = <Check className="h-2 w-2" strokeWidth={2.5} />;
-  } else if (isDone && step.kind === 'thinking') {
-    badgeContent = <Check className="h-2 w-2" strokeWidth={2.5} />;
-  } else {
-    badgeContent = <span className="block h-1 w-1 rounded-full bg-text-muted" />;
-  }
-
-  return (
-    <span
-      aria-hidden
-      className="pointer-events-none absolute left-3 top-1.5 z-[1] flex items-center gap-1"
-    >
-      <span
-        title={rawIdentity}
-        className={`block max-w-[56px] truncate font-mono text-[11px] tabular-nums ${textColor}`}
-      >
-        {identityText}
-      </span>
-      <span className={badgeClass}>{badgeContent}</span>
-    </span>
   );
 }
 
@@ -359,32 +273,21 @@ function ThinkingStepRow({
   onToggleDetail: () => void;
 }) {
   const hasDetail = Boolean(step.detail);
-  // 流式中不在行内挂 reasoning 预览，避免 CoT 被意外播报；完成后可截断预览（对 AT 隐藏）
-  const showPreview =
-    hasDetail &&
-    !detailOpen &&
-    step.status !== 'streaming' &&
-    step.status !== 'pending';
 
-  // 「思考」二字由左侧 StepLabel 独占；button 内 firstLine 去掉「思考」前缀，
-  // 只显示 step.label 的「已完成 / 正在思考」等状态部分，避免与左侧身份文本重复。
-  const labelWithoutThinkPrefix = step.label.replace(/^思考/, '');
-
-  const firstLine = (
+  // v3.1 思考步骤视觉降级（spec §4.6）：4px 灰点 + 「思考」文字，无徽章 / 无 meta
+  const stepLabel = (
     <>
       <span
+        aria-hidden
+        className="inline-block h-1 w-1 shrink-0 rounded-full bg-text-muted-2"
+      />
+      <span
         data-trace-step="thinking"
-        className="shrink-0 text-[13px] font-medium text-text"
+        className="shrink-0 text-[13px] text-text-muted whitespace-nowrap"
       >
-        {labelWithoutThinkPrefix}
+        思考
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
-        {/* thinking 行无输入参数；inputPreview 兜底位留空，让状态位 + chevron 始终右靠 */}
-        {''}
-      </span>
-      <span className="shrink-0 text-xs tabular-nums text-text-muted">
-        {hasDetail ? (detailOpen ? '收起' : '查看') : step.status === 'done' ? '已完成' : ''}
-      </span>
+      <span className="min-w-0 flex-1" aria-hidden />
       {hasDetail && (
         <ChevronDown
           className={`h-3.5 w-3.5 shrink-0 text-text-muted/70 transition-transform duration-200 ${
@@ -396,14 +299,8 @@ function ThinkingStepRow({
     </>
   );
 
-  const secondLine = showPreview ? (
-    <span aria-hidden={showPreview || undefined}>
-      {step.detail!.replace(/\s+/g, ' ').trim().slice(0, 80)}
-    </span>
-  ) : null;
-
-  const detailPre = step.detail ? (
-    <div className="mb-2 mt-1 max-w-full overflow-hidden rounded-lg border border-border/80 bg-surface-hover/40 px-3 py-2.5 text-xs leading-relaxed text-text-muted">
+  const detailBody = step.detail ? (
+    <div className="max-w-full overflow-hidden rounded-lg border border-border/80 bg-surface-hover/40 px-3 py-2.5 text-xs leading-relaxed text-text-muted">
       <Markdown text={step.detail} compact />
     </div>
   ) : null;
@@ -413,9 +310,8 @@ function ThinkingStepRow({
       step={step}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      firstLine={firstLine}
-      secondLine={secondLine}
-      detailPre={detailPre}
+      stepLabel={stepLabel}
+      detailBody={detailBody}
     />
   );
 }
@@ -429,43 +325,27 @@ function ToolStepRow({
   detailOpen: boolean;
   onToggleDetail: () => void;
 }) {
-  const hasDetail = Boolean(step.resultDetail);
+  const hasDetail = Boolean(step.resultDetail) || Boolean(step.keyParams?.length) || Boolean(step.resultPreview);
   const isRunning = step.status === 'streaming' || step.status === 'pending';
   const isError = step.isError || step.status === 'error';
 
-  // 状态位只放定长文案；结果摘要另起一行，避免长文本撑破行宽
+  // 状态位只放定长文案
   let meta = '';
   if (isRunning) meta = '执行中…';
   else if (isError) meta = '失败';
   else if (step.durationMs != null) meta = formatDuration(step.durationMs);
   else if (step.status === 'done') meta = '已完成';
 
-  const showResultPreview = Boolean(step.resultPreview) && !detailOpen;
-
-  // 关键参数 pill：按 KEY_PARAM_ORDER 取前 2 项，超过 2 个时以 +N 溢出提示
-  const keyParams: KeyParam[] = step.keyParams ?? [];
-  const extraKeyCount = countExtraKeyParams(step.keyParams);
-
-  const firstLine = (
+  // v3.1：button 内只放身份文本（中文 actionLabel） + meta + chevron（高度 36px 刚性化）
+  const stepLabel = (
     <>
-      {/* actionLabel 由左侧 StepLabel 独占（toolName 已显示）；button 内 firstLine
-          直接从 keyParams / inputPreview 开始，避免「工具名」重复渲染 */}
-      {keyParams.map((p) => (
-        <span
-          key={p.key}
-          title={p.fullValue}
-          aria-label={`${p.key}=${p.fullValue}`}
-          className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 font-mono text-[11.5px] text-primary"
-        >
-          {p.value}
-        </span>
-      ))}
-      {extraKeyCount > 0 && (
-        <span className="text-xs text-text-muted">+{extraKeyCount}</span>
-      )}
-      <span className="min-w-0 flex-1 truncate text-xs text-text-muted/60">
-        {keyParams.length === 0 ? (step.inputPreview ?? '') : ''}
+      <span
+        title={step.actionLabel}
+        className="shrink-0 text-[13px] text-text whitespace-nowrap"
+      >
+        {step.actionLabel}
       </span>
+      <span className="min-w-0 flex-1" aria-hidden />
       <span
         className={`shrink-0 text-xs tabular-nums ${
           isError ? 'text-danger' : 'text-text-muted'
@@ -484,15 +364,49 @@ function ToolStepRow({
     </>
   );
 
-  const secondLine = showResultPreview ? (
-    <span className={isError ? 'text-danger/70' : 'text-text-muted/60'}>
-      {step.resultPreview}
-    </span>
-  ) : null;
+  // 关键参数 pill：按 KEY_PARAM_ORDER 取前 2 项
+  const keyParams: KeyParam[] = step.keyParams ?? [];
+  const extraKeyCount = countExtraKeyParams(step.keyParams);
+
+  const detailBody = (
+    <>
+      {(keyParams.length > 0 || step.inputPreview) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {keyParams.map((p) => (
+            <span
+              key={p.key}
+              title={p.fullValue}
+              aria-label={`${p.key}=${p.fullValue}`}
+              className="shrink-0 rounded-md border border-primary/20 bg-primary/10 px-1.5 py-0.5 font-mono text-[11.5px] text-primary"
+            >
+              {p.value}
+            </span>
+          ))}
+          {extraKeyCount > 0 && (
+            <span className="text-xs text-text-muted">+{extraKeyCount}</span>
+          )}
+          {keyParams.length === 0 && step.inputPreview && (
+            <span className="text-xs text-text-muted/60 break-all">
+              {step.inputPreview}
+            </span>
+          )}
+        </div>
+      )}
+      {step.resultPreview && (
+        <div
+          className={`text-xs ${
+            isError ? 'text-danger/70' : 'text-text-muted/70'
+          }`}
+        >
+          {step.resultPreview}
+        </div>
+      )}
+    </>
+  );
 
   const detailPre = step.resultDetail ? (
     <pre
-      className={`mb-2 mt-0.5 whitespace-pre-wrap break-words rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed ${
+      className={`whitespace-pre-wrap break-words rounded-lg border px-3 py-2.5 font-mono text-xs leading-relaxed ${
         isError
           ? 'border-danger/20 bg-danger/5 text-danger/90'
           : 'border-border/80 bg-surface-hover/40 text-text-muted'
@@ -507,8 +421,8 @@ function ToolStepRow({
       step={step}
       detailOpen={detailOpen}
       onToggleDetail={onToggleDetail}
-      firstLine={firstLine}
-      secondLine={secondLine}
+      stepLabel={stepLabel}
+      detailBody={hasDetail ? detailBody : undefined}
       detailPre={detailPre}
     />
   );

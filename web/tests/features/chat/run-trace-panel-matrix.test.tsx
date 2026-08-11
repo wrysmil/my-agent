@@ -97,10 +97,8 @@ describe('RunTrace panel matrix (spec §8 / §9)', () => {
       expect(summaries[0]).toHaveAttribute('aria-expanded', 'true');
       const list = screen.getByRole('list');
       expect(within(list).getAllByRole('listitem')).toHaveLength(1);
-      // 左侧 StepLabel 身份文本（"思考"），由 StepLabel 独占渲染。
+      // v3.1：thinking 步骤视觉降级为 4px 灰点 + 「思考」文字，无 meta
       expect(within(list).getByText('思考')).toBeInTheDocument();
-      // button 内 firstLine：去掉「思考」前缀后剩「已完成」状态文字。
-      expect(within(list).getByText('已完成')).toBeInTheDocument();
     });
 
     it('仅 thinking 多个相邻：一个顶层摘要入口下保留三个可独立展开的步骤', async () => {
@@ -457,8 +455,9 @@ describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 /
     expect(pre!.textContent).toContain(detailBody);
   });
 
-  it('pill 渲染：tool 行带 url / query 时，DOM 中存在 font-mono + bg-primary/10 + title 属性的 span', () => {
-    // Arrange — 自动展开（流式 + 无 text）
+  it('pill 渲染：tool 行带 url / query 时，DOM 中存在 font-mono + bg-primary/10 + title 属性的 span', async () => {
+    // Arrange — 默认折叠（v3.1）；先点 step 卡片展开
+    const user = userEvent.setup();
     const fullUrl = 'https://example.com/foo/bar';
     const trace = _vm({
       status: 'running',
@@ -484,6 +483,7 @@ describe('RunTracePanel spec §7.2 第三组 — 窄屏 / 错误 a11y / 键盘 /
     const { container } = render(
       <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />,
     );
+    await user.click(screen.getByRole('button', { name: /查看 web_fetch 结果/ }));
 
     // Assert — pill 同时具备 font-mono、bg-primary/10、title 属性
     const pills = Array.from(
@@ -562,9 +562,11 @@ describe('RunTracePanel spec §8.2 — 窄屏 / 多步骤 / 暗色模式', () =>
     });
 
     // Assert — pill + StepLabel 身份文本都存在
-    expect(screen.getByText('super_long')).toBeInTheDocument();
+    // v3.1：身份文本显示中文 actionLabel（不再 mono 截断）
+    expect(screen.getByText('获取网页')).toBeInTheDocument();
+    // v3.1：pill 默认折叠到 detail 区；此处仅断言「无横向溢出」
     const pills = container.querySelectorAll('span.font-mono.bg-primary\\/10');
-    expect(pills.length).toBeGreaterThanOrEqual(1);
+    expect(pills.length).toBe(0);
   });
 
   it('§8.2.2 多步骤：3+ 步骤时各节点身份文本并列可见', () => {
@@ -590,13 +592,13 @@ describe('RunTracePanel spec §8.2 — 窄屏 / 多步骤 / 暗色模式', () =>
     const items = container.querySelectorAll('ol > li');
     expect(items).toHaveLength(4);
 
-    // Assert — 节点身份文本并列可见（spec §4.1：tool 显示 toolName，thinking 显示「思考」）
+    // Assert — 节点身份文本并列可见（v3.1：tool 显示中文 actionLabel，thinking 显示「思考」）
     const withinList = within(screen.getByRole('list'));
-    expect(withinList.getAllByText('web_search').length).toBeGreaterThanOrEqual(1);
-    expect(withinList.getAllByText('web_fetch').length).toBeGreaterThanOrEqual(1);
-    // thinking 节点：使用 getAllByText 收集所有「思考」实例（每个 thinking 行一个）
+    expect(withinList.getAllByText('搜索网页').length).toBeGreaterThanOrEqual(1);
+    expect(withinList.getAllByText('获取网页').length).toBeGreaterThanOrEqual(1);
+    // thinking 节点：每个 thinking 行一个「思考」
     const thinkingIdentityTexts = container.querySelectorAll(
-      'span.font-mono[title="思考"]',
+      '[data-trace-step="thinking"]',
     );
     expect(thinkingIdentityTexts.length).toBe(2);
   });
@@ -637,19 +639,19 @@ describe('RunTracePanel spec §8.2 — 窄屏 / 多步骤 / 暗色模式', () =>
     expect(errorBtn!.className).toContain('border-danger/40');
     expect(errorBtn!.className).toContain('bg-danger-bg');
 
-    // 错误徽章：StepLabel 右侧 bg-surface text-danger 类保留
-    const errorBadge = container.querySelector('span.bg-surface.text-danger');
-    expect(errorBadge).not.toBeNull();
-    // 内部 AlertCircle 图标存在
-    expect(errorBadge!.querySelector('.lucide-circle-alert')).not.toBeNull();
+    // Assert — v3.1：颜色徽章已移除；状态位文本（meta = '失败'）在按钮内仍渲染
+    // 错误按钮内 span 含 '失败' 字样
+    const errorBtnDark = container.querySelector(
+      'ol > li button.border-danger\\/40.bg-danger-bg',
+    ) as HTMLElement | null;
+    expect(errorBtnDark).not.toBeNull();
+    expect(errorBtnDark!.textContent).toContain('失败');
 
-    // 节点身份文本 token 类（text-danger）保留
+    // 节点身份文本 token 类（v3.1：text-text, 不再 text-danger 颜色编码）
     const identitySpan = container.querySelector(
-      'span.font-mono[title="web_fetch"]',
+      '[data-run-trace] button span[title="获取网页"]',
     );
     expect(identitySpan).not.toBeNull();
-    expect(identitySpan!.className).toContain('text-danger');
-    expect(identitySpan!.className).toContain('font-mono');
 
     // 暗色标记已注入（避免静默跳过断言）
     expect(document.documentElement.classList.contains('dark')).toBe(true);

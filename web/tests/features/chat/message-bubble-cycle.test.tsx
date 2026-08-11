@@ -1,12 +1,15 @@
 /**
- * MessageBubble 循环分组测试
+ * MessageBubble 循环分组测试（v4 双布局重构）
  *
+ * 设计动机：见 spec `.ai-runtime-artifacts/specs/2026-08-11-run-trace-dual-layout-spec.md` § 4.3。
  * 覆盖：
- *   1. 已完成 run → CycleCard 渲染含 trace + final，无 GeneratingIndicator
- *   2. 进行中且无 final → CycleCard 渲染含 GeneratingIndicator
- *   3. 进行中且有 final（部分流）→ CycleCard 渲染含 final，**无** GeneratingIndicator
- *   4. 多次 run → 2 个独立 CycleCard，user bubble 不进 CycleCard
- *   5. resetKey 透传：MessageBubble 渲染时 RunTracePanel 接收的 resetKey === message.id
+ *   1. 已完成 run → TraceBubble（trace 灰色气泡） + final markdown（裸节点）独立存在；
+ *      GeneratingIndicator 不显示
+ *   2. 进行中且无 final → TraceBubble + GeneratingIndicator，final 节点不存在
+ *   3. 进行中且有 final（部分流）→ TraceBubble + final 节点，GeneratingIndicator 不显示
+ *   4. 多次 run → 2 个独立 TraceBubble（`data-testid="trace-bubble"`），user bubble 不进 TraceBubble
+ *   5. trace 与 final 是独立 DOM 节点（trace 不再嵌套 final）
+ *   6. resetKey 透传：MessageBubble 渲染时 RunTracePanel 接收的 resetKey === message.id
  *
  * 注意：Markdown 组件是 lazy import + Suspense fallback。
  *   - 测试里要用 findByText / waitFor，等 Suspense 解析完再断言 final markdown 文本。
@@ -88,8 +91,8 @@ function makeUserMessage(text: string): ChatMessage {
   };
 }
 
-describe('MessageBubble · cycle grouping', () => {
-  it('已完成 run：CycleCard 渲染含 trace + final，无 GeneratingIndicator', async () => {
+describe('MessageBubble · v4 dual layout (trace bubble + bare final)', () => {
+  it('已完成 run：TraceBubble + final 独立存在，无 GeneratingIndicator', async () => {
     // Arrange
     const msg = makeAssistantMessage({
       hasTool: true,
@@ -99,15 +102,34 @@ describe('MessageBubble · cycle grouping', () => {
     // Act
     render(<MessageBubble message={msg} isStreaming={false} />);
 
-    // Assert
+    // Assert — trace-bubble 与 final-bubble 是两个独立 DOM 节点
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('trace-bubble')).toBeTruthy();
+        expect(screen.getByTestId('final-bubble')).toBeTruthy();
+      },
+      { timeout: 5000 },
+    );
+
+    // trace 不再嵌套 final（v4 结构调整）
+    const traceBubble = screen.getByTestId('trace-bubble');
+    const finalBubble = screen.getByTestId('final-bubble');
+    expect(traceBubble.contains(finalBubble)).toBe(false);
+    expect(finalBubble.contains(traceBubble)).toBe(false);
+
+    // 等 Suspense 解析完 Markdown（增加 timeout 以兼容 lazy import）
+    await waitFor(
+      () => {
+        expect(screen.getByText('调研报告。')).toBeTruthy();
+      },
+      { timeout: 5000 },
+    );
+
+    // GeneratingIndicator 不显示
     expect(screen.queryByText('AI 仍在生成中…')).toBeNull();
-    // 等 Suspense 解析完 Markdown
-    await waitFor(() => {
-      expect(screen.getByText('调研报告。')).toBeTruthy();
-    });
   });
 
-  it('进行中且无 final：含 GeneratingIndicator，final 区不存在', () => {
+  it('进行中且无 final：TraceBubble + GeneratingIndicator 存在，final 节点不存在', () => {
     // Arrange
     const msg = makeAssistantMessage({
       hasTool: true,
@@ -118,11 +140,16 @@ describe('MessageBubble · cycle grouping', () => {
     render(<MessageBubble message={msg} isStreaming={true} />);
 
     // Assert
-    expect(screen.getByText('AI 仍在生成中…')).toBeTruthy();
+    expect(screen.getByTestId('trace-bubble')).toBeTruthy();
+    expect(screen.queryByTestId('final-bubble')).toBeNull();
+
+    // GeneratingIndicator 渲染（转圈 svg）
+    expect(screen.getByRole('status')).toBeTruthy();
+    expect(screen.queryByText('AI 仍在生成中…')).toBeNull();
     expect(screen.queryByText('调研报告。')).toBeNull();
   });
 
-  it('进行中且有 final：final 出现时 GeneratingIndicator 不再显示', async () => {
+  it('进行中且有 final：final 节点出现时 GeneratingIndicator 不再显示', async () => {
     // Arrange
     const msg = makeAssistantMessage({
       hasTool: true,
@@ -133,14 +160,25 @@ describe('MessageBubble · cycle grouping', () => {
     render(<MessageBubble message={msg} isStreaming={true} />);
 
     // Assert
-    await waitFor(() => {
-      expect(screen.getByText('…已经写了一半')).toBeTruthy();
-    });
-    // final 已出现 → 不应该再有「还在生成」提示
-    expect(screen.queryByText('AI 仍在生成中…')).toBeNull();
+    expect(screen.getByTestId('trace-bubble')).toBeTruthy();
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('final-bubble')).toBeTruthy();
+      },
+      { timeout: 5000 },
+    );
+    await waitFor(
+      () => {
+        expect(screen.getByText('…已经写了一半')).toBeTruthy();
+      },
+      { timeout: 5000 },
+    );
+
+    // final 已出现 → GeneratingIndicator 不能再挂
+    expect(screen.queryByRole('status')).toBeNull();
   });
 
-  it('多次 run：DOM 内出现 2 个 CycleCard；user bubble 不进 CycleCard', async () => {
+  it('多次 run：DOM 内出现 2 个独立 TraceBubble；user bubble 不进 TraceBubble', async () => {
     // Arrange
     const user = makeUserMessage('继续完成调研');
     const a1 = makeAssistantMessage({
@@ -155,7 +193,7 @@ describe('MessageBubble · cycle grouping', () => {
     });
 
     // Act
-    const { container } = render(
+    render(
       <div>
         <MessageBubble message={user} isStreaming={false} />
         <MessageBubble message={a1} isStreaming={false} />
@@ -163,32 +201,34 @@ describe('MessageBubble · cycle grouping', () => {
       </div>,
     );
 
-    // Assert
-    // CycleCard 容器特征：relative mt-3 rounded-xl border border-border/80
-    const cards = container.querySelectorAll(
-      'div.relative.mt-3.rounded-xl.border.border-border\\/80',
+    // Assert — 用 data-testid="trace-bubble" 查 2 个独立 trace 节点
+    await waitFor(
+      () => {
+        expect(screen.getAllByTestId('trace-bubble')).toHaveLength(2);
+      },
+      { timeout: 5000 },
     );
-    expect(cards.length).toBe(2);
 
-    // user bubble 不进 CycleCard：从 user 文本节点向上爬祖先，
-    // 确认不会碰到带 rounded-xl + border-border/80 的容器。
+    // user bubble 不进 TraceBubble：从 user 文本节点向上爬祖先，
+    // 确认不会碰到 data-testid="trace-bubble" 的容器。
     const userBubble = screen.getByText('继续完成调研');
     let cur: Element | null = userBubble;
-    let insideCycle = false;
+    let insideTrace = false;
     while (cur) {
-      if (cur.classList && cur.classList.contains('rounded-xl') &&
-          cur.classList.contains('border-border/80')) {
-        insideCycle = true;
+      if (cur.getAttribute && cur.getAttribute('data-testid') === 'trace-bubble') {
+        insideTrace = true;
         break;
       }
       cur = cur.parentElement;
     }
-    expect(insideCycle).toBe(false);
+    expect(insideTrace).toBe(false);
 
-    // 两条 assistant final 各自独立（等 Markdown 加载完，用 cards[i].textContent 比对）
+    // 两条 assistant final 各自独立（等 Markdown 加载完）
     await waitFor(() => {
-      expect(cards[0]?.textContent ?? '').toContain('第一轮完成。');
-      expect(cards[1]?.textContent ?? '').toContain('第二轮完成。');
+      const finals = screen.getAllByTestId('final-bubble');
+      expect(finals).toHaveLength(2);
+      expect(finals[0]?.textContent ?? '').toContain('第一轮完成。');
+      expect(finals[1]?.textContent ?? '').toContain('第二轮完成。');
     });
   });
 });

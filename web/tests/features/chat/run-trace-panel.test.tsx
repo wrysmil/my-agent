@@ -135,12 +135,6 @@ describe('RunTracePanel', () => {
     const panel = container.querySelector('[data-run-trace]');
     expect(panel?.className).toContain('bg-white');
     expect(panel?.className).toContain('border-border/80');
-
-    const classNames = Array.from(container.querySelectorAll('[class]'))
-      .map((element) => element.className)
-      .filter((className): className is string => typeof className === 'string')
-      .join(' ');
-    expect(classNames).not.toMatch(/\/(?:15|25|50)\b|\bbg-surface\/40\b/);
   });
 
   it('默认展开：运行中且无最终 text 时 timeline 可见', () => {
@@ -373,7 +367,7 @@ describe('RunTracePanel', () => {
     expect(screen.getAllByText('正在思考').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('完成态 thinking 预览对 AT 隐藏（aria-hidden），仅二次展开暴露全文', async () => {
+  it('v3.1 thinking 步骤：默认不暴露 reasoning 全文；仅展开后才显示', async () => {
     const user = userEvent.setup();
     const detail = 'completed reasoning body for AT gate';
     const trace = vm({
@@ -387,17 +381,21 @@ describe('RunTracePanel', () => {
     render(<RunTracePanel trace={trace} isStreaming={true} hasFinalText={true} />);
     await user.click(screen.getByRole('button', { name: /已完成 1 个步骤/ }));
 
-    const preview = screen.getByText(/completed reasoning body/);
-    expect(preview).toHaveAttribute('aria-hidden', 'true');
+    // Assert — 默认状态下 reasoning 全文不暴露在 step 行（v3.1 行高 36px 不允许 preview）
+    expect(screen.queryByText(detail)).toBeNull();
 
+    // Act — 展开 thinking 详情
     await user.click(screen.getByRole('button', { name: '查看思考过程' }));
+
+    // Assert — 展开后 detail 暴露
     expect(screen.getByText(detail)).toBeInTheDocument();
   });
 });
 
 describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
-  it('工具行渲染 pill：title=fullValue，className 含 bg-primary/10 / border-primary/20', () => {
+  it('工具行展开后渲染 pill：title=fullValue，className 含 bg-primary/10 / border-primary/20', async () => {
     // Arrange
+    const user = userEvent.setup();
     const url = 'https://example.com/foo/bar';
     const trace = vm({
       status: 'running',
@@ -418,13 +416,13 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
       completedCount: 0,
     });
 
-    // Act
+    // Act — 默认折叠；先点 step 卡片展开
     const { container } = render(
       <RunTracePanel trace={trace} isStreaming={true} hasFinalText={false} />,
     );
+    await user.click(screen.getByRole('button', { name: /查看 web_fetch 结果/ }));
 
-    // Assert — pill 出现在统一卡片里。StepLabel 同样含 font-mono，需用
-    // bg-primary/10 + border-primary/20 区分 keyParam pill 与身份文本节点。
+    // Assert — pill 出现在 detail 区（v3.1 默认折叠）
     const pills = container.querySelectorAll(
       'span.font-mono.bg-primary\\/10',
     );
@@ -436,7 +434,7 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
     expect(pill.textContent).toBe('example.com/foo/bar');
   });
 
-  it('错误态整行带 border-danger/40 bg-danger-bg；状态位文本为 text-danger', () => {
+  it('错误态整行带 border-danger/40 bg-danger-bg；状态位文本显示「失败」', () => {
     // Arrange
     const trace = vm({
       status: 'error',
@@ -464,14 +462,14 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
 
     // Assert — 错误按钮整体带 danger 边框与背景
     const errorBtn = container.querySelector(
-      'li button.border-danger\\/40.bg-danger-bg, li div.border-danger\\/40.bg-danger-bg',
+      'li button.border-danger\\/40.bg-danger-bg',
     );
     expect(errorBtn).not.toBeNull();
     expect(errorBtn!.className).toContain('border-danger/40');
     expect(errorBtn!.className).toContain('bg-danger-bg');
 
-    // Assert — 状态位文本（meta = '失败'）渲染在 text-danger 中
-    // StepLabel 错误态身份文本也是 text-danger，需在按钮/div 内部查找以排除左侧身份文本节点。
+    // Assert — 状态位文本（meta = '失败'）在按钮内可定位
+    // v3.1：颜色编码已移除，meta 用 text-danger 标记状态
     const metaSpan = errorBtn!.querySelector(
       'span.text-danger.tabular-nums',
     ) as HTMLElement | null;
@@ -615,7 +613,7 @@ describe('RunTracePanel spec §7.2 第二组 — 视觉改造', () => {
  *  - resetKey 变化 → 强制重置 userOverride / expanded / openStepIds。
  */
 describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / resetKey', () => {
-  it('§8.1.1 节点身份文本：tool 节点显示 toolName；thinking 节点显示「思考」', () => {
+  it('§8.1.1 节点身份文本：tool 节点显示 actionLabel；thinking 节点显示「思考」', () => {
     // Arrange
     const trace = vm({
       steps: [
@@ -628,28 +626,23 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
     });
 
     // Act
-    const { container } = render(
+    render(
       <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
     );
 
-    // Assert — 左侧身份文本节点
-    expect(screen.getByText('write_file')).toBeInTheDocument();
-    const thinkingLabels = container.querySelectorAll(
-      'span.font-mono[title="思考"]',
-    );
-    expect(thinkingLabels.length).toBeGreaterThanOrEqual(1);
+    // Assert — 节点身份文本：tool 显示中文 actionLabel，thinking 显示「思考」
+    expect(screen.getByText('写文件')).toBeInTheDocument();
+    expect(screen.getAllByText('思考').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('§8.1.1 超长截断：toolName > 10 字符时只渲染前 10 字符；title 含完整值', () => {
-    // Arrange
-    const longToolName = 'super_long_tool_name_xyz';
-    expect(longToolName.length).toBeGreaterThan(10);
+  it('§8.1.1 v3.1 不截断：toolName 长名字走自然宽度（whitespace-nowrap，不硬切）', () => {
+    // Arrange — actionLabel 14 字符（中文）
     const trace = vm({
       steps: [
         tool({
           id: 'tc-long',
-          toolName: longToolName,
-          actionLabel: '超长工具名',
+          toolName: 'execute_long_command',
+          actionLabel: '执行 shell 命令',
         }),
       ],
       toolCount: 1,
@@ -662,18 +655,15 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
       <RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />,
     );
 
-    // Assert — 渲染前 10 字符（'super_long'）
-    expect(screen.getByText('super_long')).toBeInTheDocument();
-    // title 属性含完整 toolName
-    const identitySpan = container.querySelector(
-      'span.font-mono[title]',
-    ) as HTMLElement | null;
+    // Assert — 渲染完整 actionLabel（无截断）
+    expect(screen.getByText('执行 shell 命令')).toBeInTheDocument();
+    // 身份文本 span 不再是 font-mono
+    const identitySpan = container.querySelector('span.text-text.whitespace-nowrap');
     expect(identitySpan).not.toBeNull();
-    expect(identitySpan!.getAttribute('title')).toBe(longToolName);
-    expect(identitySpan!.textContent).toBe('super_long');
+    expect(identitySpan!.textContent).toBe('执行 shell 命令');
   });
 
-  it('§8.1.2 右上徽章：done tool → ✓ 绿；running tool → spinner；error → ⚠ 红；thinking done → ✓ 灰', () => {
+  it('§8.1.2 v3.1 无右上徽章：step 卡片不含 ✓/⚠/spinner 圆点徽章', () => {
     // Arrange
     const trace = vm({
       steps: [
@@ -705,36 +695,15 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
       <RunTracePanel trace={trace} isStreaming={false} hasFinalText={false} />,
     );
 
-    // Assert — 通过 <li> 上下文定位徽章（spec §4.1：右上角 h-3 w-3 圆点）
-    const items = Array.from(
-      container.querySelectorAll('ol > li'),
-    ) as HTMLElement[];
-    expect(items.length).toBe(4);
-
-    // 1) thinking done → ✓ 灰（Check + bg-surface text-text-muted）
-    const thinkingBadge = items[0]!.querySelector('span.bg-surface');
-    expect(thinkingBadge).not.toBeNull();
-    expect(thinkingBadge!.querySelector('.lucide-check')).not.toBeNull();
-
-    // 2) tool done → ✓ 绿
-    const doneBadge = items[1]!.querySelector('span.bg-surface');
-    expect(doneBadge).not.toBeNull();
-    expect(doneBadge!.className).toContain('text-green-700');
-    expect(doneBadge!.querySelector('.lucide-check')).not.toBeNull();
-
-    // 3) tool running → spinner (Loader2 含 animate-spin)
-    const runningBadge = items[2]!.querySelector('span.bg-surface');
-    expect(runningBadge).not.toBeNull();
-    expect(runningBadge!.querySelector('.animate-spin')).not.toBeNull();
-
-    // 4) tool error → ⚠ 红
-    const errorBadge = items[3]!.querySelector('span.bg-surface');
-    expect(errorBadge).not.toBeNull();
-    expect(errorBadge!.className).toContain('text-danger');
-    expect(errorBadge!.querySelector('.lucide-circle-alert')).not.toBeNull();
+    // Assert — 不存在 bg-surface 圆点徽章（v3.1 全部移除）
+    const surfaceBadges = container.querySelectorAll('span.bg-surface.rounded-full');
+    expect(surfaceBadges).toHaveLength(0);
+    // 也不应有 h-3 w-3 徽章
+    const size3Badges = container.querySelectorAll('span.h-3.w-3');
+    expect(size3Badges).toHaveLength(0);
   });
 
-  it('§8.1.3 <li> padding：className 含 pl-[72px]，不含 pl-[34px]', () => {
+  it('§8.1.3 v3.1 <li> 取消 pl-[112px]：简化为 flex 容器，由 step-card 内 before: 虚线承担', () => {
     // Arrange
     const trace = vm({
       steps: [
@@ -752,11 +721,15 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
     const items = Array.from(
       container.querySelectorAll('ol > li'),
     ) as HTMLElement[];
-    expect(items.length).toBeGreaterThan(0);
+    expect(items.length).toBeGreaterThanOrEqual(1);
     items.forEach((li) => {
-      expect(li.className).toContain('pl-[72px]');
+      expect(li.className).not.toContain('pl-[72px]');
+      expect(li.className).not.toContain('pl-[112px]');
       expect(li.className).not.toContain('pl-[34px]');
     });
+    // step-card button 含 before: 虚线伪元素
+    const stepCard = container.querySelector('button[class*="before:border-dashed"]');
+    expect(stepCard).not.toBeNull();
   });
 
   it('§8.1.4 默认展开：isStreaming=false + errorCount=0 时 timeline 容器 hidden=false', () => {
