@@ -717,8 +717,8 @@ export class Session {
     for (const msg of this.messages) {
       const tid = msg.turnId;
       if (tid !== undefined && turnIdSet.has(tid)) {
-        // 保留每轮原始 client message 作为不进入 provider 的身份锚点，
-        // 以便压缩后及服务重载后仍能做 payload 冲突检测与 dedup。
+        // P0: 同样不再跳过原始 assistant/tool_result 消息，而是标记为
+        // compactionIdentityAnchor 让 LLM 跳过、UI/history 仍可读。
         if (
           msg.role === "user" &&
           msg.id !== undefined &&
@@ -729,6 +729,10 @@ export class Session {
           )
         ) {
           result.push({ ...msg, compactionIdentityAnchor: true });
+        } else if (msg.role !== "user" && !msg.compactionIdentityAnchor) {
+          result.push({ ...msg, compactionIdentityAnchor: true });
+        } else {
+          result.push(msg);
         }
         if (!insertedTurnIds.has(tid)) {
           result.push({
@@ -789,12 +793,16 @@ export class Session {
         message.id !== undefined &&
         !message.content.every((block) => block.type === "tool_result"),
     );
-    let replaced = false;
+    let inserted = false;
     const result: Message[] = [];
     for (const msg of this.messages) {
       if (msg.turnId === targetTurnId) {
-        if (!replaced) {
-          if (originalClientMessage) {
+        // P0: 不再"跳过"原始 assistant/tool_result 消息，而是把它们全部
+        // 标记为 compactionIdentityAnchor，让 LLM 通过 getMessagesForModel
+        // 看到 summary 而跳过原始 blocks；但 history 文件与 UI 读到的仍是
+        // 完整 tool_use/tool_result → 用户 trace bubble 不会丢工具。
+        if (!inserted) {
+          if (originalClientMessage && !originalClientMessage.compactionIdentityAnchor) {
             result.push({
               ...originalClientMessage,
               compactionIdentityAnchor: true,
@@ -809,9 +817,16 @@ export class Session {
             id: randomUUID(),
             runId: originalClientMessage?.runId ?? msg.runId,
           });
-          replaced = true;
+          inserted = true;
         }
-        // 跳过当前轮的其他原始消息
+        if (msg !== originalClientMessage) {
+          // 保留原始 blocks 但打 marker，让 LLM 跳过、UI/history 仍可读。
+          if (!msg.compactionIdentityAnchor) {
+            result.push({ ...msg, compactionIdentityAnchor: true });
+          } else {
+            result.push(msg);
+          }
+        }
       } else {
         result.push(msg);
       }

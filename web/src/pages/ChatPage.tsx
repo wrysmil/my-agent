@@ -82,10 +82,12 @@ export function ChatPage() {
     }
   }, [sessionId]);
 
-  // 聊天完成后刷新侧边栏 session 列表（更新名称/消息数）
+  // 聊天完成后刷新侧边栏 session 列表（更新名称/消息数）。
+  // 只 invalidate sessions.list，避免波及 ['sessions', id, 'history'] 等子键，
+  // 防止未来 history 迁到 React Query 时被强制重拉再次触发 merge（spec §4.3）。
   useEffect(() => {
     if (status === 'done' || status === 'error' || status === 'aborted') {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.list });
     }
   }, [status, queryClient]);
 
@@ -190,7 +192,7 @@ export function ChatPage() {
         );
         const newId = data.session.id;
         logger.debug(`🆕 懒创建会话: ${newId}（由首条消息触发）`);
-        queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.sessions.list });
         try { localStorage.setItem('my-agent.activeSession', newId); } catch {}
         // 把待发送文本 + 选项存进模块级 Map，新 mount 的 ChatPage 会接住并自动发送
         setPendingMessage(newId, text, { autoSend: true, options });

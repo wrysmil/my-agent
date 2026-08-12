@@ -18,6 +18,21 @@
 
 import { useCallback, useEffect, useMemo } from 'react';
 import { parseSseStream } from '@/lib/sse';
+
+/**
+ * Streaming tool name cache：模块级 Map<toolId, toolName>。
+ *
+ * 后端 tool_use_delta SSE 帧不带 name 字段（仅 Anthropic content_block_start
+ * 触发的 tool_use_start 帧带 name），而 partial frames 可能先于 start 到达，
+ * 或 Anthropic 流式参数收集阶段前端只收到 partial frames——导致新建
+ * tool_call block 时 toolName=''。
+ *
+ * 当任意 SSE event 携带 (toolId, toolName) 时，把 toolName 写入 cache；
+ * 后续 partial frames 用 toolId 查 cache 兜底 toolName。
+ *
+ * Map 永不清空（同一进程内 toolId 唯一），适合单进程前端生命周期。
+ */
+const toolNameCache = new Map<string, string>();
 import { apiGet } from '@/lib/api';
 import { logger } from '@/lib/logger';
 import {
@@ -32,6 +47,7 @@ import type {
   ChatOptions,
   Block,
   ChatStreamEnvelope,
+  TextBlock,
   ThinkingBlock,
   ToolCallBlock,
 } from './types';
@@ -249,6 +265,14 @@ function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
 /**
  * persisted 快照只替换已经达到该 run 持久化 revision 的 overlay。
  * 没有稳定 ID 的旧消息按本地 id 去重，避免重复 history/refetch 膨胀。
+ *
+ * 方案 B（spec §4.2）：以 overlay 顺序为骨架（保留流式顺序），persisted
+ * 中与 overlay identity / runId 匹配的条目就地 merge；persisted 独有的
+ * 旧历史条目按「下一个 / 上一个已存在锚点」插入正确位置。
+ *
+ * 修复动机（spec §4.1）：旧算法以 persisted 为基底，overlay 中排在首位、
+ * 在 persisted 中找不到匹配的 user 消息会被 splice 到 result.length（末尾），
+ * 导致 done 后 history refetch 把 user 排到 assistant 后面。
  */
 export function mergePersistedWithOverlay(
   persisted: ChatMessage[],
@@ -256,44 +280,200 @@ export function mergePersistedWithOverlay(
   historyRevision: number,
   requiredRevisionForRun: (runId: string) => number | null,
 ): ChatMessage[] {
-  const result = [...persisted];
   const identity = (message: ChatMessage) =>
     message.messageId ?? message.clientMessageId ?? message.id;
 
-  for (let overlayIndex = 0; overlayIndex < overlay.length; overlayIndex += 1) {
-    const candidate = overlay[overlayIndex];
-    const candidateIdentity = identity(candidate);
-    const persistedIndex = result.findIndex(
-      (message) => identity(message) === candidateIdentity,
-    );
-    const indexedRevision = candidate.runId
-      ? requiredRevisionForRun(candidate.runId)
-      : null;
-    const requiredRevision =
-      indexedRevision ?? candidate.pendingPersistenceRevision ?? null;
+  // 步骤 1：以 overlay 顺序为骨架
+  const result = [...overlay];
+  const overlayIdentityIndex = new Map<string, number>();
+  result.forEach((message, index) => {
+    const key = identity(message);
+    if (!overlayIdentityIndex.has(key)) overlayIdentityIndex.set(key, index);
+  });
+  const overlayRunIds = new Set(
+    result.filter((m) => m.role === 'assistant' && m.runId).map((m) => m.runId),
+  );
 
-    if (persistedIndex >= 0) {
-      if (requiredRevision !== null && historyRevision < requiredRevision) {
-        result[persistedIndex] = candidate;
-      }
+  // 步骤 2：遍历 persisted，匹配条目就地 merge
+  for (
+    let persistedIndex = 0;
+    persistedIndex < persisted.length;
+    persistedIndex += 1
+  ) {
+    const persistedMsg = persisted[persistedIndex];
+
+    const idMatch = result.findIndex(
+      (message) => identity(message) === identity(persistedMsg),
+    );
+    if (idMatch >= 0) {
+      const candidate = result[idMatch];
+      const indexedRevision = candidate.runId
+        ? requiredRevisionForRun(candidate.runId)
+        : null;
+      const requiredRevision =
+        indexedRevision ?? candidate.pendingPersistenceRevision ?? null;
+      result[idMatch] = mergeAssistantForSameRun(
+        persistedMsg,
+        candidate,
+        requiredRevision !== null && historyRevision < requiredRevision
+          ? 'overlay-wins'
+          : 'persisted-wins',
+      );
       continue;
     }
 
-    let insertAt = result.length;
-    for (let previous = overlayIndex - 1; previous >= 0; previous -= 1) {
-      const previousIdentity = identity(overlay[previous]);
-      const previousResultIndex = result.findIndex(
-        (message) => identity(message) === previousIdentity,
+    // runId 二次匹配（assistant）：overlay 常以 `asst-${runId}` 存在，persisted
+    // 以 `hist-${messageId}` + messageId 存在，identity 不匹配时按 runId 归并，
+    // 防止同 run 出现多个 trace bubble（duplicate trace bubble fix 回归保护）。
+    if (
+      persistedMsg.role === 'assistant' &&
+      persistedMsg.runId &&
+      overlayRunIds.has(persistedMsg.runId)
+    ) {
+      const runMatch = result.findIndex(
+        (message) =>
+          message.role === 'assistant' && message.runId === persistedMsg.runId,
       );
-      if (previousResultIndex >= 0) {
-        insertAt = previousResultIndex + 1;
-        break;
+      if (runMatch >= 0) {
+        const candidate = result[runMatch];
+        const indexedRevision = candidate.runId
+          ? requiredRevisionForRun(candidate.runId)
+          : null;
+        const requiredRevision =
+          indexedRevision ?? candidate.pendingPersistenceRevision ?? null;
+        result[runMatch] = mergeAssistantForSameRun(
+          persistedMsg,
+          candidate,
+          requiredRevision !== null && historyRevision < requiredRevision
+            ? 'overlay-wins'
+            : 'persisted-wins',
+        );
+        continue;
       }
     }
-    result.splice(insertAt, 0, candidate);
+
+    // user 双身份去重：同一次发送的 user 消息（runId 相同）在 overlay / persisted
+    // 两侧 identity 可能不同（messageId vs clientMessageId 时序差异），视为同一条，
+    // 否则 persisted 收敛后会把 overlay 的 user 当作新条目重复插入。
+    if (persistedMsg.role === 'user' && persistedMsg.runId) {
+      const userMatch = result.findIndex(
+        (message) =>
+          message.role === 'user' && message.runId === persistedMsg.runId,
+      );
+      if (userMatch >= 0) {
+        result[userMatch] = mergeUserForSameRun(
+          result[userMatch],
+          persistedMsg,
+        );
+        continue;
+      }
+    }
+
+    // 步骤 3：persisted 独有（overlay 中没有的旧历史条目）按锚点插入
+    insertPersistedOnlyAtAnchor(
+      result,
+      persisted,
+      persistedIndex,
+      identity,
+      overlayIdentityIndex,
+    );
   }
 
+  // 步骤 4：overlay 独有（persisted 尚未落盘的新条目）已在步骤 1 按 overlay
+  // 顺序放入 result，无需额外处理。
   return result;
+}
+
+/**
+ * user 消息双身份去重：保留 overlay 内容与 clientMessageId，吸收 persisted
+ * 的稳定 id / messageId（history 再收敛时 identity 趋于稳定）。
+ */
+function mergeUserForSameRun(
+  overlayMsg: ChatMessage,
+  persistedMsg: ChatMessage,
+): ChatMessage {
+  return {
+    ...overlayMsg,
+    id: persistedMsg.id ?? overlayMsg.id,
+    messageId: persistedMsg.messageId ?? overlayMsg.messageId,
+  };
+}
+
+/**
+ * persisted 独有条目插入：利用 overlay 与 persisted 共有的 identity 锚点。
+ * 优先插到 persisted 中「下一个已存在锚点」之前（保持时间线顺序），
+ * 找不到则插到「上一个已存在锚点」之后；都找不到则 append（极端场景兜底）。
+ */
+function insertPersistedOnlyAtAnchor(
+  result: ChatMessage[],
+  persisted: ChatMessage[],
+  persistedIndex: number,
+  identity: (message: ChatMessage) => string,
+  overlayIdentityIndex: Map<string, number>,
+): void {
+  const persistedMsg = persisted[persistedIndex];
+
+  // 下一个锚点：persisted 中位于 persistedMsg 之后、且在 overlay 骨架里有身份的条目
+  for (let i = persistedIndex + 1; i < persisted.length; i += 1) {
+    const nextKey = identity(persisted[i]);
+    if (overlayIdentityIndex.has(nextKey)) {
+      const resultIdx = result.findIndex((m) => identity(m) === nextKey);
+      if (resultIdx >= 0) {
+        result.splice(resultIdx, 0, persistedMsg);
+        return;
+      }
+    }
+  }
+
+  // 上一个锚点：persisted 中位于 persistedMsg 之前的匹配条目
+  for (let i = persistedIndex - 1; i >= 0; i -= 1) {
+    const prevKey = identity(persisted[i]);
+    if (overlayIdentityIndex.has(prevKey)) {
+      const resultIdx = result.findIndex((m) => identity(m) === prevKey);
+      if (resultIdx >= 0) {
+        result.splice(resultIdx + 1, 0, persistedMsg);
+        return;
+      }
+    }
+  }
+
+  // 兜底：append（极端场景，不影响当前 bug 修复路径）
+  result.push(persistedMsg);
+}
+
+/**
+ * history 收敛时 persisted 结构优先，但若 overlay 含更长 final text 则保留 overlay 文本。
+ * 背景：done 后 history refetch 可能早于后端写入 final text 行，此时 persisted 只有
+ * thinking/tool blocks，直接丢弃 overlay 会导致「回复流被吞 / 最终内容没了」。
+ */
+function mergeAssistantTextFromOverlay(
+  target: ChatMessage,
+  overlay: ChatMessage,
+): ChatMessage {
+  const targetTextLen = messageText(target).length;
+  const overlayTextLen = messageText(overlay).length;
+  if (overlayTextLen <= targetTextLen) return target;
+
+  const nonTextBlocks = target.blocks.filter((b) => b.type !== 'text');
+  const overlayTextBlocks = overlay.blocks
+    .filter((b): b is TextBlock => b.type === 'text')
+    .map((b) => ({ ...b, status: 'done' as const }));
+  return { ...target, blocks: [...nonTextBlocks, ...overlayTextBlocks] };
+}
+
+function mergeAssistantForSameRun(
+  persisted: ChatMessage,
+  overlay: ChatMessage,
+  mode: 'overlay-wins' | 'persisted-wins',
+): ChatMessage {
+  if (mode === 'overlay-wins') {
+    return {
+      ...overlay,
+      id: persisted.id,
+      messageId: persisted.messageId ?? overlay.messageId,
+    };
+  }
+  return mergeAssistantTextFromOverlay(persisted, overlay);
 }
 
 function updateAssistantForRun(
@@ -390,8 +570,22 @@ export function useChatStream(sessionId: string) {
       retryClientMessageId?: string,
     ) => {
       const store = useChatRuntimeStore.getState();
-      const currentStatus = store.getSession(sessionId)?.status ?? 'idle';
+      const currentSession = store.getSession(sessionId);
+      const currentStatus = currentSession?.status ?? 'idle';
+      // P0 guard：status 检查 + activeRunId 检查双保险。
+      // 背景：status='done'/'error'/'aborted' 等非终态切换瞬间，可能与 hub 端 active run
+      // 状态不同步（用户切走 → 流在 B 渲染期间完成 → status 已切回 done，但 hub.runId 仍注册中）。
+      // 此时前端如直接 send，后端 hub.hasActiveRun 会 409 并回写错误消息，
+      // 视觉上呈现为「多了几个 AI 气泡」。
       if (['submitting', 'streaming', 'reconnecting'].includes(currentStatus)) {
+        return;
+      }
+      if (currentSession?.activeRunId) {
+        logger.warn('[useChatStream] send blocked: activeRunId present despite non-streaming status', {
+          sessionId,
+          status: currentStatus,
+          activeRunId: currentSession.activeRunId,
+        });
         return;
       }
 
@@ -613,6 +807,10 @@ export function useChatStream(sessionId: string) {
                 ensureAssistant();
                 const cb = innerData.content_block as Record<string, unknown> | undefined;
                 if (cb?.type === 'tool_use') {
+                  const toolId = (cb.id as string) || '';
+                  const cbName = (cb.name as string) || '';
+                  if (toolId && cbName) toolNameCache.set(toolId, cbName);
+                  const toolName = cbName || toolNameCache.get(toolId) || '';
                   store.updateMessages(sessionId, runId, (msgs) =>
                     updateAssistantForRun(msgs, runId, (assistant) => {
                     const blocks = [...assistant.blocks];
@@ -620,8 +818,8 @@ export function useChatStream(sessionId: string) {
                       id: nextBlockId(),
                       type: 'tool_call',
                       status: 'streaming',
-                      toolId: (cb.id as string) || '',
-                      toolName: (cb.name as string) || '',
+                      toolId,
+                      toolName,
                       inputRaw: '',
                       blockId: cb.id as string | undefined,
                     });
@@ -748,7 +946,10 @@ export function useChatStream(sessionId: string) {
               case 'tool_use': {
                 ensureAssistant();
                 const toolId = (innerData.id as string) ?? '';
-                const toolName = (innerData.name as string) ?? '';
+                const cbName = (innerData.name as string) ?? '';
+                if (toolId && cbName) toolNameCache.set(toolId, cbName);
+                // 兜底：tool_use_delta SSE 帧不带 name —— 查同进程 toolNameCache
+                const toolName = cbName || toolNameCache.get(toolId) || '';
                 const isPartial = innerData.partial === true;
 
                 store.updateMessages(sessionId, runId, (msgs) =>
@@ -811,12 +1012,19 @@ export function useChatStream(sessionId: string) {
                   updateAssistantForRun(msgs, runId, (assistant) => {
                   const blocks = [...assistant.blocks];
 
-                  // 标记对应 tool_call 为 done
+                  // 标记对应 tool_call 为 done；同时补救 toolName —— Anthropic 协议下
+                  // 部分 tool_use start 事件可能晚于 input delta，或 initial 事件的 name 字段
+                  // 为空，需借助 tool_result 的 tool_name 兜底，否则用户看到工具名长时间空白。
                   const tcIdx = blocks.findIndex(
                     (b) => b.type === 'tool_call' && (b as import('./types').ToolCallBlock).toolId === trToolUseId,
                   );
-                  if (tcIdx >= 0 && blocks[tcIdx].status !== 'done') {
-                    blocks[tcIdx] = { ...blocks[tcIdx], status: 'done' };
+                  if (tcIdx >= 0) {
+                    const tc = blocks[tcIdx] as import('./types').ToolCallBlock;
+                    blocks[tcIdx] = {
+                      ...tc,
+                      toolName: trToolName || tc.toolName,
+                      status: 'done',
+                    };
                   }
 
                   const existingResult = blocks.find(

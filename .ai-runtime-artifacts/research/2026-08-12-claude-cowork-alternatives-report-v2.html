@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Cowork 开源替代分析报告 · v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --surface-hover: rgba(0,0,0,.04);
+    --border: rgba(15,18,28,.10);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-fg: #ffffff;
+    --primary-soft: rgba(108,92,231,.10);
+    --danger: #d63b3b;
+    --danger-bg: rgba(214,59,59,.06);
+    --green: #16a34a;
+    --amber: #b45309;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+    --radius-sm: 10px;
+    --radius-md: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-feature-settings: "cv11", "ss01";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Header ── */
+  header.page {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(247,247,248,.85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+  }
+  header.page .inner {
+    max-width: 1100px; margin: 0 auto;
+    padding: 14px 24px;
+    display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  }
+  header.page h1 {
+    font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  header.page h1 .badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 999px;
+    background: rgba(108,92,231,.12); color: var(--primary); font-weight: 600;
+  }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+
+  /* ── Main ── */
+  main {
+    max-width: 1100px; margin: 0 auto; padding: 28px 24px 40px;
+  }
+
+  /* ── TOC ── */
+  .toc {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-card);
+  }
+  .toc h2 {
+    margin: 0 0 12px; font-size: 14px; font-weight: 600;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .toc ol {
+    margin: 0; padding: 0 0 0 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px;
+  }
+  .toc ol li { font-size: 13px; }
+  .toc ol li a {
+    color: var(--primary); text-decoration: none;
+    border-bottom: 1px solid transparent; transition: border .15s;
+  }
+  .toc ol li a:hover { border-color: var(--primary); }
+
+  /* ── Section ── */
+  section { margin-bottom: 36px; }
+  section > h2 {
+    font-size: 18px; font-weight: 600; margin: 0 0 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  section > h2 .num {
+    display: grid; place-items: center;
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--primary-soft); color: var(--primary);
+    font-size: 14px; font-weight: 700;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+  }
+  .card::before {
+    content: "";
+    position: absolute; left: 0; top: 20px; bottom: 20px;
+    width: 3px; border-radius: 0 3px 3px 0;
+    background: linear-gradient(180deg, var(--primary), color-mix(in oklab, var(--primary), white 60%));
+    opacity: .8;
+  }
+  .card .card-head {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px;
+  }
+  .card .card-head .rank {
+    font-size: 13px; font-weight: 700; color: var(--primary);
+    min-width: 28px; line-height: 1.4;
+  }
+  .card .card-head .info { flex: 1; min-width: 0; }
+  .card .card-head .info h3 {
+    margin: 0 0 4px; font-size: 15px; font-weight: 600;
+  }
+  .card .card-head .info h3 a {
+    color: inherit; text-decoration: none;
+    border-bottom: 1px solid transparent; transition: border .15s;
+  }
+  .card .card-head .info h3 a:hover { border-color: var(--primary); }
+  .card .card-head .info .meta {
+    font-size: 12px; color: var(--text-muted);
+    display: flex; flex-wrap: wrap; gap: 4px 12px;
+  }
+  .card .card-head .stars {
+    font-size: 12px; font-weight: 600; color: var(--amber);
+    white-space: nowrap; display: flex; align-items: center; gap: 4px;
+  }
+  .card .card-head .stars svg { width: 14px; height: 14px; }
+  .card .card-body { font-size: 13px; line-height: 1.7; color: var(--text); }
+  .card .card-body ul { margin: 4px 0 0; padding-left: 18px; }
+  .card .card-body ul li { margin-bottom: 3px; }
+  .card .card-body ul li::marker { color: var(--text-muted-2); }
+  .card .tags {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;
+  }
+  .card .tags span {
+    font-size: 11px; padding: 3px 8px; border-radius: 6px;
+    background: var(--surface); color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .card .tags span.hl {
+    background: var(--primary-soft); color: var(--primary); border-color: rgba(108,92,231,.25);
+  }
+
+  /* badge variants */
+  .badge-green { background: rgba(22,163,74,.10); color: var(--green); border: 1px solid rgba(22,163,74,.20); }
+  .badge-amber { background: rgba(180,83,9,.10); color: var(--amber); border: 1px solid rgba(180,83,9,.20); }
+
+  /* ── Comparison Table ── */
+  .table-wrap {
+    overflow-x: auto; margin-bottom: 20px;
+    border: 1px solid var(--border); border-radius: var(--radius-md);
+    background: var(--surface-2); box-shadow: var(--shadow-card);
+  }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 13px; line-height: 1.6;
+  }
+  table thead th {
+    text-align: left; padding: 12px 14px;
+    background: var(--surface); font-weight: 600; font-size: 12px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  table tbody td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table tbody tr:last-child td { border-bottom: none; }
+  table tbody tr:hover { background: rgba(108,92,231,.03); }
+  table .y { color: var(--green); font-weight: 600; }
+  table .n { color: var(--text-muted-2); }
+
+  /* ── Conclusion ── */
+  .conclusion-card {
+    background: var(--surface-2);
+    border: 1px solid rgba(108,92,231,.25);
+    border-radius: var(--radius-md);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-card);
+    position: relative;
+    overflow: hidden;
+  }
+  .conclusion-card::before {
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--primary); border-radius: 0 4px 4px 0;
+  }
+  .conclusion-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+  .conclusion-card p, .conclusion-card li { font-size: 13px; line-height: 1.7; color: var(--text); }
+  .conclusion-card ul { margin: 6px 0 0; padding-left: 18px; }
+  .conclusion-card li { margin-bottom: 4px; }
+
+  /* ── Trend bar ── */
+  .trend-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin-bottom: 20px;
+  }
+  .trend-item {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 16px 18px;
+    box-shadow: var(--shadow-card);
+  }
+  .trend-item h4 {
+    margin: 0 0 8px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .trend-item h4 .dot {
+    width: 8px; height: 8px; border-radius: 999px; background: var(--primary);
+  }
+  .trend-item p { font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+  /* ── Footer ── */
+  footer.page {
+    max-width: 1100px; margin: 0 auto; padding: 8px 24px 32px;
+    font-size: 11px; color: var(--text-muted-2);
+  }
+  footer.page a { color: var(--primary); text-decoration: none; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .toc ol { grid-template-columns: 1fr; }
+    .trend-grid { grid-template-columns: 1fr; }
+    table thead { display: none; }
+    table tbody td { display: block; padding: 8px 14px; }
+    table tbody td::before {
+      content: attr(data-label); font-weight: 600; display: block;
+      font-size: 11px; color: var(--text-muted); margin-bottom: 2px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>Claude Cowork 开源替代分析报告 <span class="badge">v2</span></h1>
+    <span class="sub">基于 GitHub 实时数据调研 · 2026-08-12</span>
+    <span class="spacer"></span>
+    <span style="font-size:11px;color:var(--text-muted-2);">数据来源：GitHub 仓库搜索 + 各项目主页</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ═══════════ 目录 ═══════════ -->
+  <nav class="toc">
+    <h2>📑 内容目录</h2>
+    <ol>
+      <li><a href="#s1">执行摘要</a></li>
+      <li><a href="#s2">重点开源替代项目详解（Top 6）</a></li>
+      <li><a href="#s3">其他值得关注的项目</a></li>
+      <li><a href="#s4">多维度对比矩阵</a></li>
+      <li><a href="#s5">技术栈与协议趋势</a></li>
+      <li><a href="#s6">核心功能趋势分析</a></li>
+      <li><a href="#s7">选型建议与结论</a></li>
+    </ol>
+  </nav>
+
+  <!-- ═══════════ 1. 执行摘要 ═══════════ -->
+  <section id="s1">
+    <h2><span class="num">1</span> 执行摘要</h2>
+
+    <div class="card" style="border-color: rgba(108,92,231,.20);">
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>Claude Cowork</strong> 是 Anthropic 推出的 AI 桌面智能体产品，具备多模型对话、技能系统、沙箱隔离、MCP 协议集成等能力。本报告梳理了截至 <strong>2026-08-12</strong> GitHub 上最活跃的 Claude Cowork 开源替代方案，按 Stars、功能完整度、架构设计、社区活跃度等维度进行评估。</p>
+        <p style="margin:0;">当前生态中，<strong>Open Cowork</strong>（~2k stars）是最直接的 Claude Cowork 开源克隆；<strong>AQBot</strong>（779 stars）以 Tauri + Rust 轻量架构和 ACP 协议支持形成差异化；<strong>Abu-Cowork</strong>（273 stars）凭借自进化技能系统和多智能体并行能力在功能深度上最为突出。<strong>Wandesk</strong>（64 stars）则以 "AI 桌面 OS" 的范式突破引人注目。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 2. 重点开源替代项目详解 ═══════════ -->
+  <section id="s2">
+    <h2><span class="num">2</span> 重点开源替代项目详解（Top 6）</h2>
+
+    <!-- Open Cowork -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#1</span>
+        <div class="info">
+          <h3><a href="https://github.com/OpenCoworkAI/open-cowork" target="_blank">Open Cowork</a></h3>
+          <div class="meta">
+            <span>OpenCoworkAI/open-cowork</span>
+            <span>Electron + React + TypeScript</span>
+            <span>Windows / macOS</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> ~2,000</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>Claude Cowork 最直接的开源实现</strong>，一键安装，功能对齐度最高。</p>
+        <ul>
+          <li>支持 <strong>Claude、OpenAI、Gemini、DeepSeek、GLM、MiniMax、Kimi</strong> 等多模型</li>
+          <li><strong>VM 级沙箱隔离</strong>：Windows 用 WSL2，macOS 用 Lima</li>
+          <li>内置 <strong>Skills 系统</strong>：生成 PPTX、DOCX、XLSX、PDF</li>
+          <li><strong>MCP 协议</strong>支持（浏览器、Notion 等连接器）</li>
+          <li>支持飞书/Slack 远程控制 + GUI 操作自动化</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="hl">多模型</span><span class="hl">VM 沙箱</span><span class="hl">Skills 系统</span><span>MCP</span><span>Electron</span><span>远程控制</span>
+      </div>
+    </div>
+
+    <!-- AQBot -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#2</span>
+        <div class="info">
+          <h3><a href="https://github.com/AQBot-Desktop/AQBot" target="_blank">AQBot</a></h3>
+          <div class="meta">
+            <span>AQBot-Desktop/AQBot</span>
+            <span>Tauri + Rust + TypeScript</span>
+            <span>macOS / Windows / Linux</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> 779</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>本地优先的安全 AI 桌面工作台</strong>，Tauri 架构带来轻量体验。</p>
+        <ul>
+          <li><strong>AES-256 加密</strong>保护 API 密钥，本地优先架构</li>
+          <li>多服务商对话 + <strong>ACP Agent 工作台</strong>（Codex、Claude Agent、Gemini CLI）</li>
+          <li><strong>API 网关</strong>：暴露 OpenAI / Claude / Gemini 原生接口</li>
+          <li>本地 RAG 知识库（sqlite-vec）+ 联网搜索</li>
+          <li>MCP 工具（stdio、SSE、StreamableHTTP）</li>
+          <li>11 种界面语言 + 角色市场 + 技能市场</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="hl">本地优先</span><span class="hl">AES-256</span><span class="hl">ACP 协议</span><span class="hl">API 网关</span><span>Tauri</span><span>RAG</span><span>MCP</span>
+      </div>
+    </div>
+
+    <!-- OpenSail -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#3</span>
+        <div class="info">
+          <h3><a href="https://github.com/TesslateAI/OpenSail" target="_blank">OpenSail</a></h3>
+          <div class="meta">
+            <span>TesslateAI/OpenSail</span>
+            <span>TypeScript + Docker + K8s</span>
+            <span>跨平台（Docker 部署）</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> 620</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>企业级 AI 智能体平台</strong>，定位为 Codex App、Cursor、Cowork 的开源替代品。</p>
+        <ul>
+          <li>可构建 AI 工作流、应用、智能体和自动化</li>
+          <li><strong>企业级治理</strong>：审批流、预算控制、权限管理、日志审计</li>
+          <li>沙箱工作空间（快照支持，可休眠/唤醒）</li>
+          <li>Slack、Linear、GitHub、Salesforce、Gmail 等连接器</li>
+          <li>可发布工作空间为可安装应用</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="hl">企业级</span><span class="hl">审批流</span><span>沙箱快照</span><span>Docker/K8s</span><span>多连接器</span>
+      </div>
+    </div>
+
+    <!-- Abu-Cowork -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#4</span>
+        <div class="info">
+          <h3><a href="https://github.com/PM-Shawn/Abu-Cowork" target="_blank">Abu-Cowork</a></h3>
+          <div class="meta">
+            <span>PM-Shawn/Abu-Cowork</span>
+            <span>Electron + Tauri + React + TypeScript</span>
+            <span>macOS / Windows / Linux</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> 273</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>功能深度最强的本地智能助手</strong>，自进化技能系统是最大亮点。</p>
+        <ul>
+          <li><strong>29 个内置技能 + 自进化技能系统</strong>（AI 主动发现并固化工作流为技能）</li>
+          <li><strong>多智能体并行</strong>：最多 5 个后台智能体同时执行</li>
+          <li>内置浏览器自动化 + 桌面宠物（Labs）</li>
+          <li>IM 机器人集成（飞书/钉钉/企业微信/Slack）</li>
+          <li>定时任务 + 事件触发器</li>
+          <li><strong>Soul 人格系统</strong>（Quiet / Buddy / Butler 三种预设）</li>
+          <li>内容安全扫描（提示注入检测）</li>
+          <li>12+ 云服务商 + 本地 Ollama</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="hl">自进化技能</span><span class="hl">多智能体</span><span class="hl">人格系统</span><span>Electron+Tauri</span><span>安全扫描</span><span>Ollama</span>
+      </div>
+    </div>
+
+    <!-- Wandesk -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#5</span>
+        <div class="info">
+          <h3><a href="https://github.com/Sider-ai/wandesk" target="_blank">Wandesk</a></h3>
+          <div class="meta">
+            <span>Sider-ai/wandesk</span>
+            <span>React 19 + TypeScript + Tauri + SQLite</span>
+            <span>macOS / Windows / Linux</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> 64</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;"><strong>"AI 桌面 OS" 范式</strong>，用自然语言生成完整本地应用。</p>
+        <ul>
+          <li><strong>App Workshop</strong>：自然语言描述 → 完整可用的 React 应用（前端 + API + SQLite）</li>
+          <li>共享上下文：所有应用共享一个智能体核心和工作空间</li>
+          <li>个人记忆系统</li>
+          <li>原生集成 Claude Code / Codex</li>
+          <li>自建应用经济生态（Ledger 记账、Notebook 笔记等）</li>
+          <li>完全本地运行，无需账号</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span class="hl">AI 桌面 OS</span><span class="hl">App Workshop</span><span>React 19</span><span>Tauri</span><span>SQLite</span><span>本地优先</span>
+      </div>
+    </div>
+
+    <!-- Kimi K3 Code -->
+    <div class="card">
+      <div class="card-head">
+        <span class="rank">#6</span>
+        <div class="info">
+          <h3><a href="https://github.com/kimicodek3/Kimi-K3-Code-Free-Desktop-AI" target="_blank">Kimi K3 Code</a></h3>
+          <div class="meta">
+            <span>kimicodek3/Kimi-K3-Code-Free-Desktop-AI</span>
+            <span>C++</span>
+            <span>Windows / macOS / Linux</span>
+          </div>
+        </div>
+        <span class="stars"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg> 31</span>
+      </div>
+      <div class="card-body">
+        <p style="margin:0 0 8px;">基于 Moonshot AI 的 Kimi K3 模型，<strong>专注编码场景</strong>的免费桌面 AI 工具。</p>
+        <ul>
+          <li><strong>200K 上下文窗口</strong></li>
+          <li>GitHub 集成（代码审查、PR 分析）</li>
+          <li>免费使用，中英双语</li>
+          <li>C++ 原生实现，性能优异</li>
+        </ul>
+      </div>
+      <div class="tags">
+        <span>Kimi K3</span><span>200K 上下文</span><span>C++</span><span>GitHub 集成</span><span>免费</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3. 其他值得关注的项目 ═══════════ -->
+  <section id="s3">
+    <h2><span class="num">3</span> 其他值得关注的项目</h2>
+
+    <div class="trend-grid">
+      <div class="trend-item">
+        <h4><span class="dot"></span> SmartSub — 4.6k stars</h4>
+        <p>buxuku/SmartSub · 视频字幕提取 + AI 翻译 + 声音克隆，基于本地 Whisper/FunASR，GPU 加速。纯工具型，非 Cowork 替代但有技能参考价值。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> Toonflow — 13.8k stars</h4>
+        <p>HBAI-Ltd/Toonflow-app · AI 短剧创作工具（小说→动画短剧全流程），Electron + TypeScript。展示了 AI 桌面应用在垂直创作领域的深度应用。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> Hermes Agent Desktop — 48 stars</h4>
+        <p>desktop-hermes/hermes-agent-desktop · 基于 Ollama 的本地 AI 智能体，多智能体桌面自动化。纯本地、隐私优先。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> ClickyX — 13 stars</h4>
+        <p>unn-Known1/clickyX · Rust + Tauri 跨平台 AI 伴侣，支持语音、屏幕识别、Whisper、ElevenLabs。轻量 AI 伴侣方向的新兴项目。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4. 多维度对比矩阵 ═══════════ -->
+  <section id="s4">
+    <h2><span class="num">4</span> 多维度对比矩阵</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>项目</th>
+            <th>Stars</th>
+            <th>核心定位</th>
+            <th>桌面框架</th>
+            <th>多模型</th>
+            <th>本地优先</th>
+            <th>智能体</th>
+            <th>沙箱</th>
+            <th>MCP/ACP</th>
+            <th>平台</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Open Cowork</strong></td>
+            <td>~2,000</td>
+            <td>Cowork 开源克隆</td>
+            <td>Electron</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="y">✓</td>
+            <td class="y">✓ VM</td>
+            <td>MCP</td>
+            <td>Win / Mac</td>
+          </tr>
+          <tr>
+            <td><strong>AQBot</strong></td>
+            <td>779</td>
+            <td>AI 桌面工作台</td>
+            <td>Tauri</td>
+            <td class="y">✓</td>
+            <td class="y">✓ AES-256</td>
+            <td class="y">✓ ACP</td>
+            <td class="n">✗</td>
+            <td>MCP + ACP</td>
+            <td>全平台</td>
+          </tr>
+          <tr>
+            <td><strong>OpenSail</strong></td>
+            <td>620</td>
+            <td>企业级 AI 平台</td>
+            <td>Web(Docker)</td>
+            <td class="y">✓</td>
+            <td>自部署</td>
+            <td class="y">✓</td>
+            <td class="y">✓ 快照</td>
+            <td class="n">—</td>
+            <td>Web / Docker</td>
+          </tr>
+          <tr>
+            <td><strong>Abu-Cowork</strong></td>
+            <td>273</td>
+            <td>本地智能助手</td>
+            <td>Electron+Tauri</td>
+            <td class="y">✓</td>
+            <td class="y">✓ Ollama</td>
+            <td class="y">✓ 并行</td>
+            <td class="y">✓</td>
+            <td class="n">—</td>
+            <td>全平台</td>
+          </tr>
+          <tr>
+            <td><strong>Wandesk</strong></td>
+            <td>64</td>
+            <td>AI 桌面 OS</td>
+            <td>Tauri</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="y">✓</td>
+            <td class="n">✗</td>
+            <td class="n">—</td>
+            <td>全平台</td>
+          </tr>
+          <tr>
+            <td><strong>Kimi K3 Code</strong></td>
+            <td>31</td>
+            <td>编码助手</td>
+            <td>C++ 原生</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td class="n">✗</td>
+            <td>全平台</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5. 技术栈与协议趋势 ═══════════ -->
+  <section id="s5">
+    <h2><span class="num">5</span> 技术栈与协议趋势</h2>
+
+    <div class="trend-grid">
+      <div class="trend-item">
+        <h4><span class="dot"></span> 桌面框架</h4>
+        <p><strong>Electron</strong>（Open Cowork, Abu-Cowork）仍是当前最主流，生态成熟、开发效率高。<strong>Tauri</strong>（AQBot, Wandesk, ClickyX）因内存占用低、安装包小、性能好而迅速崛起。多数新项目首选 Tauri。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> 前端技术</h4>
+        <p><strong>React + TypeScript</strong> 是绝对主流。少数项目开始采用 React 19（Wandesk）和 Rust 为核心后端语言。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> MCP vs ACP</h4>
+        <p><strong>MCP</strong>（Model Context Protocol）已被 Open Cowork、AQBot、Cherry Studio、Jan 等广泛采用。<strong>ACP</strong>（Agent Client Protocol）由 AQBot 率先支持，是智能体间通信的新兴标准。</p>
+      </div>
+      <div class="trend-item">
+        <h4><span class="dot"></span> 本地化技术</h4>
+        <p>AES-256 加密 API Key（AQBot）、本地 SQLite 存储（Wandesk）、sqlite-vec 向量数据库（AQBot）成为标配方案。Ollama 集成让纯本地推理成为可能。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 6. 核心功能趋势 ═══════════ -->
+  <section id="s6">
+    <h2><span class="num">6</span> 核心功能趋势分析</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>趋势</th>
+            <th>代表项目</th>
+            <th>说明</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>🔌 多模型聚合</strong></td>
+            <td>Open Cowork, AQBot, Abu-Cowork</td>
+            <td>几乎所有项目都支持 ≥5 家服务商，覆盖 Claude、OpenAI、Gemini、DeepSeek、GLM、Kimi、Qwen 等</td>
+          </tr>
+          <tr>
+            <td><strong>📦 技能系统</strong></td>
+            <td>Open Cowork, Abu-Cowork, AQBot</td>
+            <td>可复用、可组合的 AI 能力模块；Abu-Cowork 更进一步实现了 AI 主动发现并固化工作流为技能的<strong>自进化机制</strong></td>
+          </tr>
+          <tr>
+            <td><strong>🛡️ 沙箱安全</strong></td>
+            <td>Open Cowork (WSL2/Lima), OpenSail (Docker), Abu-Cowork</td>
+            <td>VM 级隔离成为标配；OpenSail 还支持快照和休眠/唤醒</td>
+          </tr>
+          <tr>
+            <td><strong>🤖 多智能体协作</strong></td>
+            <td>Abu-Cowork (并行 5 个), AQBot (ACP), Hermes</td>
+            <td>从单 Agent 向多 Agent 并行演进；ACP 协议提供标准化通信基础</td>
+          </tr>
+          <tr>
+            <td><strong>🔒 本地优先/隐私</strong></td>
+            <td>AQBot, Wandesk, Abu-Cowork</td>
+            <td>API Key 本地加密（AES-256）、数据本地存储、Ollama 离线推理</td>
+          </tr>
+          <tr>
+            <td><strong>💬 远程控制/IM</strong></td>
+            <td>Open Cowork (飞书/Slack), Abu-Cowork (飞书/钉钉/企业微信/Slack)</td>
+            <td>通过 IM 机器人远程操控 AI Agent，扩展桌面外的交互场景</td>
+          </tr>
+          <tr>
+            <td><strong>🧠 知识库/RAG</strong></td>
+            <td>AQBot (sqlite-vec)</td>
+            <td>本地文档索引与检索，目前仅 AQBot 有较完整的实现</td>
+          </tr>
+          <tr>
+            <td><strong>🎭 人格系统</strong></td>
+            <td>Abu-Cowork (Soul)</td>
+            <td>Abu-Cowork 独创 Quiet / Buddy / Butler 三种人格预设，使 AI 助手更具亲和力</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════ 7. 选型建议与结论 ═══════════ -->
+  <section id="s7">
+    <h2><span class="num">7</span> 选型建议与结论</h2>
+
+    <div class="conclusion-card" style="margin-bottom: 16px;">
+      <h3>🎯 选型决策矩阵</h3>
+      <table style="margin-top:8px;">
+        <thead>
+          <tr><th>如果你需要…</th><th>首选</th><th>理由</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>最接近 Claude Cowork 的体验</strong></td>
+            <td>Open Cowork</td>
+            <td>功能对齐度最高，VM 沙箱、Skills、MCP 一应俱全</td>
+          </tr>
+          <tr>
+            <td><strong>轻量 + 本地安全</strong></td>
+            <td>AQBot</td>
+            <td>Tauri 架构、AES-256 加密、API 网关、ACP 协议支持</td>
+          </tr>
+          <tr>
+            <td><strong>企业级部署</strong></td>
+            <td>OpenSail</td>
+            <td>审批流、预算控制、权限管理、日志审计、Docker/K8s</td>
+          </tr>
+          <tr>
+            <td><strong>功能深度最强</strong></td>
+            <td>Abu-Cowork</td>
+            <td>自进化技能、多智能体并行、人格系统、安全扫描、定时任务</td>
+          </tr>
+          <tr>
+            <td><strong>范式创新 / 实验性</strong></td>
+            <td>Wandesk</td>
+            <td>AI 桌面 OS 理念、App Workshop 自然语言生成应用</td>
+          </tr>
+          <tr>
+            <td><strong>纯编码辅助</strong></td>
+            <td>Kimi K3 Code</td>
+            <td>200K 上下文、免费、GitHub 集成、C++ 高性能</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="conclusion-card" style="margin-bottom: 16px;">
+      <h3>📊 核心结论</h3>
+      <ol style="margin:0; padding-left:18px;">
+        <li style="margin-bottom:6px;"><strong>Open Cowork 是入口，Abu-Cowork 和 AQBot 是终点。</strong> 对于想体验 Claude Cowork 开源替代的用户，Open Cowork 最直接；对于追求功能深度和本地安全的开发者，Abu-Cowork 和 AQBot 提供了更差异化的价值。</li>
+        <li style="margin-bottom:6px;"><strong>Tauri 正在取代 Electron</strong> 成为 AI 桌面应用的首选框架。AQBot、Wandesk 均采用 Tauri，安装包更小、资源占用更低。</li>
+        <li style="margin-bottom:6px;"><strong>MCP 已成为标配，ACP 是下一个前沿。</strong> 工具/智能体的标准化连接协议是生态互通的基础。</li>
+        <li style="margin-bottom:6px;"><strong>自进化技能系统</strong>（Abu-Cowork）代表了技能系统的演进方向——从人工定义到 AI 自主发现和固化。</li>
+        <li style="margin-bottom:0;"><strong>本地优先</strong> 是不可逆的趋势。AES-256 加密、Ollama 集成、本地 RAG 正在成为标配能力。</li>
+      </ol>
+    </div>
+
+    <div class="conclusion-card">
+      <h3>🚀 技术选型建议</h3>
+      <ul style="margin:0;">
+        <li><strong>新项目</strong>：优先 Tauri（Rust）而非 Electron，获得更好性能和小安装包</li>
+        <li><strong>架构设计</strong>：同时规划 MCP 和 ACP 双协议栈，确保工具和智能体的互操作性</li>
+        <li><strong>安全基线</strong>：API Key AES-256 本地加密 + 沙箱隔离 + 提示注入检测</li>
+        <li><strong>差异化方向</strong>：自进化技能系统（参考 Abu-Cowork）、Agent 工作台（参考 AQBot）、AI OS 范式（参考 Wandesk）</li>
+        <li><strong>许可证策略</strong>：如需商用友好，参考 MIT/Apache 2.0 项目；AGPL-3.0 需谨慎评估合规成本</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer class="page">
+  本报告基于 GitHub 公开数据生成（2026-08-12）。Stars 数为近似值，以项目主页最新数据为准。颜色与排版参考项目设计 token；正文字体 Inter，等宽 JetBrains Mono。<br/>
+  报告文件：<a href="#">claude-cowork-alternatives-report-v2.html</a>
+</footer>
+
+</body>
+</html>

@@ -7,6 +7,7 @@
 export const queryKeys = {
   sessions: {
     all: ['sessions'] as const,
+    list: ['sessions', 'list'] as const,
     detail: (id: string) => ['sessions', id] as const,
     history: (id: string) => ['sessions', id, 'history'] as const,
   },

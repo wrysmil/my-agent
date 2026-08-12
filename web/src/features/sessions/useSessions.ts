@@ -19,7 +19,7 @@ export interface SessionsResponse {
 
 export function useSessions(archived = false) {
   return useQuery({
-    queryKey: [...queryKeys.sessions.all, { archived }],
+    queryKey: [...queryKeys.sessions.list, { archived }],
     queryFn: () => apiGet<SessionsResponse>(`/api/sessions?archived=${archived}`),
     staleTime: 0, // 始终拉最新 session 列表，确保刚创建的 session 立即可见
   });
@@ -40,7 +40,7 @@ export function useDeleteSession() {
   return useMutation({
     mutationFn: (id: string) => apiDelete(`/api/sessions/${id}`),
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessions.list });
       queryClient.removeQueries({ queryKey: queryKeys.sessions.detail(id) });
       queryClient.removeQueries({ queryKey: queryKeys.sessions.history(id) });
     },

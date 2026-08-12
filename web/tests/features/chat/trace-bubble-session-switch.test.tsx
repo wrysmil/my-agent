@@ -388,4 +388,69 @@ describe('MessageBubble · session switch guards (reviewer Important #1)', () =>
 
     renderAReset.unmount();
   });
+
+  it('status 非流中但 activeRunId 仍在：send 必须被拦下，避免后端 409 回写错误气泡', async () => {
+    // 背景：用户报告「切会话后多个 AI 气泡」。
+    // 根因：流完成事件在 B 渲染期间落库 → status 切回 'done'，
+    //       但 activeRunId 残留（如 finishRun 'succeeded' 链路未跑完）。
+    //       此时用户切回 A，Composer.isStreaming=false → 用户再次 send →
+    //       前端 sendAttempt 仅检查 status 不检查 activeRunId → 放行 →
+    //       后端 hub.hasActiveRun 拒绝 → 错误消息回写进 A → 视觉「多气泡」。
+    //
+    // 修复（useChatStream.ts sendAttempt）：增加 activeRunId guard。
+    // 本测试把该 guard 固化为回归测试。
+
+    const fetchSpy = vi.fn();
+    vi.stubGlobal(
+      'fetch',
+      fetchSpy as unknown as typeof fetch,
+    );
+    // history 接口允许走通（不阻塞 hook mount），但 messages/stream 必须不被调用。
+    fetchSpy.mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : (input as Request).url;
+      if (url.endsWith('/history')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ ok: true, data: { sessionId: 'A', revision: 1, messages: [] } }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
+        );
+      }
+      throw new Error(`Unexpected fetch to ${url}`);
+    });
+
+    const store = useChatRuntimeStore.getState();
+    store.ensureSession('A');
+    // 模拟「status 已切到 done，但 activeRunId 还在」的反常状态
+    store.setSessionStatus('A', 'done');
+    store.createRun('A', 'run-orphan');
+    store.setRunStatus('run-orphan', 'running');
+    store.setActiveRun('A', 'run-orphan');
+
+    const { result } = renderHook(() => useChatStream('A'), {
+      initialProps: { sessionId: 'A' },
+    });
+    await waitFor(() =>
+      expect(useChatRuntimeStore.getState().getSession('A')?.historyLoaded).toBe(true),
+    );
+
+    // Act — 用户 send（模拟切回后 Composer 重新 enable 后用户点 send）
+    await act(async () => {
+      await result.current.send('复杂问题复测');
+    });
+
+    // Assert — fetch 拦截：不应有 stream 请求
+    const streamCalls = fetchSpy.mock.calls.filter((c) => {
+      const url = typeof c[0] === 'string' ? c[0] : (c[0] as Request).url;
+      return url.includes('/messages/stream');
+    });
+    expect(streamCalls).toHaveLength(0);
+
+    // Assert — messages 没有新增 user 消息
+    const sessionA = useChatRuntimeStore.getState().getSession('A');
+    const userMessages = (sessionA?.messages ?? []).filter((m) => m.role === 'user');
+    expect(userMessages).toHaveLength(0);
+
+    vi.unstubAllGlobals();
+  });
 });

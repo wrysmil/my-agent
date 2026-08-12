@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { useChatRuntimeStore } from '../../../src/features/chat/chatRuntimeStore';
 import {
   mergePersistedWithOverlay,
+  messageText,
   useChatStream,
 } from '../../../src/features/chat/useChatStream';
 import { logger } from '../../../src/lib/logger';
@@ -293,7 +294,88 @@ describe('chat session stream isolation regressions', () => {
     ).toMatchObject({ text: 'complete' });
     expect(
       mergePersistedWithOverlay(persisted, overlay, 5, () => 5)[0].blocks[0],
-    ).toMatchObject({ text: 'old' });
+    ).toMatchObject({ text: 'complete' });
+  });
+
+  it('mergePersistedWithOverlay preserves overlay final text when persisted converged but lacks text blocks', () => {
+    const persisted = [{
+      id: 'hist-backend-id',
+      role: 'assistant' as const,
+      blocks: [{
+        id: 'persisted-thinking',
+        type: 'thinking' as const,
+        status: 'done' as const,
+        thinking: 'done thinking',
+        collapsed: true,
+      }],
+      runId: 'run-a',
+      messageId: 'backend-assistant-id',
+    }];
+    const overlay = [{
+      id: 'asst-run-a',
+      role: 'assistant' as const,
+      blocks: [
+        {
+          id: 'overlay-thinking',
+          type: 'thinking' as const,
+          status: 'done' as const,
+          thinking: 'live thinking',
+          collapsed: true,
+        },
+        {
+          id: 'overlay-text',
+          type: 'text' as const,
+          status: 'done' as const,
+          text: '完整最终回复内容',
+        },
+      ],
+      runId: 'run-a',
+    }];
+
+    const merged = mergePersistedWithOverlay(persisted, overlay, 10, () => 10);
+    expect(merged).toHaveLength(1);
+    expect(messageText(merged[0])).toBe('完整最终回复内容');
+    expect(merged[0].blocks.some((b) => b.type === 'thinking')).toBe(true);
+  });
+
+  it('mergePersistedWithOverlay does not duplicate assistant when overlay id differs but runId matches', () => {
+    const persisted = [{
+      id: 'hist-backend-id',
+      role: 'assistant' as const,
+      blocks: [{
+        id: 'persisted-thinking',
+        type: 'thinking' as const,
+        status: 'done' as const,
+        thinking: 'from history',
+        collapsed: true,
+      }],
+      runId: 'run-a',
+      messageId: 'backend-assistant-id',
+    }];
+    const overlay = [{
+      id: 'asst-run-a',
+      role: 'assistant' as const,
+      blocks: [{
+        id: 'overlay-thinking',
+        type: 'thinking' as const,
+        status: 'streaming' as const,
+        thinking: 'live stream',
+        collapsed: true,
+      }],
+      runId: 'run-a',
+    }];
+
+    const overlayWins = mergePersistedWithOverlay(persisted, overlay, 4, () => 5);
+    expect(
+      overlayWins.filter((m) => m.role === 'assistant' && m.runId === 'run-a'),
+    ).toHaveLength(1);
+    expect(overlayWins[0].blocks[0]).toMatchObject({ thinking: 'live stream' });
+
+    const persistedWins = mergePersistedWithOverlay(persisted, overlay, 5, () => 5);
+    expect(
+      persistedWins.filter((m) => m.role === 'assistant' && m.runId === 'run-a'),
+    ).toHaveLength(1);
+    expect(persistedWins[0].blocks[0]).toMatchObject({ thinking: 'from history' });
   });
 
   it('done clears active run resources without touching another session run', async () => {

@@ -78,6 +78,14 @@ export interface BuildRunTraceOptions {
 const TOOL_ACTION_LABELS: Record<string, string> = {
   web_search: '搜索网页',
   web_fetch: '获取网页',
+  list_files: '列出文件',
+  search_files: '搜索文件',
+  read_file: '读取文件',
+  grep_files: '搜索内容',
+  write_file: '写入文件',
+  edit_file: '编辑文件',
+  bash: '执行命令',
+  ask_user_question: '询问用户',
 };
 
 export function toolActionLabel(toolName: string): string {
