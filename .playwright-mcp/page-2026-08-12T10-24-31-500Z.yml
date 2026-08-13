@@ -1,0 +1,174 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: my-agent
+    - navigation [ref=e6]:
+      - link "控制台" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]: 历史会话
+        - button "新对话" [ref=e42]
+      - list [ref=e125]:
+        - listitem [ref=e126]:
+          - link "请调用 coder 子 Agent，写一..." [ref=e127] [cursor=pointer]:
+            - /url: "#/chat/gconv-82f34ff68030"
+          - 'button "删除: 请调用 coder 子 Agent，写一..." [ref=e128]'
+        - listitem [ref=e132]:
+          - link "你好，请回复\"hi\"" [ref=e133] [cursor=pointer]:
+            - /url: "#/chat/gconv-bdd842622b32"
+          - 'button "删除: 你好，请回复\"hi\"" [ref=e134]'
+        - listitem [ref=e138]:
+          - link "测试按钮状态切换" [ref=e139] [cursor=pointer]:
+            - /url: "#/chat/gconv-fce6c5072d73"
+          - 'button "删除: 测试按钮状态切换" [ref=e140]'
+        - listitem [ref=e144]:
+          - link "新会话" [ref=e145] [cursor=pointer]:
+            - /url: "#/chat/gconv-e2dddace3976"
+          - 'button "删除: 新会话" [ref=e146]'
+        - listitem [ref=e150]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=e151] [cursor=pointer]:
+            - /url: "#/chat/gconv-2b8c71c217bb"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=e152]'
+        - listitem [ref=e156]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=e157] [cursor=pointer]:
+            - /url: "#/chat/gconv-67736d6f3b32"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=e158]'
+        - listitem [ref=e162]:
+          - link "hello smoke test" [ref=e163] [cursor=pointer]:
+            - /url: "#/chat/gconv-650896dc7e2b"
+          - 'button "删除: hello smoke test" [ref=e164]'
+        - listitem [ref=e168]:
+          - link "新会话" [ref=e169] [cursor=pointer]:
+            - /url: "#/chat/gconv-f3a139d8a4cb"
+          - 'button "删除: 新会话" [ref=e170]'
+        - listitem [ref=e174]:
+          - link "调用子Agent，Coder ，写一个h..." [ref=e175] [cursor=pointer]:
+            - /url: "#/chat/gconv-66c93eb808a9"
+          - 'button "删除: 调用子Agent，Coder ，写一个h..." [ref=e176]'
+        - listitem [ref=e180]:
+          - link "看看目前项目目录" [ref=e181] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0bdd6e074ca"
+          - 'button "删除: 看看目前项目目录" [ref=e182]'
+        - listitem [ref=e186]:
+          - link "新会话" [ref=e187] [cursor=pointer]:
+            - /url: "#/chat/gconv-23f5e5f8eef8"
+          - 'button "删除: 新会话" [ref=e188]'
+        - listitem [ref=e192]:
+          - link "研究开源 AI 桌面应用" [ref=e193] [cursor=pointer]:
+            - /url: "#/chat/gconv-fef19aa36f93"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e194]'
+        - listitem [ref=e198]:
+          - link "研究开源 AI 桌面应用" [ref=e199] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e200]'
+        - listitem [ref=e204]:
+          - link "研究开源 AI 桌面应用" [ref=e205] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e206]'
+        - listitem [ref=e210]:
+          - link "研究开源 AI 桌面应用" [ref=e211] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e212]'
+        - listitem [ref=e216]:
+          - link "研究开源 AI 桌面应用" [ref=e217] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e218]'
+        - listitem [ref=e222]:
+          - link "研究开源 AI 桌面应用" [ref=e223] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e224]'
+        - listitem [ref=e228]:
+          - link "研究开源 AI 桌面应用" [ref=e229] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e230]'
+        - listitem [ref=e234]:
+          - link "研究开源 AI 桌面应用" [ref=e235] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e236]'
+        - listitem [ref=e240]:
+          - link "研究开源 AI 桌面应用" [ref=e241] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e242]'
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Toggle theme" [ref=e50]
+        - button "Switch language" [ref=e57]
+        - generic [ref=e62]: K
+    - main [ref=e66]:
+      - generic [ref=e67]:
+        - heading "对话" [level=2] [ref=e75]
+        - log [ref=e81]:
+          - generic [ref=e82]:
+            - generic [ref=e246]: 请调用 coder 子 Agent，写一个完整的 50 行的 React 旅游页面组件，包含 5 个景点卡片，每个卡片要有图片、标题、描述、价格。请用 dispatch_to 而非直接写代码。
+            - generic [ref=e251]:
+              - generic [ref=e252]:
+                - generic [ref=e254]:
+                  - button "已完成 3 个步骤 · 1 个工具 3 步 · 1 个工具" [expanded] [ref=e255]:
+                    - generic [ref=e258]: 已完成 3 个步骤 · 1 个工具
+                    - generic [ref=e259]: 3 步 · 1 个工具
+                  - list [ref=e263]:
+                    - listitem [ref=e264]:
+                      - button "查看思考过程" [ref=e265]:
+                        - generic [ref=e266]: 思考
+                    - listitem [ref=e271]:
+                      - button "查看 结果" [ref=e272]:
+                        - generic [ref=e273]: 已完成
+                    - listitem [ref=e277]:
+                      - button "查看思考过程" [ref=e278]:
+                        - generic [ref=e279]: 思考
+                - generic [ref=e286]:
+                  - paragraph [ref=e287]: 我来调用 coder 子 Agent 完成这个任务。 coder 子 Agent 已完成任务，上面的组件代码可以直接使用。简要总结：
+                  - paragraph [ref=e288]:
+                    - strong [ref=e289]: 交付内容
+                    - text: ：57 行的
+                    - code [ref=e290]: TravelPage.jsx
+                    - text: 单文件组件，含 5 个景点卡片（黄山、九寨沟、张家界、丽江古城、长城），每个卡片包含图片、标题、描述、价格。
+                  - paragraph [ref=e291]:
+                    - strong [ref=e292]: 亮点
+                    - text: ：
+                  - list [ref=e293]:
+                    - listitem [ref=e294]:
+                      - strong [ref=e295]: 交互
+                      - text: ：卡片右上角 🤍/❤️ 点击收藏；顶部按钮按价格升/降序排列（用
+                      - code [ref=e296]: useMemo
+                      - text: 优化）
+                    - listitem [ref=e297]:
+                      - strong [ref=e298]: 响应式布局
+                      - text: ：
+                      - code [ref=e299]: repeat(auto-fill, minmax(260px, 1fr))
+                      - text: 自适应屏幕列数
+                    - listitem [ref=e300]:
+                      - strong [ref=e301]: 零外部依赖
+                      - text: ：仅 React 内置 hooks，内联样式集中管理，图片用真实 Unsplash URL
+                  - paragraph [ref=e302]:
+                    - strong [ref=e303]: 使用方式
+                    - text: ：保存为
+                    - code [ref=e304]: TravelPage.jsx
+                    - text: ，
+                    - code [ref=e305]: import TravelPage from "./TravelPage"
+                    - text: 即可使用。
+                  - paragraph [ref=e306]: 如果你需要我把代码写入工作区文件、调整景点数据、或改成 TypeScript / 接入真实接口，告诉我即可。
+              - button "复制消息" [ref=e307]
+        - generic [ref=e91]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=e93]
+          - generic [ref=e94]:
+            - button "添加附件" [ref=e96]
+            - button "选择模型" [ref=e100]
+            - generic [ref=e108]:
+              - generic [ref=e117]: Effort
+              - generic [ref=e118]: MED
+              - slider "Effort" [ref=e120] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=e121]

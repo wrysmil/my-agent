@@ -1,0 +1,161 @@
+- generic [ref=f1e3]:
+  - complementary [ref=f1e4]:
+    - generic [ref=f1e5]: my-agent
+    - navigation [ref=f1e6]:
+      - link "控制台" [ref=f1e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f1e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f1e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f1e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f1e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f1e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f1e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f1e39]:
+      - generic [ref=f1e40]:
+        - generic [ref=f1e41]: 历史会话
+        - button "新对话" [ref=f1e42]
+      - list [ref=f1e147]:
+        - listitem [ref=f1e148]:
+          - link "新会话" [ref=f1e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-e2dddace3976"
+          - 'button "删除: 新会话" [ref=f1e150]'
+        - listitem [ref=f1e154]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=f1e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-2b8c71c217bb"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=f1e156]'
+        - listitem [ref=f1e160]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=f1e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-67736d6f3b32"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=f1e162]'
+        - listitem [ref=f1e166]:
+          - link "hello smoke test" [ref=f1e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-650896dc7e2b"
+          - 'button "删除: hello smoke test" [ref=f1e168]'
+        - listitem [ref=f1e172]:
+          - link "新会话" [ref=f1e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-f3a139d8a4cb"
+          - 'button "删除: 新会话" [ref=f1e174]'
+        - listitem [ref=f1e178]:
+          - link "调用子Agent，Coder ，写一个h..." [ref=f1e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-66c93eb808a9"
+          - 'button "删除: 调用子Agent，Coder ，写一个h..." [ref=f1e180]'
+        - listitem [ref=f1e184]:
+          - link "看看目前项目目录" [ref=f1e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0bdd6e074ca"
+          - 'button "删除: 看看目前项目目录" [ref=f1e186]'
+        - listitem [ref=f1e190]:
+          - link "新会话" [ref=f1e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-23f5e5f8eef8"
+          - 'button "删除: 新会话" [ref=f1e192]'
+        - listitem [ref=f1e196]:
+          - link "研究开源 AI 桌面应用" [ref=f1e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-fef19aa36f93"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e198]'
+        - listitem [ref=f1e202]:
+          - link "研究开源 AI 桌面应用" [ref=f1e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e204]'
+        - listitem [ref=f1e208]:
+          - link "研究开源 AI 桌面应用" [ref=f1e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e210]'
+        - listitem [ref=f1e214]:
+          - link "研究开源 AI 桌面应用" [ref=f1e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e216]'
+        - listitem [ref=f1e220]:
+          - link "研究开源 AI 桌面应用" [ref=f1e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e222]'
+        - listitem [ref=f1e226]:
+          - link "研究开源 AI 桌面应用" [ref=f1e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e228]'
+        - listitem [ref=f1e232]:
+          - link "研究开源 AI 桌面应用" [ref=f1e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e234]'
+        - listitem [ref=f1e238]:
+          - link "研究开源 AI 桌面应用" [ref=f1e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e240]'
+        - listitem [ref=f1e244]:
+          - link "研究开源 AI 桌面应用" [ref=f1e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e246]'
+        - listitem [ref=f1e250]:
+          - link "研究开源 AI 桌面应用" [ref=f1e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f1e252]'
+        - listitem [ref=f1e256]:
+          - link "项目目录看看" [ref=f1e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f1e258]'
+        - listitem [ref=f1e262]:
+          - link "项目目录看看" [ref=f1e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f1e264]'
+  - generic [ref=f1e47]:
+    - banner [ref=f1e48]:
+      - generic [ref=f1e49]:
+        - button "Toggle theme" [ref=f1e50]
+        - button "Switch language" [ref=f1e57]
+        - generic [ref=f1e62]: K
+    - main [ref=f1e66]:
+      - generic [ref=f1e268]:
+        - heading "对话" [level=2] [ref=f1e276]
+        - generic [ref=f1e278]:
+          - generic [ref=f1e279]:
+            - heading "晚上好，" [level=1] [ref=f1e280]
+            - paragraph [ref=f1e281]: 想完成什么？描述任务，或选一个最近会话继续
+          - region "任务建议" [ref=f1e283]:
+            - generic [ref=f1e284]:
+              - button "研究 研究开源 AI 桌面应用 交付：研究报告" [ref=f1e285]:
+                - generic [ref=f1e286]: 研究
+                - paragraph [ref=f1e292]: 研究开源 AI 桌面应用
+                - generic [ref=f1e293]: 交付：研究报告
+              - button "视频 制作一条 AI 发展趋势科普视频 交付：视频成片" [ref=f1e298]:
+                - generic [ref=f1e299]: 视频
+                - paragraph [ref=f1e305]: 制作一条 AI 发展趋势科普视频
+                - generic [ref=f1e306]: 交付：视频成片
+              - button "图片 设计城市夏日咖啡节活动海报：8 月 16 日 14:00–20:00，城市中央广场，包含手冲体验、咖啡市集和限定特调。 交付：发布海报" [ref=f1e311]:
+                - generic [ref=f1e312]: 图片
+                - paragraph [ref=f1e319]: 设计城市夏日咖啡节活动海报：8 月 16 日 14:00–20:00，城市中央广场，包含手冲体验、咖啡市集和限定特调。
+                - generic [ref=f1e320]: 交付：发布海报
+              - button "设计 设计个人记账应用登录注册 UI 交付：登录页设计稿" [ref=f1e325]:
+                - generic [ref=f1e326]: 设计
+                - paragraph [ref=f1e335]: 设计个人记账应用登录注册 UI
+                - generic [ref=f1e336]: 交付：登录页设计稿
+              - button "办公 制作一份电商销售月报 交付：月报文件" [ref=f1e341]:
+                - generic [ref=f1e342]: 办公
+                - paragraph [ref=f1e348]: 制作一份电商销售月报
+                - generic [ref=f1e349]: 交付：月报文件
+              - button "写作 写一篇 AI 办公助手推荐社媒文章 交付：社媒成稿" [ref=f1e354]:
+                - generic [ref=f1e355]: 写作
+                - paragraph [ref=f1e360]: 写一篇 AI 办公助手推荐社媒文章
+                - generic [ref=f1e361]: 交付：社媒成稿
+              - button "开发 制作产品设计师个人作品集网站 交付：网站" [ref=f1e366]:
+                - generic [ref=f1e367]: 开发
+                - paragraph [ref=f1e373]: 制作产品设计师个人作品集网站
+                - generic [ref=f1e374]: 交付：网站
+              - button "增长 为 orkas.ai 制定 SEO 与 GEO 方案 交付：增长方案" [ref=f1e379]:
+                - generic [ref=f1e380]: 增长
+                - paragraph [ref=f1e386]: 为 orkas.ai 制定 SEO 与 GEO 方案
+                - generic [ref=f1e387]: 交付：增长方案
+            - paragraph [ref=f1e392]: 离线推荐
+        - generic [ref=f1e394]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f1e396]
+          - generic [ref=f1e397]:
+            - button "添加附件" [ref=f1e399]
+            - button "选择模型" [ref=f1e403]
+            - generic [ref=f1e411]:
+              - generic [ref=f1e420]: Effort
+              - generic [ref=f1e421]: MED
+              - slider "Effort" [ref=f1e423] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f1e424]

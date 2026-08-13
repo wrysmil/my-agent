@@ -606,6 +606,8 @@ async function adaptStreamEventWithEnvelope(
         name: ev.name,
         input: ev.input,
         index: idx,
+        ...(ev.actorName !== undefined ? { actor_name: ev.actorName } : {}),
+        ...(ev.actorKind !== undefined ? { actor_kind: ev.actorKind } : {}),
       });
       emit("tool_progress", {
         type: "tool_progress",
@@ -637,6 +639,73 @@ async function adaptStreamEventWithEnvelope(
         content: ev.result,
         is_error: ev.isError ?? false,
         ...(ev.durationMs !== undefined ? { duration_ms: ev.durationMs } : {}),
+        ...(ev.actorName !== undefined ? { actor_name: ev.actorName } : {}),
+        ...(ev.actorKind !== undefined ? { actor_kind: ev.actorKind } : {}),
+      });
+      return;
+    }
+
+    case "agent_message": {
+      emit("agent_message", {
+        type: "agent_message",
+        actorId: ev.actorId,
+        actorName: ev.actorName,
+        actorKind: ev.actorKind,
+        text: ev.text,
+        isFinal: ev.isFinal,
+      });
+      return;
+    }
+
+    case "dispatch_started": {
+      emit("dispatch_started", {
+        type: "dispatch_started",
+        actorId: ev.actorId,
+        actorName: ev.actorName,
+        toolName: ev.toolName,
+        toolId: ev.toolId,
+        isFinal: ev.isFinal,
+      });
+      return;
+    }
+
+    case "worker_step_start": {
+      emit("worker_step_start", {
+        type: "worker_step_start",
+        actorId: ev.actorId,
+        kind: ev.kind,
+        label: ev.label,
+        stepId: ev.stepId,
+      });
+      return;
+    }
+
+    case "worker_text_delta": {
+      emit("worker_text_delta", {
+        type: "worker_text_delta",
+        actorId: ev.actorId,
+        text: ev.text,
+        stepId: ev.stepId,
+      });
+      return;
+    }
+
+    case "worker_step_end": {
+      emit("worker_step_end", {
+        type: "worker_step_end",
+        actorId: ev.actorId,
+        stepId: ev.stepId,
+        summary: ev.summary,
+        isError: ev.isError,
+      });
+      return;
+    }
+
+    case "dispatch_done": {
+      emit("dispatch_done", {
+        type: "dispatch_done",
+        actorId: ev.actorId,
+        toolName: ev.toolName,
       });
       return;
     }

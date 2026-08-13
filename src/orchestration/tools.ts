@@ -4,7 +4,10 @@ import { genWorkerId } from "./actor.js";
 import type { AgentRunner } from "../agent/runner.js";
 import type { CoreAgentConfig } from "../config/schema.js";
 import type { AgentSpec } from "./agent-spec.js";
-import type { WorkerProgressEvent } from "./dispatch.js";
+import {
+  unwrapWorkerPayload,
+  type WorkerProgressEvent,
+} from "./dispatch.js";
 
 // ============================================================
 // 内部：执行一次子调度（run_worker / dispatch_to / hand_off_to 共用）
@@ -17,6 +20,8 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
   workingDir?: string;
   signal?: AbortSignal;
   onWorkerEvent?: (ev: WorkerProgressEvent) => void;
+  /** dispatch_to / hand_off_to 可见派发：actor 解析后立即发出 dispatch_started */
+  visibleDispatch?: { toolName: string; isFinal: boolean };
 }): Promise<{ actor: Actor; result: string; agentSpec?: AgentSpec }> {
   const task = String(input.task || "").trim();
 
@@ -33,6 +38,7 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
     }
 
     const actor: Actor = { kind: "agent", id: spec.agent_id, name: spec.name };
+    emitDispatchStarted(opts.onWorkerEvent, opts.visibleDispatch, actor);
     const { runNestedDispatch } = await import("./dispatch.js");
     const result = await runNestedDispatch({
       cid: opts.cid,
@@ -50,6 +56,7 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
 
   // 匿名 worker
   const actor: Actor = { kind: "worker", id: genWorkerId(), name: "Worker" };
+  emitDispatchStarted(opts.onWorkerEvent, opts.visibleDispatch, actor);
   const { runNestedDispatch } = await import("./dispatch.js");
   const result = await runNestedDispatch({
     cid: opts.cid,
@@ -62,6 +69,21 @@ async function _executeDispatch(input: Record<string, unknown>, opts: {
     onWorkerEvent: opts.onWorkerEvent,
   });
   return { actor, result };
+}
+
+/** actor 解析完成、runNestedDispatch 执行前触发 dispatch_started（仅可见派发工具）。 */
+function emitDispatchStarted(
+  onWorkerEvent: ((ev: WorkerProgressEvent) => void) | undefined,
+  visibleDispatch: { toolName: string; isFinal: boolean } | undefined,
+  actor: Actor,
+): void {
+  if (!visibleDispatch || !onWorkerEvent) return;
+  onWorkerEvent({
+    type: "dispatch_started",
+    actor,
+    toolName: visibleDispatch.toolName,
+    isFinal: visibleDispatch.isFinal,
+  });
 }
 
 // ============================================================
@@ -176,6 +198,22 @@ export function buildDispatchTools(opts: {
           signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
           onWorkerEvent: opts.onWorkerEvent,
+          visibleDispatch: { toolName: "dispatch_to", isFinal: false },
+        });
+
+        // worker 全流程结束：让前端关闭/推进 agent 气泡
+        opts.onWorkerEvent?.({
+          type: "dispatch_done",
+          actor,
+          toolName: "dispatch_to",
+        });
+
+        // 可见消息：结构化 agent_reply 事件流出（text 剥离 XML 信封，供前端渲染气泡）
+        opts.onWorkerEvent?.({
+          type: "agent_reply",
+          actor,
+          text: unwrapWorkerPayload(result),
+          isFinal: false,
         });
 
         // 可见消息：用 [agent] 标记区分，指挥官继续
@@ -226,6 +264,22 @@ export function buildDispatchTools(opts: {
           signal: ctx.signal ?? opts.signal,
           workingDir: ctx.workingDir ?? opts.workingDir,
           onWorkerEvent: opts.onWorkerEvent,
+          visibleDispatch: { toolName: "hand_off_to", isFinal: true },
+        });
+
+        // worker 全流程结束：让前端关闭/推进 agent 气泡
+        opts.onWorkerEvent?.({
+          type: "dispatch_done",
+          actor,
+          toolName: "hand_off_to",
+        });
+
+        // 移交控制权：结构化 agent_reply 事件（isFinal:true）让前端渲染为最终回答
+        opts.onWorkerEvent?.({
+          type: "agent_reply",
+          actor,
+          text: unwrapWorkerPayload(result),
+          isFinal: true,
         });
 
         // 交出控制权：结果直接输出，endTurn 终止回合

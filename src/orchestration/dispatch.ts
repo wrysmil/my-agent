@@ -20,7 +20,14 @@ import type { CoreAgentConfig } from "../config/schema.js";
 export type WorkerProgressEvent =
   | { type: "text_delta"; actor: Actor; text: string }
   | { type: "tool_start"; actor: Actor; name: string; input: Record<string, unknown> }
-  | { type: "tool_end"; actor: Actor; name: string; result: string; isError: boolean };
+  | { type: "tool_end"; actor: Actor; name: string; result: string; isError: boolean }
+  | { type: "agent_reply"; actor: Actor; text: string; isFinal: boolean }
+  // ---- WU-01：子 Agent 实时气泡渲染事件 ----
+  | { type: "dispatch_started"; actor: Actor; toolName: string; isFinal: boolean }
+  | { type: "worker_step_start"; actor: Actor; kind: string; label: string; stepId: string }
+  | { type: "worker_text_delta"; actor: Actor; text: string; stepId: string }
+  | { type: "worker_step_end"; actor: Actor; stepId: string; summary: string; isError: boolean }
+  | { type: "dispatch_done"; actor: Actor; toolName: string };
 
 // ============================================================
 // dispatchSlots — 嵌套调度并发上限
@@ -106,9 +113,14 @@ export async function runNestedDispatch(opts: {
     try {
       if (opts.onWorkerEvent) {
         // ---- 流式路径：转发 worker 事件给宿主 ----
-        opts.onWorkerEvent({ type: "text_delta", actor: opts.actor, text: `\n🐝 子Agent [${opts.actor.name}] 工作中...\n` });
+        const preamble = `\n🐝 子Agent [${opts.actor.name}] 工作中...\n`;
+        opts.onWorkerEvent({ type: "text_delta", actor: opts.actor, text: preamble });
+        opts.onWorkerEvent({ type: "worker_text_delta", actor: opts.actor, text: preamble, stepId: "" });
         let lastText = "";
         let lastMeta: AgentRunMeta | undefined;
+        // 步骤 id：按 actor 内递增，唯一标识 worker 的 thinking/tool 步骤
+        let stepSeq = 0;
+        let openStepId = "";
 
         for await (const ev of workerRunner.runStream({
           message: messageText,
@@ -121,14 +133,37 @@ export async function runNestedDispatch(opts: {
             case "text_delta":
               lastText += ev.text;
               opts.onWorkerEvent({ type: "text_delta", actor: opts.actor, text: ev.text });
+              opts.onWorkerEvent({
+                type: "worker_text_delta",
+                actor: opts.actor,
+                text: ev.text,
+                stepId: openStepId,
+              });
               break;
             case "tool_start":
+              stepSeq += 1;
+              openStepId = `step:${stepSeq}`;
+              opts.onWorkerEvent({
+                type: "worker_step_start",
+                actor: opts.actor,
+                kind: "tool",
+                label: ev.name,
+                stepId: openStepId,
+              });
               opts.onWorkerEvent({
                 type: "tool_start", actor: opts.actor,
                 name: ev.name, input: (ev as any).input ?? {},
               });
               break;
             case "tool_end":
+              opts.onWorkerEvent({
+                type: "worker_step_end",
+                actor: opts.actor,
+                stepId: openStepId,
+                summary: String((ev as any).result ?? ""),
+                isError: !!(ev as any).isError,
+              });
+              openStepId = "";
               opts.onWorkerEvent({
                 type: "tool_end", actor: opts.actor,
                 name: (ev as any).name ?? "",
@@ -253,4 +288,27 @@ function escapeXml(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+const WORKER_RESULT_RE = /<worker-result[^>]*>([\s\S]*?)<\/worker-result>/;
+const WORKER_ERROR_RE = /<worker-error[^>]*>([\s\S]*?)<\/worker-error>/;
+
+/**
+ * 从 `<worker-result>` / `<worker-error>` XML 信封中取出纯文本内容并反转义 XML 实体。
+ * 无信封时原样返回。
+ */
+export function unwrapWorkerPayload(result: string): string {
+  const match = WORKER_RESULT_RE.exec(result) ?? WORKER_ERROR_RE.exec(result);
+  if (!match) return result;
+  return unescapeXml(match[1].trim());
+}
+
+/** 反转义 XML 实体。`&amp;` 必须最后替换，避免 `&amp;lt;` 被二次错误解码。 */
+function unescapeXml(s: string): string {
+  return s
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, "&");
 }

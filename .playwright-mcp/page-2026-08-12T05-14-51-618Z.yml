@@ -1,0 +1,200 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e5]: my-agent
+    - navigation [ref=f16e6]:
+      - link "控制台" [ref=f16e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f16e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f16e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f16e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f16e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f16e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f16e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f16e39]:
+      - generic [ref=f16e40]:
+        - generic [ref=f16e41]: 历史会话
+        - button "新对话" [ref=f16e42]
+      - list [ref=f16e147]:
+        - listitem [ref=f16e148]:
+          - link "研究开源 AI 桌面应用" [ref=f16e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e150]'
+        - listitem [ref=f16e154]:
+          - link "研究开源 AI 桌面应用" [ref=f16e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e156]'
+        - listitem [ref=f16e160]:
+          - link "研究开源 AI 桌面应用" [ref=f16e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e162]'
+        - listitem [ref=f16e166]:
+          - link "研究开源 AI 桌面应用" [ref=f16e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e168]'
+        - listitem [ref=f16e172]:
+          - link "研究开源 AI 桌面应用" [ref=f16e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e174]'
+        - listitem [ref=f16e178]:
+          - link "研究开源 AI 桌面应用" [ref=f16e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e180]'
+        - listitem [ref=f16e184]:
+          - link "研究开源 AI 桌面应用" [ref=f16e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e186]'
+        - listitem [ref=f16e190]:
+          - link "研究开源 AI 桌面应用" [ref=f16e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e192]'
+        - listitem [ref=f16e196]:
+          - link "研究开源 AI 桌面应用" [ref=f16e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e198]'
+        - listitem [ref=f16e202]:
+          - link "项目目录看看" [ref=f16e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f16e204]'
+        - listitem [ref=f16e208]:
+          - link "项目目录看看" [ref=f16e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f16e210]'
+        - listitem [ref=f16e214]:
+          - link "项目目录看看" [ref=f16e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f16e216]'
+        - listitem [ref=f16e220]:
+          - link "项目目录看看" [ref=f16e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f16e222]'
+        - listitem [ref=f16e226]:
+          - link "项目目录看看" [ref=f16e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f16e228]'
+        - listitem [ref=f16e232]:
+          - link "项目目录看看" [ref=f16e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f16e234]'
+        - listitem [ref=f16e238]:
+          - link "项目目录看看" [ref=f16e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f16e240]'
+        - listitem [ref=f16e244]:
+          - link "项目目录看看" [ref=f16e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f16e246]'
+        - listitem [ref=f16e250]:
+          - link "看看项目目录" [ref=f16e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f16e252]'
+        - listitem [ref=f16e256]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e258]'
+        - listitem [ref=f16e262]:
+          - link "帮我看看项目目录" [ref=f16e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f16e264]'
+  - generic [ref=f16e47]:
+    - banner [ref=f16e48]:
+      - generic [ref=f16e49]:
+        - button "Toggle theme" [ref=f16e50]
+        - button "Switch language" [ref=f16e57]
+        - generic [ref=f16e62]: K
+    - main [ref=f16e66]:
+      - generic [ref=f16e606]:
+        - generic [ref=f16e613]:
+          - heading "模型供应商" [level=2] [ref=f16e614]
+          - paragraph [ref=f16e615]: 已配置 1 个供应商 · 支持 8 种主流厂商一键接入
+        - generic [ref=f16e616]:
+          - heading "添加供应商" [level=3] [ref=f16e621]
+          - generic [ref=f16e623]:
+            - button "DS DeepSeek 已配置 deepseek-chat DeepSeek" [ref=f16e624]:
+              - generic [ref=f16e626]:
+                - generic [ref=f16e627]: DS
+                - generic [ref=f16e628]:
+                  - generic [ref=f16e629]:
+                    - heading "DeepSeek" [level=4] [ref=f16e630]
+                    - generic [ref=f16e631]: 已配置
+                  - paragraph [ref=f16e634]: deepseek-chat
+              - paragraph [ref=f16e635]: DeepSeek
+            - button "A Claude claude-sonnet-4-5 Anthropic" [ref=f16e636]:
+              - generic [ref=f16e638]:
+                - generic [ref=f16e639]: A
+                - generic [ref=f16e640]:
+                  - heading "Claude" [level=4] [ref=f16e642]
+                  - paragraph [ref=f16e644]: claude-sonnet-4-5
+              - paragraph [ref=f16e645]: Anthropic
+            - button "O GPT gpt-4o OpenAI" [ref=f16e646]:
+              - generic [ref=f16e648]:
+                - generic [ref=f16e649]: O
+                - generic [ref=f16e650]:
+                  - heading "GPT" [level=4] [ref=f16e652]
+                  - paragraph [ref=f16e654]: gpt-4o
+              - paragraph [ref=f16e655]: OpenAI
+            - button "G Gemini gemini-2.5-flash Google Gemini" [ref=f16e656]:
+              - generic [ref=f16e658]:
+                - generic [ref=f16e659]: G
+                - generic [ref=f16e660]:
+                  - heading "Gemini" [level=4] [ref=f16e662]
+                  - paragraph [ref=f16e664]: gemini-2.5-flash
+              - paragraph [ref=f16e665]: Google Gemini
+            - button "M Kimi moonshot-v1-8k Moonshot" [ref=f16e666]:
+              - generic [ref=f16e668]:
+                - generic [ref=f16e669]: M
+                - generic [ref=f16e670]:
+                  - heading "Kimi" [level=4] [ref=f16e672]
+                  - paragraph [ref=f16e674]: moonshot-v1-8k
+              - paragraph [ref=f16e675]: Moonshot
+            - button "Q Qwen qwen-max Qwen 通义千问" [ref=f16e676]:
+              - generic [ref=f16e678]:
+                - generic [ref=f16e679]: Q
+                - generic [ref=f16e680]:
+                  - heading "Qwen" [level=4] [ref=f16e682]
+                  - paragraph [ref=f16e684]: qwen-max
+              - paragraph [ref=f16e685]: Qwen 通义千问
+            - button "Mi Mistral mistral-large-latest Mistral AI" [ref=f16e686]:
+              - generic [ref=f16e688]:
+                - generic [ref=f16e689]: Mi
+                - generic [ref=f16e690]:
+                  - heading "Mistral" [level=4] [ref=f16e692]
+                  - paragraph [ref=f16e694]: mistral-large-latest
+              - paragraph [ref=f16e695]: Mistral AI
+            - button "X Grok grok-2 Grok (xAI)" [ref=f16e696]:
+              - generic [ref=f16e698]:
+                - generic [ref=f16e699]: X
+                - generic [ref=f16e700]:
+                  - heading "Grok" [level=4] [ref=f16e702]
+                  - paragraph [ref=f16e704]: grok-2
+              - paragraph [ref=f16e705]: Grok (xAI)
+        - generic [ref=f16e706]:
+          - generic [ref=f16e707]:
+            - heading "已配置供应商" [level=3] [ref=f16e711]
+            - generic [ref=f16e713]: 1 个
+          - list [ref=f16e714]:
+            - listitem [ref=f16e715]:
+              - generic [ref=f16e717]:
+                - generic [ref=f16e718]: DS
+                - generic [ref=f16e719]:
+                  - generic [ref=f16e720]:
+                    - generic [ref=f16e723]: DeepSeek
+                    - generic [ref=f16e724]: DeepSeek
+                    - generic [ref=f16e725]: 已启用
+                    - generic [ref=f16e730]: 当前使用
+                  - generic [ref=f16e731]:
+                    - generic "https://api.deepseek.com/v1" [ref=f16e732]
+                    - generic [ref=f16e733]: ·
+                    - generic [ref=f16e734]: deepseek-v4-flash
+                    - generic [ref=f16e735]: ·
+                    - generic [ref=f16e736]: "ID: deepseek"
+                - generic [ref=f16e737]:
+                  - button "测试联通" [ref=f16e739]
+                  - button "编辑" [ref=f16e744]
+                  - button "禁用" [ref=f16e748]
+                  - button "删除" [disabled] [ref=f16e751]

@@ -1,0 +1,309 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e5]: my-agent
+    - navigation [ref=f16e6]:
+      - link "控制台" [ref=f16e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f16e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f16e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f16e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f16e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f16e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f16e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f16e39]:
+      - generic [ref=f16e40]:
+        - generic [ref=f16e41]: 历史会话
+        - button "新对话" [ref=f16e42]
+      - list [ref=f16e147]:
+        - listitem [ref=f16e915]:
+          - link "研究开源 AI 桌面应用" [ref=f16e1006] [cursor=pointer]:
+            - /url: "#/chat/gconv-fef19aa36f93"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e1007]'
+        - listitem [ref=f16e148]:
+          - link "研究开源 AI 桌面应用" [ref=f16e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e150]'
+        - listitem [ref=f16e154]:
+          - link "研究开源 AI 桌面应用" [ref=f16e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e156]'
+        - listitem [ref=f16e160]:
+          - link "研究开源 AI 桌面应用" [ref=f16e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e162]'
+        - listitem [ref=f16e166]:
+          - link "研究开源 AI 桌面应用" [ref=f16e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e168]'
+        - listitem [ref=f16e172]:
+          - link "研究开源 AI 桌面应用" [ref=f16e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e174]'
+        - listitem [ref=f16e178]:
+          - link "研究开源 AI 桌面应用" [ref=f16e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e180]'
+        - listitem [ref=f16e184]:
+          - link "研究开源 AI 桌面应用" [ref=f16e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e186]'
+        - listitem [ref=f16e190]:
+          - link "研究开源 AI 桌面应用" [ref=f16e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e192]'
+        - listitem [ref=f16e196]:
+          - link "研究开源 AI 桌面应用" [ref=f16e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e198]'
+        - listitem [ref=f16e202]:
+          - link "项目目录看看" [ref=f16e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f16e204]'
+        - listitem [ref=f16e208]:
+          - link "项目目录看看" [ref=f16e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f16e210]'
+        - listitem [ref=f16e214]:
+          - link "项目目录看看" [ref=f16e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f16e216]'
+        - listitem [ref=f16e220]:
+          - link "项目目录看看" [ref=f16e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f16e222]'
+        - listitem [ref=f16e226]:
+          - link "项目目录看看" [ref=f16e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f16e228]'
+        - listitem [ref=f16e232]:
+          - link "项目目录看看" [ref=f16e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f16e234]'
+        - listitem [ref=f16e238]:
+          - link "项目目录看看" [ref=f16e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f16e240]'
+        - listitem [ref=f16e244]:
+          - link "项目目录看看" [ref=f16e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f16e246]'
+        - listitem [ref=f16e250]:
+          - link "看看项目目录" [ref=f16e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f16e252]'
+        - listitem [ref=f16e256]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e258]'
+  - generic [ref=f16e47]:
+    - banner [ref=f16e48]:
+      - generic [ref=f16e49]:
+        - button "Toggle theme" [ref=f16e50]
+        - button "Switch language" [ref=f16e57]
+        - generic [ref=f16e62]: K
+    - main [ref=f16e66]:
+      - generic [ref=f16e755]:
+        - heading "对话" [level=2] [ref=f16e763]
+        - log [ref=f16e923]:
+          - generic [ref=f16e924]:
+            - generic [ref=f16e1008]: 研究开源 AI 桌面应用
+            - generic [ref=f16e1013]:
+              - generic [ref=f16e1014]:
+                - generic [ref=f16e1016]:
+                  - button "已完成 13 个步骤 · 8 个工具 13 步 · 8 个工具" [expanded] [ref=f16e1017]:
+                    - generic [ref=f16e1020]: 已完成 13 个步骤 · 8 个工具
+                    - generic [ref=f16e1021]: 13 步 · 8 个工具
+                  - list [ref=f16e1025]:
+                    - listitem [ref=f16e1026]:
+                      - button "查看思考过程" [ref=f16e1027]:
+                        - generic [ref=f16e1028]: 思考
+                    - listitem [ref=f16e1033]:
+                      - button "查看 bash 结果" [ref=f16e1034]:
+                        - generic [ref=f16e1035]:
+                          - generic "执行命令" [ref=f16e1036]
+                          - generic [ref=f16e1037]: 已完成
+                    - listitem [ref=f16e1040]:
+                      - button "查看 web_fetch 结果" [ref=f16e1041]:
+                        - generic [ref=f16e1042]:
+                          - generic "获取网页" [ref=f16e1043]
+                          - generic [ref=f16e1044]: 已完成
+                    - listitem [ref=f16e1047]:
+                      - button "查看思考过程" [ref=f16e1048]:
+                        - generic [ref=f16e1049]: 思考
+                    - listitem [ref=f16e1054]:
+                      - button "查看 web_fetch 结果" [ref=f16e1055]:
+                        - generic [ref=f16e1056]:
+                          - generic "获取网页" [ref=f16e1057]
+                          - generic [ref=f16e1058]: 已完成
+                    - listitem [ref=f16e1061]:
+                      - button "查看 web_fetch 结果" [ref=f16e1062]:
+                        - generic [ref=f16e1063]:
+                          - generic "获取网页" [ref=f16e1064]
+                          - generic [ref=f16e1065]: 已完成
+                    - listitem [ref=f16e1068]:
+                      - button "查看思考过程" [ref=f16e1069]:
+                        - generic [ref=f16e1070]: 思考
+                    - listitem [ref=f16e1075]:
+                      - button "查看 web_fetch 结果" [ref=f16e1076]:
+                        - generic [ref=f16e1077]:
+                          - generic "获取网页" [ref=f16e1078]
+                          - generic [ref=f16e1079]: 已完成
+                    - listitem [ref=f16e1082]:
+                      - button "查看 web_fetch 结果" [ref=f16e1083]:
+                        - generic [ref=f16e1084]:
+                          - generic "获取网页" [ref=f16e1085]
+                          - generic [ref=f16e1086]: 已完成
+                    - listitem [ref=f16e1089]:
+                      - button "查看思考过程" [ref=f16e1090]:
+                        - generic [ref=f16e1091]: 思考
+                    - listitem [ref=f16e1096]:
+                      - button "查看 web_fetch 结果" [expanded] [active] [ref=f16e1097]:
+                        - generic [ref=f16e1098]:
+                          - generic "获取网页" [ref=f16e1099]
+                          - generic [ref=f16e1100]: 已完成
+                      - generic [ref=f16e1223]:
+                        - generic "url=https://github.com/nomic-ai/gpt4all" [ref=f16e1225]: github.com/nomic-ai/gpt4all
+                        - generic [ref=f16e1226]: "GitHub - nomic-ai/gpt4all: GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. · GitHub Skip to content Navigation Menu Sign in"
+                        - generic [ref=f16e1227]: "GitHub - nomic-ai/gpt4all: GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they start EXPLORE Why GitHub Documentation Blog Changelog Marketplace View all features Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support Pricing Type / to search Sign in Sign up Appearance settings You signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert {{ message }} Uh oh! There was an error while loading. Please reload this page . nomic-ai / gpt4all Public Notifications You must be signed in to change notification settings Fork 8.3k Star 77.4k Code Issues 730 Pull requests 44 Discussions Actions Projects Wiki Security and quality 0 Insights Additional navigation options Code Issues Pull requests Discussions Actions Projects Wiki Security and quality Insights main Branches Tags Go to file Code Open more actions menu Folders and files Name Name Last commit message Last commit date Latest commit History 2,289 Commits 2,289 Commits .circleci .circleci .github .github common common gpt4all-backend gpt4all-backend gpt4all-bindings gpt4all-bindings gpt4all-chat gpt4all-chat gpt4all-training gpt4all-training .codespellrc .codespellrc .gitignore .gitignore .gitmodules .gitmodules CONTRIBUTING.md CONTRIBUTING.md LICENSE.txt LICENSE.txt MAINTAINERS.md MAINTAINERS.md README.md README.md gpt4all-lora-demo.gif gpt4all-lora-demo.gif roadmap.md roadmap.md View all files Repository files navigation README Contributing MIT license More items GPT4All Now with support for DeepSeek R1 Distillations Website • Documentation • Discord • YouTube Tutorial GPT4All runs large language models (LLMs) privately on everyday desktops & laptops. No API calls or GPUs required - you can just download the application and get started . Read about what's new in our blog . Subscribe to the newsletter gpt4all_2.mp4 GPT4All is made possible by our compute partner Paperspace . Download Links — Windows Installer — — Windows ARM Installer — — macOS Installer — — Ubuntu Installer — The Windows and Linux builds require Intel Core i3 2nd Gen / AMD Bulldozer, or better. The Windows ARM build supports Qualcomm Snapdragon and Microsoft SQ1/SQ2 processors. The Linux build is x86-64 only (no ARM). The macOS build requires Monterey 12.6 or newer. Best results with Apple Silicon M-series processors. See the full System Requirements for more details. Flathub (community maintained) Install GPT4All Python gpt4all gives you access to LLMs with our Python client around llama.cpp implementations. Nomic contributes to open source software like llama.cpp to make LLMs accessible and efficient for all . pip install gpt4all from gpt4all import GPT4All model = GPT4All ( \"Meta-Llama-3-8B-Instruct.Q4_0.gguf\" ) # downloads / loads a 4.66GB LLM with model . chat_session (): print ( model . generate ( \"How can I run LLMs efficiently on my laptop?\" , max_tokens = 1024 )) Integrations 🦜🔗 Langchain 🗃️ Weaviate Vector Database - module docs 🔭 OpenLIT (OTel-native Monitoring) - Docs Release History July 2nd, 2024 : V3.0.0 Release Fresh redesign of the chat application UI Improved user workflow for LocalDocs Expanded access to more model architectures October 19th, 2023 : GGUF Support Launches with Support for: Mistral 7b base model, an updated model gallery on our website, several new local code models including Rift Coder v1.5 Nomic Vulkan support for Q4_0 and Q4_1 quantizations in GGUF. Offline build support for running old versions of the GPT4All Local LLM Chat Client. September 18th, 2023 : Nomic Vulkan launches supporting local LLM inference on NVIDIA and AMD GPUs. July 2023 : Stable support for LocalDocs, a feature that allows you to privately and locally chat with your data. June 28th, 2023 : Docker-based API server launches allowing inference of local LLMs from an OpenAI-compatible HTTP endpoint. Contributing GPT4All welcomes contributions, involvement, and discussion from the open source community! Please see CONTRIBUTING.md and follow the issues, bug reports, and PR markdown templates. Check project discord, with project owners, or through existing issues/PRs to avoid duplicate work. Please make sure to tag all of the above with relevant project identifiers or your contribution could potentially get lost. Example tags: backend , bindings , python-bindings , documentation , etc. Citation If you utilize this repository, models or data in a downstream project, please consider citing it with: @misc{gpt4all, author = {Yuvanesh Anand and Zach Nussbaum and Brandon Duderstadt and Benjamin Schmidt and Andriy Mulyar}, title = {GPT4All: Training an Assistant-style Chatbot with Large Scale Data Distillation from GPT-3.5-Turbo}, year = {2023}, publisher = {GitHub}, journal = {GitHub repository}, howpublished = {\\url{https://github.com/nomic-ai/gpt4all}}, } About GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. nomic.ai/gpt4all Topics ai-chat llm-inference Resources Readme MIT license Contributing Contributing Activity Custom properties Stars 77.4k stars Watchers 698 watching Forks 8.3k forks Report repository Releases Packages Used by Contributors Languages Footer &copy; 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs Contact Manage cookies Do not share my personal information You can’t perform tha ...(已截断)"
+                    - listitem [ref=f16e1103]:
+                      - button "查看 web_fetch 结果" [ref=f16e1104]:
+                        - generic [ref=f16e1105]:
+                          - generic "获取网页" [ref=f16e1106]
+                          - generic [ref=f16e1107]: 已完成
+                    - listitem [ref=f16e1110]:
+                      - button "查看思考过程" [ref=f16e1111]:
+                        - generic [ref=f16e1112]: 思考
+                - generic [ref=f16e1119]:
+                  - paragraph [ref=f16e1120]: 我来研究开源 AI 桌面应用的最新情况。先搜索获取信息。 GitHub topic 页面结果较杂，我来针对几个主流开源 AI 桌面应用逐一核实最新信息。 已获取 AnythingLLM 和 Jan 的信息。继续核实 Cherry Studio 和 Chatbox。 再核实 GPT4All 和 Lobe Chat 两个项目。 调研完成，以下是截至 2026-08-12 的开源 AI 桌面应用研究报告（数据来自各项目 GitHub 主页实时抓取）。
+                  - heading "开源 AI 桌面应用研究报告" [level=1] [ref=f16e1121]
+                  - heading "结论先行" [level=2] [ref=f16e1122]
+                  - paragraph [ref=f16e1123]:
+                    - text: 当前开源 AI 桌面应用已形成两条清晰路线：
+                    - strong [ref=f16e1124]: 本地优先
+                    - text: （完全离线跑模型，隐私至上）和
+                    - strong [ref=f16e1125]: BYOK 客户端
+                    - text: （自带密钥接各家云端 API）。市场格局稳定，头部项目 Star 数均在 4 万以上，其中
+                    - strong [ref=f16e1126]: GPT4All、LobeHub
+                    - text: 领跑（7.7 万+/8.1 万+），
+                    - strong [ref=f16e1127]: AnythingLLM、Cherry Studio
+                    - text: 紧随其后。
+                  - heading "主流项目盘点" [level=2] [ref=f16e1128]
+                  - heading "🏠 本地优先（离线运行）" [level=3] [ref=f16e1129]
+                  - table [ref=f16e1130]:
+                    - rowgroup [ref=f16e1131]:
+                      - row [ref=f16e1132]:
+                        - columnheader "项目" [ref=f16e1133]
+                        - columnheader "Star" [ref=f16e1134]
+                        - columnheader "许可" [ref=f16e1135]
+                        - columnheader "技术栈" [ref=f16e1136]
+                        - columnheader "核心特点" [ref=f16e1137]
+                    - rowgroup [ref=f16e1138]:
+                      - row [ref=f16e1139]:
+                        - cell [ref=f16e1140]:
+                          - strong [ref=f16e1141]: GPT4All
+                          - text: (nomic-ai)
+                        - cell "77.4k" [ref=f16e1142]
+                        - cell "MIT" [ref=f16e1143]
+                        - cell "Qt/C++ + llama.cpp" [ref=f16e1144]
+                        - cell "CPU 即可跑模型，无需 API 和 GPU；LocalDocs 本地文档问答；支持 DeepSeek R1 蒸馏版；商业可用" [ref=f16e1145]
+                      - row [ref=f16e1146]:
+                        - cell [ref=f16e1147]:
+                          - strong [ref=f16e1148]: Jan
+                          - text: (janhq)
+                        - cell "44k" [ref=f16e1149]
+                        - cell "Apache 2.0" [ref=f16e1150]
+                        - cell "Tauri/Rust" [ref=f16e1151]
+                        - cell "100% 离线 ChatGPT 替代品；从 HuggingFace 下载模型；内置 OpenAI 兼容 API（localhost:1337）；支持 MCP；也接云端 API" [ref=f16e1152]
+                  - heading "🔑 BYOK 多提供商客户端（自带密钥）" [level=3] [ref=f16e1153]
+                  - table [ref=f16e1154]:
+                    - rowgroup [ref=f16e1155]:
+                      - row [ref=f16e1156]:
+                        - columnheader "项目" [ref=f16e1157]
+                        - columnheader "Star" [ref=f16e1158]
+                        - columnheader "许可" [ref=f16e1159]
+                        - columnheader "技术栈" [ref=f16e1160]
+                        - columnheader "核心特点" [ref=f16e1161]
+                    - rowgroup [ref=f16e1162]:
+                      - row [ref=f16e1163]:
+                        - cell [ref=f16e1164]:
+                          - strong [ref=f16e1165]: AnythingLLM
+                          - text: (Mintplex-Labs)
+                        - cell "64.6k" [ref=f16e1166]
+                        - cell "MIT" [ref=f16e1167]
+                        - cell "Electron + React/Node" [ref=f16e1168]
+                        - cell "全能型：文档 RAG + AI Agent + 多用户；支持 30+ LLM 提供商和 10+ 向量库；动态模型路由、定时任务、MCP；Docker 可部署为团队服务" [ref=f16e1169]
+                      - row [ref=f16e1170]:
+                        - cell [ref=f16e1171]:
+                          - strong [ref=f16e1172]: Cherry Studio
+                          - text: (CherryHQ)
+                        - cell "50.3k" [ref=f16e1173]
+                        - cell [ref=f16e1174]:
+                          - strong [ref=f16e1175]: AGPL-3.0
+                        - cell "Electron" [ref=f16e1176]
+                        - cell "300+ 预置助手；支持 OpenAI/Gemini/Anthropic 及 Claude/Perplexity 网页服务、Ollama 本地模型；MCP、WebDAV 备份；中文社区最活跃" [ref=f16e1177]
+                      - row [ref=f16e1178]:
+                        - cell [ref=f16e1179]:
+                          - strong [ref=f16e1180]: Chatbox
+                          - text: (chatboxai)
+                        - cell "41.4k" [ref=f16e1181]
+                        - cell "GPL-3.0" [ref=f16e1182]
+                        - cell "Electron" [ref=f16e1183]
+                        - cell "轻量简洁；数据本地存储；桌面 + 移动 + Web 全平台；DALL-E 绘图、团队 API 共享" [ref=f16e1184]
+                      - row [ref=f16e1185]:
+                        - cell [ref=f16e1186]:
+                          - strong [ref=f16e1187]: LobeHub
+                          - text: （原 Lobe Chat）
+                        - cell "81.5k" [ref=f16e1188]
+                        - cell "MIT" [ref=f16e1189]
+                        - cell "Next.js" [ref=f16e1190]
+                        - cell "从 Web 聊天转型为\"AI Agent 运营平台\"，主打 7×24 自主 Agent 团队；插件体系完善" [ref=f16e1191]
+                  - heading "关键差异点" [level=2] [ref=f16e1192]
+                  - list [ref=f16e1193]:
+                    - listitem [ref=f16e1194]:
+                      - strong [ref=f16e1195]: 许可证注意
+                      - text: ：Cherry Studio 是 AGPL-3.0（代码传染性最强，做商业集成需谨慎）；Chatbox 社区版是 GPL-3.0；其余均为宽松许可（MIT/Apache 2.0）。
+                    - listitem [ref=f16e1196]:
+                      - strong [ref=f16e1197]: 本地模型后端
+                      - text: ：几乎所有客户端都通过
+                      - strong [ref=f16e1198]: Ollama
+                      - text: 或
+                      - strong [ref=f16e1199]: LM Studio
+                      - text: 对接本地模型——Ollama 本身是 CLI/服务而非图形应用，但它是这个生态的事实标准底座。
+                    - listitem [ref=f16e1200]:
+                      - strong [ref=f16e1201]: 生态分化
+                      - text: ：AnythingLLM 走"私有化 ChatGPT + 文档平台"路线（适合团队/企业自托管）；Cherry Studio 走"个人生产力工具"路线；LobeHub 走"Agent 编排"前沿路线。
+                  - heading "选型建议" [level=2] [ref=f16e1202]
+                  - list [ref=f16e1203]:
+                    - listitem [ref=f16e1204]:
+                      - strong [ref=f16e1205]: 完全离线、隐私敏感、想免费跑本地模型
+                      - text: → GPT4All（低配可跑）或 Jan（体验更现代）
+                    - listitem [ref=f16e1206]:
+                      - strong [ref=f16e1207]: 个人日常使用、接各家 API、要中文界面和丰富功能
+                      - text: → Cherry Studio
+                    - listitem [ref=f16e1208]:
+                      - strong [ref=f16e1209]: 企业/团队自托管、文档问答 + Agent 自动化
+                      - text: → AnythingLLM（Docker 部署 + 多用户权限）
+                    - listitem [ref=f16e1210]:
+                      - strong [ref=f16e1211]: 轻量简单、跨平台（含手机）
+                      - text: → Chatbox
+                    - listitem [ref=f16e1212]:
+                      - strong [ref=f16e1213]: 愿意尝鲜 Agent 自主协作
+                      - text: → LobeHub
+                  - paragraph [ref=f16e1214]: 需要的话，我可以把这份报告写成 Markdown 文件保存到工作目录，或针对某个项目做更深入的对比（如性能、模型支持矩阵）。
+              - button "复制消息" [ref=f16e1215]
+        - generic [ref=f16e973]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f16e975]: 研究开源 AI 桌面应用
+          - generic [ref=f16e976]:
+            - button "添加附件" [ref=f16e978]
+            - button "选择模型" [ref=f16e982]
+            - generic [ref=f16e990]:
+              - generic [ref=f16e999]: Effort
+              - generic [ref=f16e1000]: MED
+              - slider "Effort" [ref=f16e1002] [cursor=pointer]: "2"
+            - button "发送" [ref=f16e1219] [cursor=pointer]

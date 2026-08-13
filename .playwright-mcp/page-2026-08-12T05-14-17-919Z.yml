@@ -1,0 +1,164 @@
+- generic [ref=f16e3]:
+  - complementary [ref=f16e4]:
+    - generic [ref=f16e5]: my-agent
+    - navigation [ref=f16e6]:
+      - link "控制台" [ref=f16e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f16e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f16e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f16e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f16e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f16e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f16e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f16e39]:
+      - generic [ref=f16e40]:
+        - generic [ref=f16e41]: 历史会话
+        - button "新对话" [ref=f16e42]
+      - list [ref=f16e147]:
+        - listitem [ref=f16e148]:
+          - link "研究开源 AI 桌面应用" [ref=f16e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e150]'
+        - listitem [ref=f16e154]:
+          - link "研究开源 AI 桌面应用" [ref=f16e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e156]'
+        - listitem [ref=f16e160]:
+          - link "研究开源 AI 桌面应用" [ref=f16e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e162]'
+        - listitem [ref=f16e166]:
+          - link "研究开源 AI 桌面应用" [ref=f16e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e168]'
+        - listitem [ref=f16e172]:
+          - link "研究开源 AI 桌面应用" [ref=f16e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e174]'
+        - listitem [ref=f16e178]:
+          - link "研究开源 AI 桌面应用" [ref=f16e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e180]'
+        - listitem [ref=f16e184]:
+          - link "研究开源 AI 桌面应用" [ref=f16e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e186]'
+        - listitem [ref=f16e190]:
+          - link "研究开源 AI 桌面应用" [ref=f16e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e192]'
+        - listitem [ref=f16e196]:
+          - link "研究开源 AI 桌面应用" [ref=f16e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f16e198]'
+        - listitem [ref=f16e202]:
+          - link "项目目录看看" [ref=f16e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f16e204]'
+        - listitem [ref=f16e208]:
+          - link "项目目录看看" [ref=f16e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f16e210]'
+        - listitem [ref=f16e214]:
+          - link "项目目录看看" [ref=f16e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f16e216]'
+        - listitem [ref=f16e220]:
+          - link "项目目录看看" [ref=f16e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f16e222]'
+        - listitem [ref=f16e226]:
+          - link "项目目录看看" [ref=f16e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f16e228]'
+        - listitem [ref=f16e232]:
+          - link "项目目录看看" [ref=f16e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f16e234]'
+        - listitem [ref=f16e238]:
+          - link "项目目录看看" [ref=f16e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f16e240]'
+        - listitem [ref=f16e244]:
+          - link "项目目录看看" [ref=f16e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f16e246]'
+        - listitem [ref=f16e250]:
+          - link "看看项目目录" [ref=f16e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f16e252]'
+        - listitem [ref=f16e256]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f16e258]'
+        - listitem [ref=f16e262]:
+          - link "帮我看看项目目录" [ref=f16e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f16e264]'
+  - generic [ref=f16e47]:
+    - banner [ref=f16e48]:
+      - generic [ref=f16e49]:
+        - button "Toggle theme" [ref=f16e50]
+        - button "Switch language" [ref=f16e57]
+        - generic [ref=f16e62]: K
+    - main [ref=f16e66]:
+      - generic [ref=f16e326]:
+        - generic [ref=f16e327]:
+          - heading "Agent" [level=1] [ref=f16e328]
+          - paragraph [ref=f16e329]: 共 5 个 Agent
+        - generic [ref=f16e330]:
+          - generic [ref=f16e332] [cursor=pointer]:
+            - generic [ref=f16e333]:
+              - generic [ref=f16e334]:
+                - heading "Coder" [level=3] [ref=f16e335]
+                - generic [ref=f16e336]: builtin
+              - paragraph [ref=f16e337]: 代码实现专家 — 编写、修改、重构代码，含单元测试。适合已明确方案的编码任务。
+            - generic [ref=f16e338]:
+              - generic [ref=f16e339]: bash
+              - generic [ref=f16e340]: read_file
+              - generic [ref=f16e341]: write_file
+              - generic [ref=f16e342]: "+4"
+          - generic [ref=f16e345] [cursor=pointer]:
+            - generic [ref=f16e346]:
+              - heading "Commander" [level=3] [ref=f16e347]
+              - generic [ref=f16e348]: builtin
+            - paragraph [ref=f16e349]: 无描述
+          - generic [ref=f16e351] [cursor=pointer]:
+            - generic [ref=f16e352]:
+              - generic [ref=f16e353]:
+                - heading "Debugger" [level=3] [ref=f16e354]
+                - generic [ref=f16e355]: builtin
+              - paragraph [ref=f16e356]: 缺陷调查专家 — 系统性定位根因、提出修复方案、编写回归测试。适合 Bug 排查。
+            - generic [ref=f16e357]:
+              - generic [ref=f16e358]: bash
+              - generic [ref=f16e359]: read_file
+              - generic [ref=f16e360]: grep_files
+              - generic [ref=f16e361]: "+4"
+          - generic [ref=f16e363] [cursor=pointer]:
+            - generic [ref=f16e364]:
+              - generic [ref=f16e365]:
+                - heading "Explorer" [level=3] [ref=f16e366]
+                - generic [ref=f16e367]: builtin
+              - paragraph [ref=f16e368]: 代码探查专家 — 只读搜索、分析、理解代码库。适合调研、定位、梳理依赖。
+            - generic [ref=f16e369]:
+              - generic [ref=f16e370]: read_file
+              - generic [ref=f16e371]: grep_files
+              - generic [ref=f16e372]: search_files
+              - generic [ref=f16e373]: "+1"
+          - generic [ref=f16e375] [cursor=pointer]:
+            - generic [ref=f16e376]:
+              - generic [ref=f16e377]:
+                - heading "Reviewer" [level=3] [ref=f16e378]
+                - generic [ref=f16e379]: builtin
+              - paragraph [ref=f16e380]: 代码审查专家 — 多维度审查代码质量、安全、性能。适合合并前的全面审查。
+            - generic [ref=f16e381]:
+              - generic [ref=f16e382]: read_file
+              - generic [ref=f16e383]: grep_files
+              - generic [ref=f16e384]: search_files
+              - generic [ref=f16e385]: "+1"

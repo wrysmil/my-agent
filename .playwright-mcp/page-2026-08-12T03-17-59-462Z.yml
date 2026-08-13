@@ -1,0 +1,398 @@
+- generic [ref=f11e3]:
+  - complementary [ref=f11e4]:
+    - generic [ref=f11e5]: my-agent
+    - navigation [ref=f11e6]:
+      - link "控制台" [ref=f11e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f11e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f11e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f11e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f11e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f11e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f11e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f11e39]:
+      - generic [ref=f11e40]:
+        - generic [ref=f11e41]: 历史会话
+        - button "新对话" [ref=f11e42]
+      - list [ref=f11e44]:
+        - listitem [ref=f11e45]:
+          - link "研究开源 AI 桌面应用" [ref=f11e46] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e47]'
+        - listitem [ref=f11e51]:
+          - link "研究开源 AI 桌面应用" [ref=f11e52] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e53]'
+        - listitem [ref=f11e57]:
+          - link "研究开源 AI 桌面应用" [ref=f11e58] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e59]'
+        - listitem [ref=f11e63]:
+          - link "研究开源 AI 桌面应用" [ref=f11e64] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e65]'
+        - listitem [ref=f11e69]:
+          - link "研究开源 AI 桌面应用" [ref=f11e70] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e71]'
+        - listitem [ref=f11e75]:
+          - link "研究开源 AI 桌面应用" [ref=f11e76] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e77]'
+        - listitem [ref=f11e81]:
+          - link "项目目录看看" [ref=f11e82] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f11e83]'
+        - listitem [ref=f11e87]:
+          - link "项目目录看看" [ref=f11e88] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f11e89]'
+        - listitem [ref=f11e93]:
+          - link "项目目录看看" [ref=f11e94] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f11e95]'
+        - listitem [ref=f11e99]:
+          - link "项目目录看看" [ref=f11e100] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f11e101]'
+        - listitem [ref=f11e105]:
+          - link "项目目录看看" [ref=f11e106] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f11e107]'
+        - listitem [ref=f11e111]:
+          - link "项目目录看看" [ref=f11e112] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f11e113]'
+        - listitem [ref=f11e117]:
+          - link "项目目录看看" [ref=f11e118] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f11e119]'
+        - listitem [ref=f11e123]:
+          - link "项目目录看看" [ref=f11e124] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f11e125]'
+        - listitem [ref=f11e129]:
+          - link "看看项目目录" [ref=f11e130] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f11e131]'
+        - listitem [ref=f11e135]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f11e136] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f11e137]'
+        - listitem [ref=f11e141]:
+          - link "帮我看看项目目录" [ref=f11e142] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e143]'
+        - listitem [ref=f11e147]:
+          - link "帮我看看项目目录" [ref=f11e148] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e149]'
+        - listitem [ref=f11e153]:
+          - link "帮我看看项目目录" [ref=f11e154] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e155]'
+        - listitem [ref=f11e159]:
+          - link "帮我看看当前项目目录" [ref=f11e160] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f11e161]'
+  - generic [ref=f11e165]:
+    - banner [ref=f11e166]:
+      - generic [ref=f11e167]:
+        - button "Toggle theme" [ref=f11e168]
+        - button "Switch language" [ref=f11e175]
+        - generic [ref=f11e180]: K
+    - main [ref=f11e184]:
+      - generic [ref=f11e185]:
+        - heading "对话" [level=2] [ref=f11e193]
+        - log [ref=f11e196]:
+          - generic [ref=f11e197]:
+            - generic [ref=f11e198]: 研究开源 AI 桌面应用
+            - generic [ref=f11e203]:
+              - generic [ref=f11e204]:
+                - generic [ref=f11e206]:
+                  - button "已完成 8 个步骤 · 4 个工具 8 步 · 4 个工具" [expanded] [ref=f11e207]:
+                    - generic [ref=f11e210]: 已完成 8 个步骤 · 4 个工具
+                    - generic [ref=f11e211]: 8 步 · 4 个工具
+                  - list [ref=f11e215]:
+                    - listitem [ref=f11e216]:
+                      - button "查看思考过程" [ref=f11e217]:
+                        - generic [ref=f11e218]: 思考
+                    - listitem [ref=f11e223]:
+                      - button "查看思考过程" [ref=f11e224]:
+                        - generic [ref=f11e225]: 思考
+                    - listitem [ref=f11e230]:
+                      - button "查看 list_files 结果" [ref=f11e231]:
+                        - generic [ref=f11e232]:
+                          - generic "list_files" [ref=f11e233]
+                          - generic [ref=f11e234]: 已完成
+                    - listitem [ref=f11e237]:
+                      - button "查看思考过程" [ref=f11e238]:
+                        - generic [ref=f11e239]: 思考
+                    - listitem [ref=f11e244]:
+                      - button "查看 read_file 结果" [ref=f11e245]:
+                        - generic [ref=f11e246]:
+                          - generic "read_file" [ref=f11e247]
+                          - generic [ref=f11e248]: 已完成
+                    - listitem [ref=f11e251]:
+                      - button "查看 read_file 结果" [ref=f11e252]:
+                        - generic [ref=f11e253]:
+                          - generic "read_file" [ref=f11e254]
+                          - generic [ref=f11e255]: 已完成
+                    - listitem [ref=f11e258]:
+                      - button "查看 read_file 结果" [ref=f11e259]:
+                        - generic [ref=f11e260]:
+                          - generic "read_file" [ref=f11e261]
+                          - generic [ref=f11e262]: 已完成
+                    - listitem [ref=f11e265]:
+                      - button "查看思考过程" [ref=f11e266]:
+                        - generic [ref=f11e267]: 思考
+                - generic [ref=f11e274]:
+                  - paragraph [ref=f11e275]: 我看到目录中已有一份研究报告。让我先查看关键文件： 「Harness：web-investigator」
+                  - paragraph [ref=f11e276]:
+                    - text: 你的项目目录中已有一份
+                    - strong [ref=f11e277]: 2026-08-12
+                    - text: 的完整研究报告，覆盖了 GitHub 上主流的开源 AI 桌面应用。以下是核心结论：
+                  - separator [ref=f11e278]
+                  - heading "已研究的关键项目" [level=2] [ref=f11e279]
+                  - table [ref=f11e280]:
+                    - rowgroup [ref=f11e281]:
+                      - row [ref=f11e282]:
+                        - columnheader "项目" [ref=f11e283]
+                        - columnheader "Stars" [ref=f11e284]
+                        - columnheader "许可证" [ref=f11e285]
+                        - columnheader "技术栈" [ref=f11e286]
+                        - columnheader "一句话定位" [ref=f11e287]
+                    - rowgroup [ref=f11e288]:
+                      - row [ref=f11e289]:
+                        - cell [ref=f11e290]:
+                          - strong [ref=f11e291]: GPT4All
+                        - cell "77.4k" [ref=f11e292]
+                        - cell "MIT" [ref=f11e293]
+                        - cell "C++/Python/Qt" [ref=f11e294]
+                        - cell "纯本地 LLM 运行器，无需 GPU" [ref=f11e295]
+                      - row [ref=f11e296]:
+                        - cell [ref=f11e297]:
+                          - strong [ref=f11e298]: Cherry Studio
+                        - cell "50.3k" [ref=f11e299]
+                        - cell "AGPL-3.0" [ref=f11e300]
+                        - cell "TS/Electron" [ref=f11e301]
+                        - cell "多模型聚合 + 300 助手 + MCP" [ref=f11e302]
+                      - row [ref=f11e303]:
+                        - cell [ref=f11e304]:
+                          - strong [ref=f11e305]: Jan
+                        - cell "44.0k" [ref=f11e306]
+                        - cell "Apache 2.0" [ref=f11e307]
+                        - cell "Rust/Tauri" [ref=f11e308]
+                        - cell "离线 ChatGPT 替代品，MCP 集成" [ref=f11e309]
+                      - row [ref=f11e310]:
+                        - cell [ref=f11e311]:
+                          - strong [ref=f11e312]: ClawX
+                        - cell "7.6k" [ref=f11e313]
+                        - cell "—" [ref=f11e314]
+                        - cell "TypeScript" [ref=f11e315]
+                        - cell "Agent GUI，极高频更新" [ref=f11e316]
+                      - row [ref=f11e317]:
+                        - cell [ref=f11e318]:
+                          - strong [ref=f11e319]: Everywhere
+                        - cell "6.2k" [ref=f11e320]
+                        - cell "—" [ref=f11e321]
+                        - cell "C#" [ref=f11e322]
+                        - cell "屏幕感知桌面 AI 助手" [ref=f11e323]
+                  - heading "关键趋势" [level=2] [ref=f11e324]
+                  - list [ref=f11e325]:
+                    - listitem [ref=f11e326]:
+                      - strong [ref=f11e327]: MCP 已成标配
+                      - text: — Cherry Studio、Jan、Everywhere 均已集成
+                    - listitem [ref=f11e328]:
+                      - strong [ref=f11e329]: Tauri (Rust) 正在替代 Electron
+                      - text: — 更轻量、性能更好（Jan、skills-manager 采用）
+                    - listitem [ref=f11e330]:
+                      - strong [ref=f11e331]: 早期项目已停滞
+                      - text: — lencx/ChatGPT（54.4k ⭐，最后更新 2024-08）、BingGPT 不再维护
+                    - listitem [ref=f11e332]:
+                      - strong [ref=f11e333]: Cherry Studio 最活跃
+                      - text: — 8k+ commits，清晰的 roadmap，开发者激励计划
+                  - separator [ref=f11e334]
+                  - paragraph [ref=f11e335]:
+                    - strong [ref=f11e336]: 你是要
+                    - text: ：① 基于已有报告直接使用结论？② 更新到最新数据（重新抓取 star 数和活跃度）？③ 深入某个具体项目的架构分析？
+              - button "复制消息" [ref=f11e337]
+            - generic [ref=f11e341]: 用 web_fetch 抓取 https://github.com/vitejs/vite 和 https://github.com/evanw/esbuild 的 README，对比构建工具差异
+            - generic [ref=f11e346]:
+              - generic [ref=f11e347]:
+                - generic [ref=f11e349]:
+                  - button "已完成 4 个步骤 · 2 个工具 4 步 · 2 个工具" [expanded] [ref=f11e350]:
+                    - generic [ref=f11e353]: 已完成 4 个步骤 · 2 个工具
+                    - generic [ref=f11e354]: 4 步 · 2 个工具
+                  - list [ref=f11e358]:
+                    - listitem [ref=f11e359]:
+                      - button "查看思考过程" [ref=f11e360]:
+                        - generic [ref=f11e361]: 思考
+                    - listitem [ref=f11e366]:
+                      - button "查看 web_fetch 结果" [ref=f11e367]:
+                        - generic [ref=f11e368]:
+                          - generic "获取网页" [ref=f11e369]
+                          - generic [ref=f11e370]: 已完成
+                    - listitem [ref=f11e373]:
+                      - button "查看 web_fetch 结果" [ref=f11e374]:
+                        - generic [ref=f11e375]:
+                          - generic "获取网页" [ref=f11e376]
+                          - generic [ref=f11e377]: 已完成
+                    - listitem [ref=f11e380]:
+                      - button "查看思考过程" [ref=f11e381]:
+                        - generic [ref=f11e382]: 思考
+                - generic [ref=f11e389]:
+                  - paragraph [ref=f11e390]: 「Harness：web-investigator」
+                  - paragraph [ref=f11e391]: 好的，抓取两个仓库的 README 进行对比： 已抓取两个仓库的 README（当前日期 2026-08-12，数据均为实时抓取）。对比结果如下：
+                  - heading "Vite vs esbuild 对比" [level=2] [ref=f11e392]
+                  - heading "基本数据" [level=3] [ref=f11e393]
+                  - table [ref=f11e394]:
+                    - rowgroup [ref=f11e395]:
+                      - row [ref=f11e396]:
+                        - columnheader "维度" [ref=f11e397]
+                        - columnheader "Vite (vitejs/vite)" [ref=f11e398]
+                        - columnheader "esbuild (evanw/esbuild)" [ref=f11e399]
+                    - rowgroup [ref=f11e400]:
+                      - row [ref=f11e401]:
+                        - cell "Stars" [ref=f11e402]
+                        - cell [ref=f11e403]:
+                          - strong [ref=f11e404]: 82.3k
+                        - cell "40.0k" [ref=f11e405]
+                      - row [ref=f11e406]:
+                        - cell "Forks" [ref=f11e407]
+                        - cell "8.6k" [ref=f11e408]
+                        - cell "1.3k" [ref=f11e409]
+                      - row [ref=f11e410]:
+                        - cell "Commits" [ref=f11e411]
+                        - cell "9,562" [ref=f11e412]
+                        - cell "4,478" [ref=f11e413]
+                      - row [ref=f11e414]:
+                        - cell "许可证" [ref=f11e415]
+                        - cell "MIT" [ref=f11e416]
+                        - cell "MIT" [ref=f11e417]
+                      - row [ref=f11e418]:
+                        - cell "核心语言" [ref=f11e419]
+                        - cell "TypeScript（Rolldown 为 Rust）" [ref=f11e420]
+                        - cell [ref=f11e421]:
+                          - strong [ref=f11e422]: Go
+                      - row [ref=f11e423]:
+                        - cell "定位" [ref=f11e424]
+                        - cell "下一代前端工具链" [ref=f11e425]
+                        - cell "极速 web 打包器" [ref=f11e426]
+                  - heading "定位差异（README 原话）" [level=3] [ref=f11e427]
+                  - list [ref=f11e428]:
+                    - listitem [ref=f11e429]:
+                      - strong [ref=f11e430]: Vite
+                      - text: ：「为现代 Web 项目提供
+                      - strong [ref=f11e431]: 更快、更精简
+                      - text: 的开发体验」，由两部分组成：
+                      - list [ref=f11e432]:
+                        - listitem [ref=f11e433]:
+                          - strong [ref=f11e434]: Dev server
+                          - text: — 基于原生 ES Modules 提供增强，核心是
+                          - strong [ref=f11e435]: 极快 HMR
+                        - listitem [ref=f11e436]:
+                          - strong [ref=f11e437]: Build 命令
+                          - text: — 用
+                          - strong [ref=f11e438]: Rolldown
+                          - text: 打包，输出预配置的、高度优化的生产静态资源
+                    - listitem [ref=f11e439]:
+                      - strong [ref=f11e440]: esbuild
+                      - text: ：「当前 web 构建工具比应有速度慢 10-100 倍」——目标就是
+                      - strong [ref=f11e441]: 开启构建工具性能的新时代
+                      - text: ，做一个易用的现代打包器
+                  - heading "核心功能对比" [level=3] [ref=f11e442]
+                  - table [ref=f11e443]:
+                    - rowgroup [ref=f11e444]:
+                      - row [ref=f11e445]:
+                        - columnheader "能力" [ref=f11e446]
+                        - columnheader "Vite" [ref=f11e447]
+                        - columnheader "esbuild" [ref=f11e448]
+                    - rowgroup [ref=f11e449]:
+                      - row [ref=f11e450]:
+                        - cell "开发服务器 + HMR" [ref=f11e451]
+                        - cell "✅ 核心卖点（Instant Server Start、Lightning Fast HMR）" [ref=f11e452]
+                        - cell "仅提供简单本地服务器 + watch 模式" [ref=f11e453]
+                      - row [ref=f11e454]:
+                        - cell "生产构建" [ref=f11e455]
+                        - cell "✅ Rolldown（Rust 内核）" [ref=f11e456]
+                        - cell "✅ 独立打包" [ref=f11e457]
+                      - row [ref=f11e458]:
+                        - cell "TS/JSX 转译" [ref=f11e459]
+                        - cell "依赖 esbuild 做预构建/转译" [ref=f11e460]
+                        - cell [ref=f11e461]:
+                          - text: ✅
+                          - strong [ref=f11e462]: 内置
+                          - text: （原生支持）
+                      - row [ref=f11e463]:
+                        - cell "ESM/CJS 打包" [ref=f11e464]
+                        - cell "✅" [ref=f11e465]
+                        - cell "✅" [ref=f11e466]
+                      - row [ref=f11e467]:
+                        - cell "CSS（含 CSS Modules）" [ref=f11e468]
+                        - cell "✅" [ref=f11e469]
+                        - cell "✅" [ref=f11e470]
+                      - row [ref=f11e471]:
+                        - cell "Tree shaking / 压缩 / sourcemap" [ref=f11e472]
+                        - cell "✅" [ref=f11e473]
+                        - cell "✅" [ref=f11e474]
+                      - row [ref=f11e475]:
+                        - cell "插件系统" [ref=f11e476]
+                        - cell [ref=f11e477]:
+                          - text: ✅
+                          - strong [ref=f11e478]: Universal Plugin API
+                          - text: （生态庞大）
+                        - cell "⚠️ 有插件机制，但生态远小于 Vite" [ref=f11e479]
+                      - row [ref=f11e480]:
+                        - cell "类型化 API" [ref=f11e481]
+                        - cell "✅ Fully Typed APIs（JS API + Plugin API）" [ref=f11e482]
+                        - cell [ref=f11e483]:
+                          - text: ✅ CLI / JS /
+                          - strong [ref=f11e484]: Go
+                          - text: 三套 API
+                  - heading [level=3] [ref=f11e485]:
+                    - text: 关键关系：
+                    - strong [ref=f11e486]: 不是竞争，而是依赖
+                  - paragraph [ref=f11e487]:
+                    - text: README 直接揭示了两者的真实关系：
+                    - strong [ref=f11e488]: Vite 在 dev 阶段用 esbuild 做依赖预打包与 TS/JSX 转译
+                    - text: （这是 Vite 快的核心手段之一），而生产构建从 Rollup 迁移到了
+                    - strong [ref=f11e489]: Rolldown
+                    - text: （Rust 重写的 Rollup 兼容打包器）。
+                  - heading "性能策略差异" [level=3] [ref=f11e490]
+                  - list [ref=f11e491]:
+                    - listitem [ref=f11e492]:
+                      - strong [ref=f11e493]: esbuild
+                      - text: ：用
+                      - strong [ref=f11e494]: Go 编写 + 并行化
+                      - text: 换取"无需缓存的极致速度"，单文件工具，无缓存也能秒级构建
+                    - listitem [ref=f11e495]:
+                      - strong [ref=f11e496]: Vite
+                      - text: ：
+                      - strong [ref=f11e497]: 双引擎策略
+                      - text: —— dev 用原生 ESM（按需加载，不整包打包）+ esbuild 预构建，build 用 Rolldown；靠"按需"而非"快打包"实现开发体验优化
+                  - heading "一句话总结" [level=3] [ref=f11e498]
+                  - blockquote [ref=f11e499]:
+                    - paragraph [ref=f11e500]:
+                      - strong [ref=f11e501]: esbuild 是"最快的打包引擎"
+                      - text: （Go 单二进制、无缓存也快）；
+                      - strong [ref=f11e502]: Vite 是"围绕该引擎构建的完整开发框架"
+                      - text: （dev server + HMR + 插件生态 + 生产构建），两者是上下游关系——Vite 内嵌 esbuild 作为其转译/预构建引擎。
+                  - paragraph [ref=f11e503]: 如果你需要，我可以进一步：① 对比两者的插件生态规模（npm 下载量/插件数量）；② 深入 Rolldown 与 esbuild 的构建性能 benchmark；③ 写一份正式的对比报告文件存档。
+              - button "复制消息" [ref=f11e504]
+        - generic [ref=f11e509]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f11e511]
+          - generic [ref=f11e512]:
+            - button "添加附件" [ref=f11e514]
+            - button "选择模型" [ref=f11e518]
+            - generic [ref=f11e526]:
+              - generic [ref=f11e535]: Effort
+              - generic [ref=f11e536]: MED
+              - slider "Effort" [ref=f11e538] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f11e539]

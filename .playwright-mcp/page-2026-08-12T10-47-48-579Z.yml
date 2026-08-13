@@ -1,0 +1,127 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: my-agent
+    - navigation [ref=e6]:
+      - link "控制台" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - generic [ref=e41]: 历史会话
+        - button "新对话" [ref=e42]
+      - list [ref=e147]:
+        - listitem [ref=e148]:
+          - link "看看目前项目目录" [ref=e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-c0aff7b0d20f"
+          - 'button "删除: 看看目前项目目录" [ref=e150]'
+        - listitem [ref=e154]:
+          - link "请调用 coder 子 Agent，写一..." [ref=e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-f760d8995402"
+          - 'button "删除: 请调用 coder 子 Agent，写一..." [ref=e156]'
+        - listitem [ref=e160]:
+          - link "调用 coder 子 Agent，写一个..." [ref=e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-a48d4c7fd447"
+          - 'button "删除: 调用 coder 子 Agent，写一个..." [ref=e162]'
+        - listitem [ref=e166]:
+          - link "请调用 coder 子 Agent，写一..." [ref=e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-82f34ff68030"
+          - 'button "删除: 请调用 coder 子 Agent，写一..." [ref=e168]'
+        - listitem [ref=e172]:
+          - link "你好，请回复\"hi\"" [ref=e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-bdd842622b32"
+          - 'button "删除: 你好，请回复\"hi\"" [ref=e174]'
+        - listitem [ref=e178]:
+          - link "测试按钮状态切换" [ref=e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-fce6c5072d73"
+          - 'button "删除: 测试按钮状态切换" [ref=e180]'
+        - listitem [ref=e184]:
+          - link "新会话" [ref=e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-e2dddace3976"
+          - 'button "删除: 新会话" [ref=e186]'
+        - listitem [ref=e190]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-2b8c71c217bb"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=e192]'
+        - listitem [ref=e196]:
+          - link "协调Coder子Agent，写个旅游界面..." [ref=e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-67736d6f3b32"
+          - 'button "删除: 协调Coder子Agent，写个旅游界面..." [ref=e198]'
+        - listitem [ref=e202]:
+          - link "hello smoke test" [ref=e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-650896dc7e2b"
+          - 'button "删除: hello smoke test" [ref=e204]'
+        - listitem [ref=e208]:
+          - link "新会话" [ref=e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-f3a139d8a4cb"
+          - 'button "删除: 新会话" [ref=e210]'
+        - listitem [ref=e214]:
+          - link "调用子Agent，Coder ，写一个h..." [ref=e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-66c93eb808a9"
+          - 'button "删除: 调用子Agent，Coder ，写一个h..." [ref=e216]'
+        - listitem [ref=e220]:
+          - link "看看目前项目目录" [ref=e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0bdd6e074ca"
+          - 'button "删除: 看看目前项目目录" [ref=e222]'
+        - listitem [ref=e226]:
+          - link "新会话" [ref=e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-23f5e5f8eef8"
+          - 'button "删除: 新会话" [ref=e228]'
+        - listitem [ref=e232]:
+          - link "研究开源 AI 桌面应用" [ref=e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-fef19aa36f93"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e234]'
+        - listitem [ref=e238]:
+          - link "研究开源 AI 桌面应用" [ref=e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-c925f314a2f6"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e240]'
+        - listitem [ref=e244]:
+          - link "研究开源 AI 桌面应用" [ref=e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-8a4e6ec74380"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e246]'
+        - listitem [ref=e250]:
+          - link "研究开源 AI 桌面应用" [ref=e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-dea5467b9e8f"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e252]'
+        - listitem [ref=e256]:
+          - link "研究开源 AI 桌面应用" [ref=e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e258]'
+        - listitem [ref=e262]:
+          - link "研究开源 AI 桌面应用" [ref=e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=e264]'
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Toggle theme" [ref=e50]
+        - button "Switch language" [ref=e57]
+        - generic [ref=e62]: K
+    - main [ref=e66]:
+      - generic [ref=e293]:
+        - heading "对话" [level=2] [ref=e301]
+        - generic [ref=e580]: 加载历史消息...
+        - log [ref=e583]:
+          - generic [ref=e589]:
+            - heading "开始对话" [level=3] [ref=e590]
+            - paragraph [ref=e591]: 在下方输入框输入消息，按 Enter 发送。Shift+Enter 换行。
+        - generic [ref=e593]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=e595]
+          - generic [ref=e596]:
+            - button "添加附件" [ref=e598]
+            - button "选择模型" [ref=e602]
+            - generic [ref=e610]:
+              - generic [ref=e619]: Effort
+              - generic [ref=e620]: MED
+              - slider "Effort" [ref=e622] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=e623]

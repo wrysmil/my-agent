@@ -1,0 +1,45 @@
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]: my-agent
+    - navigation [ref=e6]:
+      - link "控制台" [ref=e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=e40]:
+      - generic [ref=e41]: 历史会话
+      - button "新对话" [ref=e42]
+  - generic [ref=e47]:
+    - banner [ref=e48]:
+      - generic [ref=e49]:
+        - button "Toggle theme" [ref=e50]
+        - button "Switch language" [ref=e57]
+        - generic [ref=e62]: K
+    - main [ref=e66]:
+      - generic [ref=e67]:
+        - heading "对话" [level=2] [ref=e75]
+        - generic [ref=e76]: 加载历史消息...
+        - log [ref=e81]:
+          - generic [ref=e87]:
+            - heading "开始对话" [level=3] [ref=e88]
+            - paragraph [ref=e89]: 在下方输入框输入消息，按 Enter 发送。Shift+Enter 换行。
+        - generic [ref=e91]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=e93]
+          - generic [ref=e94]:
+            - button "添加附件" [ref=e96]
+            - button "选择模型" [ref=e100]
+            - generic [ref=e108]:
+              - generic [ref=e117]: Effort
+              - generic [ref=e118]: MED
+              - slider "Effort" [ref=e120] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=e121]

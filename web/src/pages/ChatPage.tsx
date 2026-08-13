@@ -106,6 +106,13 @@ export function ChatPage() {
     }
   }, [creating, status]);
 
+  // 「切会话时清 creating」——切到其他会话（含空白对话页）必须把创建态释放，
+  // 否则旧会话的 creating=true 会持续让 Composer 显示红色停止按钮，
+  // 而此时 prop status 已变成新会话的 'idle'，本 useEffect 不会再触发清理。
+  useEffect(() => {
+    setCreating(false);
+  }, [sessionId]);
+
   // Set default model once active provider is loaded
   useEffect(() => {
     if (activeProvider?.defaultModel && !selectedModel) {

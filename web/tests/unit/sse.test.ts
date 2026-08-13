@@ -38,4 +38,15 @@ describe('parseSseStream', () => {
     for await (const e of parseSseStream(s)) events.push(e);
     expect(events.map(e => e.event)).toEqual(['usage', 'done']);
   });
+  it('parses agent_message event (WU-04 P0 fix)', async () => {
+    const s = mockStream([
+      'event: agent_message\n' +
+        'data: {"type":"agent_message","actorId":"coder-id","actorName":"coder","actorKind":"agent","text":"hello","isFinal":false}\n\n',
+    ]);
+    const events: any[] = [];
+    for await (const e of parseSseStream(s)) events.push(e);
+    expect(events.map(e => e.event)).toEqual(['agent_message']);
+    expect(events[0].data.actorName).toBe('coder');
+    expect(events[0].data.isFinal).toBe(false);
+  });
 });

@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子 Agent 调度渲染 · 方案对比 A/B/C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --border: rgba(15,18,28,.10);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-soft: rgba(108,92,231,.08);
+    --primary-soft-2: rgba(108,92,231,.14);
+    --agent: #0e9f6e;
+    --agent-soft: rgba(14,159,110,.10);
+    --agent-soft-2: rgba(14,159,110,.16);
+    --danger: #d63b3b;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--surface); color: var(--text); font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; }
+
+  header.page { position: sticky; top: 0; z-index: 10; background: rgba(247,247,248,.88); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  header.page .inner { max-width: 1440px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header.page h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+  header.page .scenario { font-size: 12px; color: var(--primary); background: var(--primary-soft); border: 1px solid var(--primary-soft-2); padding: 4px 10px; border-radius: 999px; }
+
+  main { max-width: 1440px; margin: 24px auto 80px; padding: 0 24px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 1200px) { main { grid-template-columns: 1fr; } }
+
+  .scheme { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-card); overflow: hidden; }
+  .scheme > .head { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .scheme > .head h2 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
+  .scheme > .head .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+  .scheme > .head .tag.a { background: var(--primary-soft); color: var(--primary); }
+  .scheme > .head .tag.b { background: rgba(234,144,14,.12); color: #b45309; }
+  .scheme > .head .tag.c { background: rgba(14,159,110,.12); color: #0e7a55; }
+  .scheme > .head .desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+  .scheme > .body { padding: 14px; }
+
+  .pros { margin: 12px 16px 16px; padding: 10px 12px; background: var(--surface); border-radius: 10px; font-size: 12px; line-height: 1.55; color: var(--text-muted); }
+  .pros strong { color: var(--text); }
+  .pros .good { color: #0e7a55; }
+  .pros .bad { color: #b45309; }
+
+  /* ===== chat 流 ===== */
+  .chat-list { display: flex; flex-direction: column; gap: 16px; }
+
+  .msg { display: flex; gap: 12px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: #eaf2ff; color: #0b2d6b; padding: 10px 14px; border-radius: 16px; border-bottom-right-radius: 6px; max-width: 85%; font-size: 13.5px; line-height: 1.5; }
+
+  .msg.assistant { flex-direction: column; align-items: stretch; }
+
+  .trace-bubble { background: #f1f2f4; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-card); position: relative; overflow: hidden; align-self: flex-start; width: 100%; max-width: 660px; }
+  .trace-bubble::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 999px; background: linear-gradient(180deg, var(--primary) 0%, rgba(108,92,231,.5) 100%); pointer-events: none; }
+
+  .final-bubble { align-self: flex-start; width: 100%; max-width: 720px; color: var(--text); font-size: 14px; line-height: 1.65; padding: 4px 0; }
+  .final-bubble p { margin: 0 0 12px; }
+  .final-bubble code { background: rgba(0,0,0,.05); padding: 1px 6px; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  /* ===== run-trace 摘要行 ===== */
+  .run-trace .summary { display: flex; align-items: center; gap: 10px; padding: 10px 14px; width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-size: 13px; font-family: inherit; }
+  .run-trace .summary:hover { background: rgba(0,0,0,.03); }
+  .run-trace .summary .label { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-trace .summary .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .run-trace .summary .chev { transition: transform .2s; color: var(--text-muted); }
+  .icon-ok { width: 16px; height: 16px; color: #16a34a; flex: 0 0 auto; }
+  .icon-spin { width: 16px; height: 16px; color: var(--primary); flex: 0 0 auto; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .run-trace .timeline { border-top: 1px solid var(--border); padding: 6px 6px 8px; }
+  .run-trace .timeline ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  /* ===== step-card 基础 ===== */
+  .step-card { display: flex; align-items: center; gap: 8px; min-height: 32px; width: 100%; min-width: 0; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: #ffffff; cursor: pointer; text-align: left; font-family: inherit; overflow: hidden; }
+  .step-card .name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; flex: 0 0 auto; }
+  .step-card .name-chip { background: var(--primary-soft-2); color: var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 12.5px; font-weight: 500; white-space: nowrap; flex: 0 0 auto; }
+  .step-card .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .step-card .chev { width: 14px; height: 14px; color: var(--text-muted); transition: transform .2s; flex: 0 0 auto; }
+  .step-card .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--text-muted-2); flex: 0 0 auto; }
+  .step-card .grow { flex: 1; min-width: 0; }
+  .step-card.thinking .name { color: var(--text-muted); font-weight: 400; }
+  .step-card.error { border-color: rgba(214,59,59,.4); background: rgba(214,59,59,.04); }
+  .step-card.error .meta { color: var(--danger); }
+
+  /* ===== 方案 A：嵌套分组 ===== */
+  .agent-group { margin: 4px 0 4px 16px; padding: 8px 8px 6px 10px; background: rgba(14,159,110,.06); border: 1px solid rgba(14,159,110,.22); border-radius: 10px; position: relative; }
+  .agent-group::before { content: ""; position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 999px; background: linear-gradient(180deg, var(--agent) 0%, rgba(14,159,110,.4) 100%); }
+  .agent-group .agent-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 6px; }
+  .agent-group .agent-head .avatar { width: 18px; height: 18px; border-radius: 6px; background: var(--agent); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+  .agent-group .agent-head .agent-name { font-size: 12px; font-weight: 600; color: #0e7a55; }
+  .agent-group .agent-head .agent-role { font-size: 11px; color: var(--text-muted); }
+  .agent-group .agent-steps { display: flex; flex-direction: column; gap: 4px; }
+  .agent-group .agent-steps .step-card { background: #ffffff; }
+
+  /* ===== 方案 B：平铺 + 徽章 ===== */
+  .badge-agent { background: var(--agent-soft-2); color: #0e7a55; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; flex: 0 0 auto; border: 1px solid rgba(14,159,110,.25); }
+
+  /* ===== 方案 C：独立 agent 气泡 ===== */
+  .msg.agent { flex-direction: column; align-items: stretch; }
+  .agent-bubble { align-self: flex-start; width: 100%; max-width: 640px; background: rgba(14,159,110,.07); border: 1px solid rgba(14,159,110,.28); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-card); }
+  .agent-bubble .agent-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(14,159,110,.10); border-bottom: 1px solid rgba(14,159,110,.18); }
+  .agent-bubble .agent-bar .avatar { width: 20px; height: 20px; border-radius: 6px; background: var(--agent); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .agent-bubble .agent-bar .who { font-size: 12.5px; font-weight: 600; color: #0e7a55; }
+  .agent-bubble .agent-bar .label-tag { font-size: 11px; color: var(--text-muted); background: #fff; border: 1px solid var(--border); padding: 1px 7px; border-radius: 999px; }
+  .agent-bubble .agent-content { padding: 10px 14px; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .agent-bubble .agent-content p { margin: 0 0 8px; }
+  .agent-bubble .agent-content .file-card { margin-top: 8px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .agent-bubble .agent-content .file-card .ok { color: #16a34a; }
+
+  .gen-indicator { margin-top: 6px; padding: 4px 0; display: flex; align-items: center; justify-content: center; }
+  .gen-indicator .spinner { width: 14px; height: 14px; color: var(--primary); animation: spin 1s linear infinite; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>子 Agent 调度渲染 · 三方案对比</h1>
+    <span class="sub">run_worker / dispatch_to / hand_off_to 在前端 RunTrace 与 chat 流中的呈现</span>
+    <span class="spacer"></span>
+    <span class="scenario">场景：用户 →「用 coder 子 Agent 写一个旅游主题 HTML 页面」</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- ================================================================
+       方案 A：嵌套分组
+  ================================================================= -->
+  <section class="scheme">
+    <div class="head">
+      <span class="tag a">方案 A · 嵌套分组</span>
+      <h2>run_worker 下缩进展示子 Agent 步骤</h2>
+      <p class="desc">run_worker 卡片可展开，内部用绿色「子 Agent: coder」分组卡包住子 Agent 的 write_file 步骤。层级清晰，一眼看出「谁派给谁」。</p>
+    </div>
+    <div class="body">
+      <div class="chat-list">
+
+        <div class="msg user">
+          <div class="bubble">用 coder 子 Agent 写一个旅游主题 HTML 页面</div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="trace-bubble">
+            <div class="run-trace">
+              <button class="summary" aria-expanded="true">
+                <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="label">已完成 4 个步骤 · 3 个工具</span>
+                <span class="meta">4 步 · 3 个工具</span>
+                <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="timeline">
+                <ol>
+                  <li>
+                    <button class="step-card thinking" aria-expanded="false">
+                      <span class="dot"></span><span class="name">思考</span><span class="grow"></span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="true">
+                      <span class="name-chip">run_worker</span>
+                      <span class="grow"></span>
+                      <span class="meta">2.1s</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="agent-group">
+                      <div class="agent-head">
+                        <span class="avatar">C</span>
+                        <span class="agent-name">coder</span>
+                        <span class="agent-role">子 Agent · 写代码</span>
+                      </div>
+                      <div class="agent-steps">
+                        <button class="step-card" aria-expanded="true">
+                          <span class="name-chip">write_file</span>
+                          <span class="grow"></span>
+                          <span class="meta">✅ tourism.html</span>
+                          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                        </button>
+                        <div class="final-bubble" style="max-width:none;padding:4px 8px;font-size:12.5px">
+                          <code>tourism.html</code> 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="false">
+                      <span class="name-chip">run_worker</span>
+                      <span class="meta">完成 · 子Agent 已返回</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="final-bubble">
+            <p>已用 coder 子 Agent 完成，页面文件为 <code>tourism.html</code>，包含：</p>
+            <p>🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式</p>
+            <p>浏览器打开即可预览。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <strong>优点：</strong><span class="good">层级最清晰</span>，主/子 Agent 归属一目了然；子 Agent 活动自动「收起」在 run_worker 下，主 trace 不臃肿。<br>
+      <strong>代价：</strong>实现最重——需要后端带 actor 身份、前端新增嵌套容器；run_worker 结果与子 Agent 步骤分离展示。
+    </div>
+  </section>
+
+  <!-- ================================================================
+       方案 B：平铺 + 徽章
+  ================================================================= -->
+  <section class="scheme">
+    <div class="head">
+      <span class="tag b">方案 B · 平铺 + 徽章</span>
+      <h2>所有步骤同层，子 Agent 步骤带徽章</h2>
+      <p class="desc">write_file 直接平铺在主 trace 里，前面加绿色「coder」徽章标识归属。实现最简单，改动最小。</p>
+    </div>
+    <div class="body">
+      <div class="chat-list">
+
+        <div class="msg user">
+          <div class="bubble">用 coder 子 Agent 写一个旅游主题 HTML 页面</div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="trace-bubble">
+            <div class="run-trace">
+              <button class="summary" aria-expanded="true">
+                <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="label">已完成 4 个步骤 · 3 个工具</span>
+                <span class="meta">4 步 · 3 个工具</span>
+                <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="timeline">
+                <ol>
+                  <li>
+                    <button class="step-card thinking" aria-expanded="false">
+                      <span class="dot"></span><span class="name">思考</span><span class="grow"></span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="false">
+                      <span class="name-chip">run_worker</span>
+                      <span class="badge-agent">coder</span>
+                      <span class="grow"></span>
+                      <span class="meta">2.1s</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="true">
+                      <span class="badge-agent">coder</span>
+                      <span class="name-chip">write_file</span>
+                      <span class="grow"></span>
+                      <span class="meta">✅ tourism.html</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                    <div class="final-bubble" style="max-width:none;padding:4px 8px;font-size:12.5px">
+                      <code>tourism.html</code> 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+                    </div>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="false">
+                      <span class="name-chip">run_worker</span>
+                      <span class="meta">完成 · 子Agent 已返回</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <div class="final-bubble">
+            <p>已用 coder 子 Agent 完成，页面文件为 <code>tourism.html</code>，包含：</p>
+            <p>🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式</p>
+            <p>浏览器打开即可预览。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <strong>优点：</strong><span class="good">改动最小、实现最快</span>——只需给 worker 事件的 step 加一个「归属徽章」，渲染层几乎零重构。<br>
+      <strong>代价：</strong>长 trace 时主/子 Agent 步骤混在一起，视觉层级弱；多个子 Agent 并行时易混乱。
+    </div>
+  </section>
+
+  <!-- ================================================================
+       方案 C：独立 Agent 气泡（dispatch_to / hand_off_to 可见回复）
+  ================================================================= -->
+  <section class="scheme">
+    <div class="head">
+      <span class="tag c">方案 C · 独立 Agent 气泡</span>
+      <h2>子 Agent 可见回复独立成气泡 + trace 徽章</h2>
+      <p class="desc">dispatch_to / hand_off_to 的「可见回复」在 chat 流中独立成绿色 agent 气泡（含头像与名字）；trace 内步骤仍带徽章。run_worker 私密结果仍收在主 trace。</p>
+    </div>
+    <div class="body">
+      <div class="chat-list">
+
+        <div class="msg user">
+          <div class="bubble">让 coder 子 Agent 写一个旅游主题 HTML 页面，并把结果直接给我看</div>
+        </div>
+
+        <div class="msg assistant">
+          <div class="trace-bubble">
+            <div class="run-trace">
+              <button class="summary" aria-expanded="true">
+                <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="label">已派发 coder · 2 个步骤</span>
+                <span class="meta">2 步 · 2 个工具</span>
+                <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              <div class="timeline">
+                <ol>
+                  <li>
+                    <button class="step-card thinking" aria-expanded="false">
+                      <span class="dot"></span><span class="name">思考</span><span class="grow"></span>
+                    </button>
+                  </li>
+                  <li>
+                    <button class="step-card" aria-expanded="true">
+                      <span class="name-chip">dispatch_to</span>
+                      <span class="badge-agent">coder</span>
+                      <span class="grow"></span>
+                      <span class="meta">1.9s</span>
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                    </button>
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 子 Agent 独立气泡 -->
+        <div class="msg agent">
+          <div class="agent-bubble">
+            <div class="agent-bar">
+              <span class="avatar">C</span>
+              <span class="who">coder</span>
+              <span class="label-tag">子 Agent 回复</span>
+            </div>
+            <div class="agent-content">
+              <p>已完成旅游页面，文件为 <code>tourism.html</code>（~4.2 KB）。</p>
+              <p>包含：🏝 景点卡片 · 🧭 顶部导航 · 📱 响应式布局。</p>
+              <div class="file-card"><span class="ok">✓</span> tourism.html · 4.2 KB</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 主 Agent 收尾 -->
+        <div class="msg assistant">
+          <div class="final-bubble">
+            <p>coder 已完成：<code>tourism.html</code> 已生成，浏览器打开即可预览。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pros">
+      <strong>优点：</strong><span class="good">语义最贴切</span>——dispatch_to/hand_off_to 的回复对用户可见，独立气泡最直观；用户能区分「谁说的」；hand_off_to 时该气泡即最终答案。<br>
+      <strong>代价：</strong>需要前端新增 agent 消息类型；run_worker 私密结果仍建议配合 A 或 B 的徽章/嵌套展示。
+    </div>
+  </section>
+
+</main>
+
+</body>
+</html>

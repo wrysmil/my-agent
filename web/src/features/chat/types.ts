@@ -17,6 +17,8 @@ export interface ContentBlock {
   status: BlockStatus;
   /** 服务端生成的稳定 block ID（P0+）。 */
   blockId?: string;
+  /** worker 步骤 ID（WU-02：worker_step_start/end 配对定位内部步骤）。 */
+  stepId?: string;
 }
 
 // ============================================================
@@ -43,6 +45,9 @@ export interface ToolCallBlock extends ContentBlock {
   inputRaw: string;
   /** 参数完整时解析的对象 */
   input?: Record<string, unknown>;
+  /** 执行该工具的子 Agent 身份（WU-03；tool_use 帧 actor_name/actor_kind） */
+  actorName?: string;
+  actorKind?: string;
 }
 
 export interface ToolResultBlock extends ContentBlock {
@@ -54,6 +59,9 @@ export interface ToolResultBlock extends ContentBlock {
   isError: boolean;
   /** 执行耗时（毫秒） */
   durationMs?: number;
+  /** 执行该工具的子 Agent 身份（WU-03；tool_result 帧 actor_name/actor_kind） */
+  actorName?: string;
+  actorKind?: string;
 }
 
 // ============================================================
@@ -73,11 +81,25 @@ export type ChatStatus =
 
 export interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'agent';
   /** 结构化内容块（替代 text 字段） */
   blocks: Block[];
   /** 用户消息保留 text 快捷字段 */
   text?: string;
+  /** agent 消息的子 Agent 身份（WU-03） */
+  actorName?: string;
+  /** agent 气泡的子 Agent 标识（WU-02：并发 dispatch 按 (runId, actorId) 路由） */
+  actorId?: string;
+  /** agent 气泡：触发派发的工具名（dispatch_to / hand_off_to） */
+  toolName?: string;
+  /** agent 气泡：dispatch_started 携带的工具调用 ID（WU-02） */
+  toolId?: string;
+  /** agent 气泡状态（WU-02：working 流式 / done 关闭 / error） */
+  status?: 'working' | 'done' | 'error';
+  /** agent 气泡折叠摘要（步骤计数，WU-02 状态机维护） */
+  summary?: string;
+  /** hand_off_to 语义：该 agent 气泡即最终回答（WU-03） */
+  isFinal?: boolean;
   /** 浏览器生成的用户消息 UUID（P0+）。同一次重试必须复用。 */
   clientMessageId?: string;
   /** 服务端生成的稳定消息 ID（P0+）。 */
@@ -156,6 +178,9 @@ export interface SseToolUseData {
   input: unknown;
   index?: number;
   partial?: boolean;
+  /** 执行该工具的子 Agent 身份（WU-03 后端透传） */
+  actor_name?: string;
+  actor_kind?: string;
 }
 
 export interface SseToolResultData {
@@ -165,6 +190,9 @@ export interface SseToolResultData {
   content: string;
   is_error: boolean;
   duration_ms?: number;
+  /** 执行该工具的子 Agent 身份（WU-03 后端透传） */
+  actor_name?: string;
+  actor_kind?: string;
 }
 
 export interface SseToolProgressData {
@@ -248,6 +276,67 @@ export interface SsePingData {
   ts: number;
 }
 
+/**
+ * 子 Agent 可见回复（WU-03）。
+ * 一个 run 内可多次到达，按到达顺序在对应 assistant 气泡后追加。
+ */
+export interface SseAgentMessageData {
+  type: 'agent_message';
+  actorId: string;
+  actorName: string;
+  actorKind: string;
+  text: string;
+  /** hand_off_to 语义：true 表示该气泡即最终回答 */
+  isFinal: boolean;
+}
+
+// ============================================================
+// 子 Agent 实时流式事件（WU-02）
+// ============================================================
+
+/** 派发开始：前端立即创建 role:'agent' 气泡（status working） */
+export interface SseDispatchStartedData {
+  type: 'dispatch_started';
+  actorId: string;
+  actorName: string;
+  toolName: string;
+  toolId: string;
+  isFinal: boolean;
+}
+
+/** worker 步骤开始：向 agent 气泡内部 blocks 推入 thinking / tool_call 步骤 */
+export interface SseWorkerStepStartData {
+  type: 'worker_step_start';
+  actorId: string;
+  kind: 'thinking' | 'tool';
+  label: string;
+  stepId: string;
+}
+
+/** worker 文本增量：agent 气泡 .text typewriter 流 */
+export interface SseWorkerTextDeltaData {
+  type: 'worker_text_delta';
+  actorId: string;
+  text: string;
+  stepId: string;
+}
+
+/** worker 步骤结束：finalize 对应内部步骤（含结果摘要 / 错误标记） */
+export interface SseWorkerStepEndData {
+  type: 'worker_step_end';
+  actorId: string;
+  stepId: string;
+  summary: string;
+  isError: boolean;
+}
+
+/** 派发完成：关闭 agent 气泡；dispatch_to（非 hand_off_to）触发 mainResume */
+export interface SseDispatchDoneData {
+  type: 'dispatch_done';
+  actorId: string;
+  toolName: string;
+}
+
 export type SseEventData =
   | SseMessageStartData
   | SseContentBlockStartData
@@ -263,6 +352,12 @@ export type SseEventData =
   | SseMessageDeltaData
   | SseMessageStopData
   | SseUsageData
+  | SseAgentMessageData
+  | SseDispatchStartedData
+  | SseWorkerStepStartData
+  | SseWorkerTextDeltaData
+  | SseWorkerStepEndData
+  | SseDispatchDoneData
   | SseDoneData
   | SseErrorData
   | SsePingData

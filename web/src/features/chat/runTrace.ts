@@ -39,6 +39,9 @@ export interface ToolTraceStep {
   keyParams?: KeyParam[];
   durationMs?: number;
   isError: boolean;
+  /** 执行该工具的子 Agent 身份（WU-03；tool_call 优先，tool_result 兜底） */
+  actorName?: string;
+  actorKind?: string;
 }
 
 /** 关键参数 pill 数据；value 为渲染短文本，fullValue 用于 title 提示 */
@@ -86,7 +89,23 @@ const TOOL_ACTION_LABELS: Record<string, string> = {
   edit_file: '编辑文件',
   bash: '执行命令',
   ask_user_question: '询问用户',
+  run_worker: '派生子 Agent',
+  dispatch_to: '派发子 Agent',
+  hand_off_to: '移交子 Agent',
 };
+
+/**
+ * 调度工具名集合 —— 这些工具本身不进入 trace 派生（它们是「派发动作」，
+ * 真正的子 Agent 内部步骤会带自己的 actorName 进入 trace）。
+ *
+ * 仍然保留在 TOOL_ACTION_LABELS 里是为了历史路径下的回放降级（如果未来
+ * 暂态打开让调度工具可见，仍有可读名）。
+ */
+const DISPATCH_TOOL_NAMES: ReadonlySet<string> = new Set([
+  'run_worker',
+  'dispatch_to',
+  'hand_off_to',
+]);
 
 export function toolActionLabel(toolName: string): string {
   return TOOL_ACTION_LABELS[toolName] ?? toolName;
@@ -126,6 +145,33 @@ function formatResultPreview(content: string): string {
   return content.replace(/\s+/g, ' ').trim().slice(0, 160);
 }
 
+// ============================================================
+// worker XML 信封剥离（WU-03 §4.4；与后端 unwrapWorkerPayload 语义等价）
+// ============================================================
+
+const WORKER_RESULT_RE = /<worker-result[^>]*>([\s\S]*?)<\/worker-result>/;
+const WORKER_ERROR_RE = /<worker-error[^>]*>([\s\S]*?)<\/worker-error>/;
+
+/**
+ * 从 `<worker-result>` / `<worker-error>` XML 信封中取出纯文本并反转义 XML 实体。
+ * 未命中信封时原样返回。
+ */
+export function stripWorkerEnvelope(text: string): string {
+  const match = WORKER_RESULT_RE.exec(text) ?? WORKER_ERROR_RE.exec(text);
+  if (!match) return text;
+  return unescapeXml(match[1].trim());
+}
+
+/** 反转义 XML 实体。`&amp;` 必须最后替换，避免 `&amp;lt;` 被二次错误解码。 */
+function unescapeXml(value: string): string {
+  return value
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
+}
+
 function thinkingLabel(status: BlockStatus): string {
   if (status === 'streaming' || status === 'pending') return '正在思考';
   if (status === 'error') return '思考失败';
@@ -142,6 +188,12 @@ export function buildRunTrace(
 ): RunTraceViewModel {
   const steps: TraceStep[] = [];
   const toolIndex = new Map<string, number>();
+  /**
+   * 调度工具的 toolCallId 集合 —— 第一遍扫描 tool_call 时记录。
+   * toolCallId 可能来自 JSONL history（tool_result 的 toolName 字段缺失，
+   * 不能仅靠 block.toolName 判断），所以提前索引更可靠。
+   */
+  const dispatchToolCallIds = new Set<string>();
 
   for (const block of blocks) {
     if (block.type === 'text') continue;
@@ -158,6 +210,13 @@ export function buildRunTrace(
     }
 
     if (block.type === 'tool_call') {
+      // 调度工具本尊不入 trace —— 它们是「派发动作」而不是「结果展示」，
+      // 用户在 trace 里看到的是子 Agent 内部的步骤（思考 / stat_file 等），
+      // 而不是「派发子 Agent」这一行。
+      if (DISPATCH_TOOL_NAMES.has(block.toolName)) {
+        if (block.toolId) dispatchToolCallIds.add(block.toolId);
+        continue;
+      }
       const step: ToolTraceStep = {
         id: block.id,
         kind: 'tool',
@@ -167,6 +226,8 @@ export function buildRunTrace(
         inputPreview: formatInputPreview(block.input, block.inputRaw),
         keyParams: extractKeyParams(block.input),
         isError: block.status === 'error',
+        ...(block.actorName !== undefined ? { actorName: block.actorName } : {}),
+        ...(block.actorKind !== undefined ? { actorKind: block.actorKind } : {}),
       };
       toolIndex.set(block.toolId, steps.length);
       steps.push(step);
@@ -174,9 +235,20 @@ export function buildRunTrace(
     }
 
     if (block.type === 'tool_result') {
+      // 任何满足以下条件之一都跳过：
+      //   1. block.toolName 本身就是 dispatch（流式 SSE 路径，tool_result 自带 toolName）
+      //   2. 对应 tool_use 已被识别为 dispatch（history 路径兜底，tool_result 的
+      //      toolName 字段常常缺失，但能通过 toolCallId 反查到 tool_use）
+      if (
+        DISPATCH_TOOL_NAMES.has(block.toolName) ||
+        (block.toolCallId !== undefined &&
+          dispatchToolCallIds.has(block.toolCallId))
+      ) {
+        continue;
+      }
       const existingIdx = toolIndex.get(block.toolCallId);
       const preview = block.content ? formatResultPreview(block.content) : undefined;
-      const detail = block.content || undefined;
+      const detail = block.content || '';
 
       if (existingIdx !== undefined) {
         const existing = steps[existingIdx];
@@ -190,6 +262,13 @@ export function buildRunTrace(
             existing.toolName = block.toolName;
             existing.actionLabel = toolActionLabel(block.toolName);
           }
+          // tool_call 优先，tool_result 兜底
+          if (block.actorName !== undefined && existing.actorName === undefined) {
+            existing.actorName = block.actorName;
+          }
+          if (block.actorKind !== undefined && existing.actorKind === undefined) {
+            existing.actorKind = block.actorKind;
+          }
         }
       } else {
         const step: ToolTraceStep = {
@@ -202,6 +281,8 @@ export function buildRunTrace(
           resultDetail: detail,
           durationMs: block.durationMs,
           isError: block.isError,
+          ...(block.actorName !== undefined ? { actorName: block.actorName } : {}),
+          ...(block.actorKind !== undefined ? { actorKind: block.actorKind } : {}),
         };
         steps.push(step);
       }

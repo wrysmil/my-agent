@@ -14,6 +14,7 @@ import {
   formatDuration,
   formatInputPreview,
   extractKeyParams,
+  stripWorkerEnvelope,
   type KeyParam,
   type RunTraceViewModel,
 } from '@/features/chat/runTrace';
@@ -399,6 +400,12 @@ describe('toolActionLabel / formatDuration / formatInputPreview', () => {
     expect(toolActionLabel('run_python')).toBe('run_python');
   });
 
+  it('[toolActionLabel] [子 Agent 工具映射中文] [run_worker / dispatch_to / hand_off_to]', () => {
+    expect(toolActionLabel('run_worker')).toBe('派生子 Agent');
+    expect(toolActionLabel('dispatch_to')).toBe('派发子 Agent');
+    expect(toolActionLabel('hand_off_to')).toBe('移交子 Agent');
+  });
+
   it('[formatDuration] [按阈值格式化] [ms / s / m]', () => {
     expect(formatDuration(350)).toBe('350ms');
     expect(formatDuration(1200)).toBe('1.2s');
@@ -531,5 +538,200 @@ describe('extractKeyParams / keyParams', () => {
     expect(step.keyParams![1]?.key).toBe('query');
     // inputPreview 仍保留（fallback 语义）
     expect(step.inputPreview).toBeDefined();
+  });
+});
+
+describe('stripWorkerEnvelope（WU-03）', () => {
+  it('[stripWorkerEnvelope] [剥离成功信封] [<worker-result> 标签 + 内部文本]', () => {
+    const payload = '<worker-result from="coder">\nhello world\n</worker-result>';
+    expect(stripWorkerEnvelope(payload)).toBe('hello world');
+  });
+
+  it('[stripWorkerEnvelope] [剥离错误信封] [<worker-error aborted> 标签]', () => {
+    const payload =
+      '<worker-error from="coder" aborted="true">\nWorker aborted.\n</worker-error>';
+    expect(stripWorkerEnvelope(payload)).toBe('Worker aborted.');
+  });
+
+  it('[stripWorkerEnvelope] [XML 实体反转义] [&lt;/&gt;/&quot;/&apos; 解码且 &amp; 最后替换]', () => {
+    const payload =
+      '<worker-result from="coder">\n&lt;div&gt; &quot;q&quot; &apos;a&apos; &amp;amp; &amp;lt;x&amp;gt;\n</worker-result>';
+    // 单遍反转义：简单实体解码为原文；&amp;amp; → &amp;；&amp;lt;x&amp;gt; → &lt;x&gt;
+    // （若 &amp; 先于 &lt; 替换，&amp;lt; 会被二次解码成 <，即错误语义）
+    expect(stripWorkerEnvelope(payload)).toBe(
+      '<div> "q" \'a\' &amp; &lt;x&gt;',
+    );
+  });
+
+  it('[stripWorkerEnvelope] [非信封原样返回] [普通文本]', () => {
+    const plain = 'no envelope here';
+    expect(stripWorkerEnvelope(plain)).toBe(plain);
+  });
+
+  it('[stripWorkerEnvelope] [空字符串返回空] [无内容]', () => {
+    expect(stripWorkerEnvelope('')).toBe('');
+  });
+});
+
+describe('buildRunTrace actor / dispatch 简短确认（WU-03）', () => {
+  // 新契约：调度工具（run_worker / dispatch_to / hand_off_to）本身不入 trace。
+  // 子 Agent 内部步骤（思考 / stat_file 等）会带 actorName 进入 trace。
+  // 下面三个测试覆盖「调度工具本尊不进 trace」。
+  it('[buildRunTrace] [run_worker 不进 trace] [整段被过滤]', () => {
+    const blocks: Block[] = [
+      toolCall({
+        id: 'c1',
+        toolId: 'call-1',
+        toolName: 'run_worker',
+        actorName: 'coder',
+        actorKind: 'agent',
+        status: 'done',
+      }),
+      toolResult({
+        id: 'r1',
+        toolCallId: 'call-1',
+        toolName: 'run_worker',
+        content: '<worker-result from="coder">\nok\n</worker-result>',
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(0);
+  });
+
+  it('[buildRunTrace] [dispatch_to 不进 trace] [整段被过滤]', () => {
+    const blocks: Block[] = [
+      toolCall({ id: 'c1', toolId: 'call-1', toolName: 'dispatch_to', status: 'done' }),
+      toolResult({
+        id: 'r1',
+        toolCallId: 'call-1',
+        toolName: 'dispatch_to',
+        content: 'some long body',
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(0);
+  });
+
+  it('[buildRunTrace] [hand_off_to 不进 trace] [整段被过滤]', () => {
+    const blocks: Block[] = [
+      toolCall({ id: 'c1', toolId: 'call-1', toolName: 'hand_off_to', status: 'done' }),
+      toolResult({
+        id: 'r1',
+        toolCallId: 'call-1',
+        toolName: 'hand_off_to',
+        content: 'some hand off content',
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(0);
+  });
+
+  // 子 Agent 内部步骤（例如 stat_file、write_file）会带 actorName 进入 trace，
+  // 即使外层是 run_worker / dispatch_to 派发出来的。
+  it('[buildRunTrace] [调度工具被过滤但子 Agent 内部步骤保留] [混合 blocks]', () => {
+    const blocks: Block[] = [
+      toolCall({
+        id: 'outer',
+        toolId: 'call-outer',
+        toolName: 'dispatch_to',
+        status: 'done',
+      }),
+      toolCall({
+        id: 'inner1',
+        toolId: 'call-inner1',
+        toolName: 'stat_file',
+        actorName: 'coder',
+        actorKind: 'agent',
+        input: { path: 'foo.ts' },
+        status: 'done',
+      }),
+      toolCall({
+        id: 'inner2',
+        toolId: 'call-inner2',
+        toolName: 'read_file',
+        actorName: 'coder',
+        actorKind: 'agent',
+        input: { path: 'bar.ts' },
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(2);
+    const toolSteps = vm.steps.filter((s) => s.kind === 'tool');
+    expect(toolSteps).toHaveLength(2);
+    for (const step of toolSteps) {
+      if (step.kind !== 'tool') continue;
+      expect(step.actorName).toBe('coder');
+      expect(step.actorKind).toBe('agent');
+    }
+  });
+
+  // 真实场景回归：JSONL history 回放时，tool_result row 的 content blocks
+  // 不带 name 字段（parseHistoryBlocks 用 cb.name ?? ''），但 tool_use 行带。
+  // 派生时必须通过 toolCallId 反查父 tool_call 才能识别 dispatch 工具，
+  // 否则会推一个 toolName=''、actionLabel=''、meta='已完成' 的孤儿 step，
+  // 并把整段 XML 信封正文作为 resultDetail 展开（用户截图 §「已完成」回归）。
+  it('[buildRunTrace] [dispatch_to history 路径] [tool_result toolName 缺，靠 toolCallId 反查]', () => {
+    const blocks: Block[] = [
+      toolCall({ id: 'c1', toolId: 'call-1', toolName: 'dispatch_to', status: 'done' }),
+      toolResult({
+        id: 'r1',
+        toolCallId: 'call-1',
+        toolName: '', // history 路径常见：JSONL tool_result 没有 name
+        content:
+          '## 💬 Coder 说：\n\n<worker-result from="Coder">\n完整 coder 输出\n</worker-result>',
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(0);
+  });
+
+  it('[buildRunTrace] [run_worker history 路径] [tool_result toolName 缺，靠 toolCallId 反查]', () => {
+    const blocks: Block[] = [
+      toolCall({ id: 'c1', toolId: 'call-1', toolName: 'run_worker', status: 'done' }),
+      toolResult({
+        id: 'r1',
+        toolCallId: 'call-1',
+        toolName: '',
+        content: '<worker-result from="coder">\nok\n</worker-result>',
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    expect(vm.steps).toHaveLength(0);
+  });
+
+  it('[buildRunTrace] [history 路径混合] [dispatch_to 被过滤 + 子 Agent stat_file 保留]', () => {
+    const blocks: Block[] = [
+      toolCall({ id: 'outer', toolId: 'call-outer', toolName: 'dispatch_to', status: 'done' }),
+      toolResult({
+        id: 'outer-r',
+        toolCallId: 'call-outer',
+        toolName: '',
+        content: '## 💬 Coder 说：\n<worker-result from="Coder">\n...\n</worker-result>',
+        status: 'done',
+      }),
+      toolCall({
+        id: 'inner1',
+        toolId: 'call-inner1',
+        toolName: 'stat_file',
+        actorName: 'coder',
+        actorKind: 'agent',
+        input: { path: 'foo.ts' },
+        status: 'done',
+      }),
+    ];
+    const vm = buildRunTrace(blocks, { isStreaming: false });
+    // dispatch_to 的 tool_call + tool_result 都应被过滤，只剩 stat_file
+    expect(vm.steps).toHaveLength(1);
+    const toolStep = vm.steps[0];
+    expect(toolStep.kind).toBe('tool');
+    if (toolStep.kind !== 'tool') return;
+    expect(toolStep.toolName).toBe('stat_file');
+    expect(toolStep.actorName).toBe('coder');
   });
 });

@@ -891,3 +891,49 @@ describe('RunTracePanel spec §8.1 — 节点身份 / 徽章 / 默认展开 / re
     expect(stepBtnAfter).toHaveAttribute('aria-expanded', 'false');
   });
 });
+
+/**
+ * WU-04 spec §4.2 方案 B：子 Agent 步骤平铺 + 绿色 badge-agent 徽章 + 左缘绿描边。
+ */
+describe('RunTracePanel · WU-04 子 Agent 徽章', () => {
+  it('带 actorName 的 step 渲染 badge-agent（内容 = actorName）+ 卡片左缘绿色描边', () => {
+    // Arrange — isStreaming=false && errorCount=0 → 默认展开
+    const trace = vm({
+      status: 'done',
+      steps: [
+        tool({
+          id: 'tc-run-worker',
+          toolName: 'run_worker',
+          actionLabel: '派生子 Agent',
+          actorName: 'coder',
+          actorKind: 'agent',
+        }),
+        tool({
+          id: 'tc-plain',
+          toolName: 'web_fetch',
+          actionLabel: '获取网页',
+        }),
+      ],
+      toolCount: 2,
+      completedCount: 2,
+      summaryLabel: '已完成 2 个步骤 · 2 个工具',
+    });
+
+    // Act
+    render(<RunTracePanel trace={trace} isStreaming={false} hasFinalText={true} />);
+
+    // Assert — 只有 actorName 的 step 有徽章，内容为 actorName
+    const badges = screen.getAllByTestId('badge-agent');
+    expect(badges).toHaveLength(1);
+    expect(badges[0]!.textContent).toBe('coder');
+
+    // Assert — 带 actorName 的步骤卡片有绿色左描边
+    const actorBtn = screen.getByRole('button', { name: /查看 run_worker 结果/ });
+    expect(actorBtn.className).toContain('border-l-emerald-500');
+
+    // Assert — 无 actorName 的普通步骤不受影响（无徽章、无左描边）
+    const plainBtn = screen.getByRole('button', { name: /查看 web_fetch 结果/ });
+    expect(plainBtn.className).not.toContain('border-l-emerald-500');
+    expect(within(plainBtn).queryByTestId('badge-agent')).toBeNull();
+  });
+});

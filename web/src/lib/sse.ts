@@ -4,7 +4,7 @@ export interface SseEvent {
   data: Record<string, unknown> | string;
 }
 
-/** Known SSE event types — includes text, thinking, tool, context & lifecycle events */
+/** Known SSE event types — includes text, thinking, tool, agent & lifecycle events */
 const KNOWN_EVENTS = new Set([
   'message_start',
   'content_block_start',
@@ -14,6 +14,12 @@ const KNOWN_EVENTS = new Set([
   'tool_use',
   'tool_result',
   'tool_progress',
+  'agent_message',
+  'dispatch_started',
+  'worker_step_start',
+  'worker_text_delta',
+  'worker_step_end',
+  'dispatch_done',
   'compaction',
   'context_status',
   'retry',

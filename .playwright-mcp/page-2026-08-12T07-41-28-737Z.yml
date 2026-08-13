@@ -1,0 +1,140 @@
+- generic [active] [ref=f19e1]:
+  - banner [ref=f19e2]:
+    - generic [ref=f19e3]:
+      - heading "子 Agent 调度渲染 · 三方案对比" [level=1] [ref=f19e4]
+      - generic [ref=f19e5]: run_worker / dispatch_to / hand_off_to 在前端 RunTrace 与 chat 流中的呈现
+      - generic [ref=f19e6]: 场景：用户 →「用 coder 子 Agent 写一个旅游主题 HTML 页面」
+  - main [ref=f19e7]:
+    - generic [ref=f19e8]:
+      - generic [ref=f19e9]:
+        - generic [ref=f19e10]: 方案 A · 嵌套分组
+        - heading "run_worker 下缩进展示子 Agent 步骤" [level=2] [ref=f19e11]
+        - paragraph [ref=f19e12]: "run_worker 卡片可展开，内部用绿色「子 Agent: coder」分组卡包住子 Agent 的 write_file 步骤。层级清晰，一眼看出「谁派给谁」。"
+      - generic [ref=f19e14]:
+        - generic [ref=f19e15]: 用 coder 子 Agent 写一个旅游主题 HTML 页面
+        - generic [ref=f19e17]:
+          - generic [ref=f19e19]:
+            - button "已完成 4 个步骤 · 3 个工具 4 步 · 3 个工具" [expanded] [ref=f19e20] [cursor=pointer]:
+              - generic [ref=f19e23]: 已完成 4 个步骤 · 3 个工具
+              - generic [ref=f19e24]: 4 步 · 3 个工具
+            - list [ref=f19e28]:
+              - listitem [ref=f19e29]:
+                - button "思考" [ref=f19e30] [cursor=pointer]
+              - listitem [ref=f19e35]:
+                - button "run_worker 2.1s" [expanded] [ref=f19e36] [cursor=pointer]:
+                  - generic [ref=f19e37]: run_worker
+                  - generic [ref=f19e38]: 2.1s
+                - generic [ref=f19e41]:
+                  - generic [ref=f19e42]:
+                    - generic [ref=f19e43]: C
+                    - generic [ref=f19e44]: coder
+                    - generic [ref=f19e45]: 子 Agent · 写代码
+                  - generic [ref=f19e46]:
+                    - button "write_file ✅ tourism.html" [expanded] [ref=f19e47] [cursor=pointer]:
+                      - generic [ref=f19e48]: write_file
+                      - generic [ref=f19e49]: ✅ tourism.html
+                    - generic [ref=f19e52]:
+                      - code [ref=f19e53]: tourism.html
+                      - text: 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+              - listitem [ref=f19e54]:
+                - button "run_worker 完成 · 子Agent 已返回" [ref=f19e55] [cursor=pointer]:
+                  - generic [ref=f19e56]: run_worker
+                  - generic [ref=f19e57]: 完成 · 子Agent 已返回
+          - generic [ref=f19e60]:
+            - paragraph [ref=f19e61]:
+              - text: 已用 coder 子 Agent 完成，页面文件为
+              - code [ref=f19e62]: tourism.html
+              - text: ，包含：
+            - paragraph [ref=f19e63]: 🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式
+            - paragraph [ref=f19e64]: 浏览器打开即可预览。
+      - generic [ref=f19e65]:
+        - strong [ref=f19e66]: 优点：
+        - text: 层级最清晰，主/子 Agent 归属一目了然；子 Agent 活动自动「收起」在 run_worker 下，主 trace 不臃肿。
+        - strong [ref=f19e67]: 代价：
+        - text: 实现最重——需要后端带 actor 身份、前端新增嵌套容器；run_worker 结果与子 Agent 步骤分离展示。
+    - generic [ref=f19e68]:
+      - generic [ref=f19e69]:
+        - generic [ref=f19e70]: 方案 B · 平铺 + 徽章
+        - heading "所有步骤同层，子 Agent 步骤带徽章" [level=2] [ref=f19e71]
+        - paragraph [ref=f19e72]: write_file 直接平铺在主 trace 里，前面加绿色「coder」徽章标识归属。实现最简单，改动最小。
+      - generic [ref=f19e74]:
+        - generic [ref=f19e75]: 用 coder 子 Agent 写一个旅游主题 HTML 页面
+        - generic [ref=f19e77]:
+          - generic [ref=f19e79]:
+            - button "已完成 4 个步骤 · 3 个工具 4 步 · 3 个工具" [expanded] [ref=f19e80] [cursor=pointer]:
+              - generic [ref=f19e83]: 已完成 4 个步骤 · 3 个工具
+              - generic [ref=f19e84]: 4 步 · 3 个工具
+            - list [ref=f19e88]:
+              - listitem [ref=f19e89]:
+                - button "思考" [ref=f19e90] [cursor=pointer]
+              - listitem [ref=f19e95]:
+                - button "run_worker coder 2.1s" [ref=f19e96] [cursor=pointer]:
+                  - generic [ref=f19e97]: run_worker
+                  - generic [ref=f19e98]: coder
+                  - generic [ref=f19e99]: 2.1s
+              - listitem [ref=f19e102]:
+                - button "coder write_file ✅ tourism.html" [expanded] [ref=f19e103] [cursor=pointer]:
+                  - generic [ref=f19e104]: coder
+                  - generic [ref=f19e105]: write_file
+                  - generic [ref=f19e106]: ✅ tourism.html
+                - generic [ref=f19e109]:
+                  - code [ref=f19e110]: tourism.html
+                  - text: 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+              - listitem [ref=f19e111]:
+                - button "run_worker 完成 · 子Agent 已返回" [ref=f19e112] [cursor=pointer]:
+                  - generic [ref=f19e113]: run_worker
+                  - generic [ref=f19e114]: 完成 · 子Agent 已返回
+          - generic [ref=f19e117]:
+            - paragraph [ref=f19e118]:
+              - text: 已用 coder 子 Agent 完成，页面文件为
+              - code [ref=f19e119]: tourism.html
+              - text: ，包含：
+            - paragraph [ref=f19e120]: 🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式
+            - paragraph [ref=f19e121]: 浏览器打开即可预览。
+      - generic [ref=f19e122]:
+        - strong [ref=f19e123]: 优点：
+        - text: 改动最小、实现最快——只需给 worker 事件的 step 加一个「归属徽章」，渲染层几乎零重构。
+        - strong [ref=f19e124]: 代价：
+        - text: 长 trace 时主/子 Agent 步骤混在一起，视觉层级弱；多个子 Agent 并行时易混乱。
+    - generic [ref=f19e125]:
+      - generic [ref=f19e126]:
+        - generic [ref=f19e127]: 方案 C · 独立 Agent 气泡
+        - heading "子 Agent 可见回复独立成气泡 + trace 徽章" [level=2] [ref=f19e128]
+        - paragraph [ref=f19e129]: dispatch_to / hand_off_to 的「可见回复」在 chat 流中独立成绿色 agent 气泡（含头像与名字）；trace 内步骤仍带徽章。run_worker 私密结果仍收在主 trace。
+      - generic [ref=f19e131]:
+        - generic [ref=f19e132]: 让 coder 子 Agent 写一个旅游主题 HTML 页面，并把结果直接给我看
+        - generic [ref=f19e136]:
+          - button "已派发 coder · 2 个步骤 2 步 · 2 个工具" [expanded] [ref=f19e137] [cursor=pointer]:
+            - generic [ref=f19e140]: 已派发 coder · 2 个步骤
+            - generic [ref=f19e141]: 2 步 · 2 个工具
+          - list [ref=f19e145]:
+            - listitem [ref=f19e146]:
+              - button "思考" [ref=f19e147] [cursor=pointer]
+            - listitem [ref=f19e150]:
+              - button "dispatch_to coder 1.9s" [expanded] [ref=f19e151] [cursor=pointer]:
+                - generic [ref=f19e152]: dispatch_to
+                - generic [ref=f19e153]: coder
+                - generic [ref=f19e154]: 1.9s
+        - generic [ref=f19e158]:
+          - generic [ref=f19e159]:
+            - generic [ref=f19e160]: C
+            - generic [ref=f19e161]: coder
+            - generic [ref=f19e162]: 子 Agent 回复
+          - generic [ref=f19e163]:
+            - paragraph [ref=f19e164]:
+              - text: 已完成旅游页面，文件为
+              - code [ref=f19e165]: tourism.html
+              - text: （~4.2 KB）。
+            - paragraph [ref=f19e166]: 包含：🏝 景点卡片 · 🧭 顶部导航 · 📱 响应式布局。
+            - generic [ref=f19e167]:
+              - generic [ref=f19e168]: ✓
+              - text: tourism.html · 4.2 KB
+        - paragraph [ref=f19e171]:
+          - text: coder 已完成：
+          - code [ref=f19e172]: tourism.html
+          - text: 已生成，浏览器打开即可预览。
+      - generic [ref=f19e173]:
+        - strong [ref=f19e174]: 优点：
+        - text: 语义最贴切——dispatch_to/hand_off_to 的回复对用户可见，独立气泡最直观；用户能区分「谁说的」；hand_off_to 时该气泡即最终答案。
+        - strong [ref=f19e175]: 代价：
+        - text: 需要前端新增 agent 消息类型；run_worker 私密结果仍建议配合 A 或 B 的徽章/嵌套展示。

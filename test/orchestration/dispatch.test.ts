@@ -76,7 +76,7 @@ vi.mock("../../src/agent/runner.js", () => {
   return { AgentRunner: FakeAgentRunner };
 });
 
-import { runNestedDispatch, dispatchSlots } from "../../src/orchestration/dispatch.js";
+import { runNestedDispatch, dispatchSlots, unwrapWorkerPayload } from "../../src/orchestration/dispatch.js";
 import type { WorkerProgressEvent } from "../../src/orchestration/dispatch.js";
 import { createConfig } from "../../src/config/loader.js";
 import type { Actor } from "../../src/orchestration/actor.js";
@@ -326,6 +326,116 @@ describe("dispatch", () => {
       // 走的是 run() → 使用 resultToReturn
       expect(out).toContain("blocking result");
       expect(state.runCalls.length).toBe(1); // run() 被调用
+    });
+
+    it("tool_start/tool_end 时触发 worker_step_start / worker_step_end（stepId 唯一且配对）", async () => {
+      state.streamEvents = [
+        { type: "tool_start", name: "read_file", input: { path: "/tmp/x.txt" } },
+        { type: "text_delta", text: "reading..." },
+        { type: "tool_end", name: "read_file", result: "file contents...", isError: false },
+        { type: "tool_start", name: "bash", input: { command: "ls" } },
+        { type: "tool_end", name: "bash", result: "a.ts\nb.ts", isError: true },
+        { type: "done", result: { text: "done", meta: {} } },
+      ];
+
+      const events: WorkerProgressEvent[] = [];
+      await runDispatch({ onWorkerEvent: (ev) => events.push(ev) });
+
+      const starts = events.filter((e) => e.type === "worker_step_start");
+      const ends = events.filter((e) => e.type === "worker_step_end");
+
+      expect(starts).toHaveLength(2);
+      expect(starts[0]).toMatchObject({
+        type: "worker_step_start",
+        actor: { name: "Worker" },
+        kind: "tool",
+        label: "read_file",
+      });
+      expect(starts[1]).toMatchObject({
+        type: "worker_step_start",
+        actor: { name: "Worker" },
+        kind: "tool",
+        label: "bash",
+      });
+      expect(starts[0].stepId).toBeTruthy();
+      expect(starts[0].stepId).not.toBe(starts[1].stepId);
+
+      expect(ends).toHaveLength(2);
+      expect(ends[0]).toMatchObject({
+        type: "worker_step_end",
+        actor: { name: "Worker" },
+        summary: "file contents...",
+        isError: false,
+      });
+      expect(ends[1]).toMatchObject({
+        type: "worker_step_end",
+        actor: { name: "Worker" },
+        summary: "a.ts\nb.ts",
+        isError: true,
+      });
+      // stepId 与对应的 worker_step_start 配对
+      expect(ends[0].stepId).toBe(starts[0].stepId);
+      expect(ends[1].stepId).toBe(starts[1].stepId);
+    });
+
+    it("text_delta 时触发 worker_text_delta（关联当前 stepId；preamble 无 step）", async () => {
+      state.streamEvents = [
+        { type: "tool_start", name: "read_file", input: {} },
+        { type: "text_delta", text: "Hello" },
+        { type: "tool_end", name: "read_file", result: "ok", isError: false },
+        { type: "done", result: { text: "Hello", meta: {} } },
+      ];
+
+      const events: WorkerProgressEvent[] = [];
+      await runDispatch({ onWorkerEvent: (ev) => events.push(ev) });
+
+      const workerTexts = events.filter((e) => e.type === "worker_text_delta");
+      // preamble（无 step）+ 1 条内容 delta
+      expect(workerTexts).toHaveLength(2);
+      expect(workerTexts[0].text).toContain("工作中");
+      expect(workerTexts[1]).toMatchObject({
+        type: "worker_text_delta",
+        actor: { name: "Worker" },
+        text: "Hello",
+      });
+      // 内容 delta 关联到当前 open step
+      const start = events.find((e) => e.type === "worker_step_start");
+      expect(workerTexts[1].stepId).toBe(start?.stepId);
+      expect(workerTexts[1].stepId).toBeTruthy();
+    });
+  });
+
+  // ============================================================
+  // unwrapWorkerPayload — XML 信封剥离 + 反转义
+  // ============================================================
+
+  describe("unwrapWorkerPayload", () => {
+    it("从 <worker-result> 信封中提取正文", () => {
+      expect(unwrapWorkerPayload('<worker-result from="coder">\nhello\n</worker-result>')).toBe("hello");
+    });
+
+    it("从 <worker-error> 信封中提取正文（含 aborted 属性）", () => {
+      expect(
+        unwrapWorkerPayload('<worker-error from="coder" aborted="true">\nboom\n</worker-error>'),
+      ).toBe("boom");
+    });
+
+    it("反转义信封内的 XML 实体（&lt; &amp; &quot;）", () => {
+      const payload =
+        '<worker-result from="coder">\n&lt;div&gt; &amp; &quot;x&quot;\n</worker-result>';
+      expect(unwrapWorkerPayload(payload)).toBe('<div> & "x"');
+    });
+
+    it("非信封字符串原样返回", () => {
+      expect(unwrapWorkerPayload("plain text result")).toBe("plain text result");
+    });
+
+    it("边界：空字符串原样返回", () => {
+      expect(unwrapWorkerPayload("")).toBe("");
+    });
+
+    it("边界：只有标签无内容 → 空字符串", () => {
+      expect(unwrapWorkerPayload('<worker-result from="coder">\n\n</worker-result>')).toBe("");
     });
   });
 });

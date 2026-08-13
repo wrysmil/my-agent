@@ -1,0 +1,113 @@
+- generic [active] [ref=f21e1]:
+  - banner [ref=f21e2]:
+    - generic [ref=f21e3]:
+      - heading "子 Agent 调度渲染 · 推荐方案 B + C" [level=1] [ref=f21e4]
+      - generic [ref=f21e5]: run_worker / dispatch_to / hand_off_to 完整对话流（含中文可读名）
+      - generic [ref=f21e6]: 推荐
+  - main [ref=f21e7]:
+    - generic [ref=f21e8]:
+      - generic [ref=f21e9]: 主 Agent 步骤
+      - generic [ref=f21e12]: 子 Agent 步骤（带 coder 徽章）
+      - generic [ref=f21e15]: 绿色气泡 = 子 Agent 可见回复
+    - generic [ref=f21e17]:
+      - generic [ref=f21e18]: 用 coder 子 Agent 写一个旅游主题 HTML 页面
+      - generic [ref=f21e20]:
+        - generic [ref=f21e22]:
+          - button "已完成 4 个步骤 · 3 个工具 4 步 · 3 个工具" [expanded] [ref=f21e23] [cursor=pointer]:
+            - generic [ref=f21e26]: 已完成 4 个步骤 · 3 个工具
+            - generic [ref=f21e27]: 4 步 · 3 个工具
+          - list [ref=f21e31]:
+            - listitem [ref=f21e32]:
+              - button "思考" [ref=f21e33] [cursor=pointer]
+            - listitem [ref=f21e38]:
+              - button "run_worker 派生子 Agent coder 2.1s" [expanded] [ref=f21e39] [cursor=pointer]:
+                - generic [ref=f21e40]: run_worker
+                - generic [ref=f21e41]: 派生子 Agent
+                - generic [ref=f21e42]: coder
+                - generic [ref=f21e43]: 2.1s
+            - listitem [ref=f21e46]:
+              - button "coder write_file ✅ tourism.html" [expanded] [ref=f21e47] [cursor=pointer]:
+                - generic [ref=f21e48]: coder
+                - generic [ref=f21e49]: write_file
+                - generic [ref=f21e50]: ✅ tourism.html
+              - generic [ref=f21e53]:
+                - code [ref=f21e54]: tourism.html
+                - text: 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+            - listitem [ref=f21e55]:
+              - button "run_worker 派生子 Agent ✓ 子Agent 已返回" [ref=f21e56] [cursor=pointer]:
+                - generic [ref=f21e57]: run_worker
+                - generic [ref=f21e58]: 派生子 Agent
+                - generic [ref=f21e59]: ✓ 子Agent 已返回
+        - generic [ref=f21e62]:
+          - paragraph [ref=f21e63]:
+            - text: 已用 coder 子 Agent 完成，页面文件为
+            - code [ref=f21e64]: tourism.html
+            - text: ，包含：
+          - paragraph [ref=f21e65]: 🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式
+          - paragraph [ref=f21e66]: 浏览器打开即可预览。
+      - generic [ref=f21e67]: 很好，让 coder 再帮我加一个「热门目的地」区块，结果直接给我看
+      - generic [ref=f21e71]:
+        - button "已派发 coder · 2 个步骤 2 步 · 2 个工具" [expanded] [ref=f21e72] [cursor=pointer]:
+          - generic [ref=f21e75]: 已派发 coder · 2 个步骤
+          - generic [ref=f21e76]: 2 步 · 2 个工具
+        - list [ref=f21e80]:
+          - listitem [ref=f21e81]:
+            - button "思考" [ref=f21e82] [cursor=pointer]
+          - listitem [ref=f21e85]:
+            - button "dispatch_to 派发子 Agent coder 1.9s" [expanded] [ref=f21e86] [cursor=pointer]:
+              - generic [ref=f21e87]: dispatch_to
+              - generic [ref=f21e88]: 派发子 Agent
+              - generic [ref=f21e89]: coder
+              - generic [ref=f21e90]: 1.9s
+      - generic [ref=f21e94]:
+        - generic [ref=f21e95]:
+          - generic [ref=f21e96]: C
+          - generic [ref=f21e97]: coder
+          - generic [ref=f21e98]: 子 Agent 回复
+        - generic [ref=f21e99]:
+          - paragraph [ref=f21e100]: 已添加「热门目的地」区块：
+          - paragraph [ref=f21e101]: 🏝 三亚 · 🏔 张家界 · 🏯 西安 · 🌊 青岛
+          - generic [ref=f21e102]:
+            - generic [ref=f21e103]: ✓
+            - text: tourism.html · 已更新 · 5.1 KB
+      - paragraph [ref=f21e106]:
+        - text: coder 已完成，
+        - code [ref=f21e107]: tourism.html
+        - text: 新增了「热门目的地」区块，刷新浏览器即可查看。
+      - generic [ref=f21e108]: 接下来这个问题直接交给 coder 回答
+      - generic [ref=f21e112]:
+        - button "已移交 coder · 1 个步骤 1 步 · 1 个工具" [expanded] [ref=f21e113] [cursor=pointer]:
+          - generic [ref=f21e116]: 已移交 coder · 1 个步骤
+          - generic [ref=f21e117]: 1 步 · 1 个工具
+        - list [ref=f21e121]:
+          - listitem [ref=f21e122]:
+            - button "hand_off_to 移交子 Agent coder 0.8s" [expanded] [ref=f21e123] [cursor=pointer]:
+              - generic [ref=f21e124]: hand_off_to
+              - generic [ref=f21e125]: 移交子 Agent
+              - generic [ref=f21e126]: coder
+              - generic [ref=f21e127]: 0.8s
+      - generic [ref=f21e131]:
+        - generic [ref=f21e132]:
+          - generic [ref=f21e133]: C
+          - generic [ref=f21e134]: coder
+          - generic [ref=f21e135]: 最终回答
+        - generic [ref=f21e136]:
+          - paragraph [ref=f21e137]: 页面的移动端适配已通过媒体查询实现：
+          - paragraph [ref=f21e138]:
+            - code [ref=f21e139]: "@media (max-width: 640px)"
+            - text: 下导航折叠为汉堡菜单、景点卡片改为单列、字号降为 14px。
+          - generic [ref=f21e140]:
+            - generic [ref=f21e141]: ✓
+            - text: tourism.html · 响应式实现
+    - generic [ref=f21e142]:
+      - text: 设计要点： ①
+      - code [ref=f21e143]: run_worker
+      - text: → 派生子 Agent：私密结果只进 trace，子 Agent 的步骤平铺并带绿色
+      - code [ref=f21e144]: coder
+      - text: 徽章（左侧绿色描边区分归属）。 ②
+      - code [ref=f21e145]: dispatch_to
+      - text: → 派发子 Agent：trace 内显示调度步骤，子 Agent 回复独立成绿色气泡（含头像 + 名字 + 「子 Agent 回复」标签）。 ③
+      - code [ref=f21e146]: hand_off_to
+      - text: → 移交子 Agent：trace 内显示移交步骤，子 Agent 气泡即最终回答（标签「最终回答」），主 Agent 不再补充。 ④ 三个工具名在
+      - code [ref=f21e147]: toolActionLabel
+      - text: "映射为中文（上表），step 卡片上 `name-chip` 保留英文原名 + 中文可读名并排。"

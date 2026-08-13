@@ -1,0 +1,1381 @@
+- generic [ref=f14e3]:
+  - complementary [ref=f14e4]:
+    - generic [ref=f14e5]: my-agent
+    - navigation [ref=f14e6]:
+      - link "控制台" [ref=f14e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f14e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f14e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f14e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f14e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f14e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f14e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f14e39]:
+      - generic [ref=f14e40]:
+        - generic [ref=f14e41]: 历史会话
+        - button "新对话" [ref=f14e42]
+      - list [ref=f14e44]:
+        - listitem [ref=f14e45]:
+          - link "研究开源 AI 桌面应用" [ref=f14e46] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e47]'
+        - listitem [ref=f14e51]:
+          - link "研究开源 AI 桌面应用" [ref=f14e52] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e53]'
+        - listitem [ref=f14e57]:
+          - link "研究开源 AI 桌面应用" [ref=f14e58] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e59]'
+        - listitem [ref=f14e63]:
+          - link "研究开源 AI 桌面应用" [ref=f14e64] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e65]'
+        - listitem [ref=f14e69]:
+          - link "研究开源 AI 桌面应用" [ref=f14e70] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e71]'
+        - listitem [ref=f14e75]:
+          - link "研究开源 AI 桌面应用" [ref=f14e76] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f14e77]'
+        - listitem [ref=f14e81]:
+          - link "项目目录看看" [ref=f14e82] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f14e83]'
+        - listitem [ref=f14e87]:
+          - link "项目目录看看" [ref=f14e88] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f14e89]'
+        - listitem [ref=f14e93]:
+          - link "项目目录看看" [ref=f14e94] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f14e95]'
+        - listitem [ref=f14e99]:
+          - link "项目目录看看" [ref=f14e100] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f14e101]'
+        - listitem [ref=f14e105]:
+          - link "项目目录看看" [ref=f14e106] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f14e107]'
+        - listitem [ref=f14e111]:
+          - link "项目目录看看" [ref=f14e112] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f14e113]'
+        - listitem [ref=f14e117]:
+          - link "项目目录看看" [ref=f14e118] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f14e119]'
+        - listitem [ref=f14e123]:
+          - link "项目目录看看" [ref=f14e124] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f14e125]'
+        - listitem [ref=f14e129]:
+          - link "看看项目目录" [ref=f14e130] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f14e131]'
+        - listitem [ref=f14e135]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f14e136] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f14e137]'
+        - listitem [ref=f14e141]:
+          - link "帮我看看项目目录" [ref=f14e142] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f14e143]'
+        - listitem [ref=f14e147]:
+          - link "帮我看看项目目录" [ref=f14e148] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f14e149]'
+        - listitem [ref=f14e153]:
+          - link "帮我看看项目目录" [ref=f14e154] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f14e155]'
+        - listitem [ref=f14e159]:
+          - link "帮我看看当前项目目录" [ref=f14e160] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f14e161]'
+  - generic [ref=f14e165]:
+    - banner [ref=f14e166]:
+      - generic [ref=f14e167]:
+        - button "Toggle theme" [ref=f14e168]
+        - button "Switch language" [ref=f14e175]
+        - generic [ref=f14e180]: K
+    - main [ref=f14e184]:
+      - generic [ref=f14e185]:
+        - heading "对话" [level=2] [ref=f14e193]
+        - log [ref=f14e246]:
+          - generic [ref=f14e247]:
+            - generic [ref=f14e290]: 研究开源 AI 桌面应用
+            - generic [ref=f14e298]:
+              - button "已完成 1 个步骤 · 0 个工具 1 步 · 0 个工具" [expanded] [ref=f14e299]:
+                - generic [ref=f14e302]: 已完成 1 个步骤 · 0 个工具
+                - generic [ref=f14e303]: 1 步 · 0 个工具
+              - list [ref=f14e307]:
+                - listitem [ref=f14e308]:
+                  - button "查看思考过程" [expanded] [ref=f14e309]:
+                    - generic [ref=f14e310]: 思考
+                  - generic [ref=f14e317]:
+                    - heading "Task Context" [level=2] [ref=f14e318]
+                    - paragraph [ref=f14e319]:
+                      - strong [ref=f14e320]: "User request (Chinese):"
+                      - text: "\"研究开源 AI 桌面应用\" — Research open-source AI desktop applications."
+                    - paragraph [ref=f14e321]:
+                      - strong [ref=f14e322]: "Current date context:"
+                      - text: 2026-08-11 (assistant noted this in thinking). The task is
+                      - strong [ref=f14e323]: incomplete
+                      - text: — the assistant gathered data via web searches and GitHub fetches but had not yet produced the final research report.
+                    - separator [ref=f14e324]
+                    - heading "Search Strategy & Results" [level=2] [ref=f14e325]
+                    - heading "Failed attempts (Bing/DuckDuckGo queries were unhelpful)" [level=3] [ref=f14e326]
+                    - list [ref=f14e327]:
+                      - listitem [ref=f14e328]:
+                        - strong [ref=f14e329]: Google
+                        - text: (
+                        - code [ref=f14e330]: best open source AI desktop apps 2026
+                        - text: "): returned only a JS-redirect placeholder page — no results."
+                      - listitem [ref=f14e331]:
+                        - strong [ref=f14e332]: DuckDuckGo
+                        - text: (
+                        - code [ref=f14e333]: best open source AI desktop apps 2026
+                        - text: "): blocked by bot CAPTCHA challenge; error code"
+                        - code [ref=f14e334]: d4cd0dabcf4caa22ad92fab40844c786
+                        - text: .
+                      - listitem [ref=f14e335]:
+                        - strong [ref=f14e336]: Bing
+                        - text: (
+                        - code [ref=f14e337]: best open source AI desktop apps 2026
+                        - text: "): irrelevant results (dictionary definitions of \"best\")."
+                      - listitem [ref=f14e338]:
+                        - strong [ref=f14e339]: Bing
+                        - text: (
+                        - code [ref=f14e340]: "\"open source\" AI desktop application GitHub Jan GPT4All Cherry Studio"
+                        - text: "): irrelevant results (matched \"open\" + dictionary/OpenAI pages)."
+                      - listitem [ref=f14e341]:
+                        - strong [ref=f14e342]: Bing (Chinese)
+                        - text: (
+                        - code [ref=f14e343]: 开源 AI 桌面应用 推荐 2026 Cherry Studio Jan GPT4All
+                        - text: "): irrelevant results (returned Anya Taylor-Joy pages; ~69,900 results)."
+                    - heading "Successful approach" [level=3] [ref=f14e344]
+                    - paragraph [ref=f14e345]:
+                      - strong [ref=f14e346]: GitHub repository search
+                      - text: (
+                      - code [ref=f14e347]: github.com/search?q=ai+desktop+app&type=repositories&s=stars&o=desc
+                      - text: ), then direct
+                      - strong [ref=f14e348]: GitHub repo page fetches
+                      - text: for authoritative project data (stars, licenses, stack, features).
+                    - separator [ref=f14e349]
+                    - heading "GitHub Search Results (\"ai desktop app\", sorted by stars)" [level=2] [ref=f14e350]
+                    - table [ref=f14e351]:
+                      - rowgroup [ref=f14e352]:
+                        - row [ref=f14e353]:
+                          - columnheader "Project" [ref=f14e354]
+                          - columnheader "Stars" [ref=f14e355]
+                          - columnheader "Language" [ref=f14e356]
+                          - columnheader "Description" [ref=f14e357]
+                      - rowgroup [ref=f14e358]:
+                        - row [ref=f14e359]:
+                          - cell "lencx/ChatGPT" [ref=f14e360]
+                          - cell "54.4k" [ref=f14e361]
+                          - cell "Rust" [ref=f14e362]
+                          - cell "ChatGPT desktop app (Mac/Win/Linux); last updated Aug 2024" [ref=f14e363]
+                        - row [ref=f14e364]:
+                          - cell "HBAI-Ltd/Toonflow-app" [ref=f14e365]
+                          - cell "13.7k" [ref=f14e366]
+                          - cell "TypeScript" [ref=f14e367]
+                          - cell "Open-source AI short-drama creation tool (novel→animated shorts; AI writing, storyboards, character/video gen); Electron, cross-platform" [ref=f14e368]
+                        - row [ref=f14e369]:
+                          - cell "dice2o/BingGPT" [ref=f14e370]
+                          - cell "8.9k" [ref=f14e371]
+                          - cell "JavaScript" [ref=f14e372]
+                          - cell "New Bing AI chat desktop app; Electron (Win/macOS/Linux); last updated Feb 2024" [ref=f14e373]
+                        - row [ref=f14e374]:
+                          - cell "ValueCell-ai/ClawX" [ref=f14e375]
+                          - cell "7.6k" [ref=f14e376]
+                          - cell "TypeScript" [ref=f14e377]
+                          - cell "GUI for OpenClaw AI agents (turns CLI orchestration into desktop experience); updated 25 min before fetch" [ref=f14e378]
+                        - row [ref=f14e379]:
+                          - cell "Sylinko/Everywhere" [ref=f14e380]
+                          - cell "6.2k" [ref=f14e381]
+                          - cell "C#" [ref=f14e382]
+                          - cell "On-screen-aware desktop AI assistant; uses current app context, multiple LLMs, MCP tools; updated day before fetch" [ref=f14e383]
+                        - row [ref=f14e384]:
+                          - cell "lightningpixel/modly" [ref=f14e385]
+                          - cell "4.9k" [ref=f14e386]
+                          - cell "TypeScript" [ref=f14e387]
+                          - cell "Generates 3D models from images via local AI; runs entirely on GPU; updated day before fetch" [ref=f14e388]
+                        - row [ref=f14e389]:
+                          - cell "buxuku/SmartSub" [ref=f14e390]
+                          - cell "4.6k" [ref=f14e391]
+                          - cell "TypeScript" [ref=f14e392]
+                          - cell "Video→subtitles, subtitle translation, AI dubbing, voice cloning, subtitle burning; local Whisper/FunASR offline; Windows/macOS/Linux" [ref=f14e393]
+                        - row [ref=f14e394]:
+                          - cell "JabRef/jabref" [ref=f14e395]
+                          - cell "4.6k" [ref=f14e396]
+                          - cell "Java" [ref=f14e397]
+                          - cell "BibTeX/BibLaTeX reference manager with OCR/AI features" [ref=f14e398]
+                        - row [ref=f14e399]:
+                          - cell "xingkongliang/skills-manager" [ref=f14e400]
+                          - cell "3.7k" [ref=f14e401]
+                          - cell "Rust" [ref=f14e402]
+                          - cell "Lightweight desktop app to manage/sync/organize AI agent skills across 50+ coding tools (Claude Code, Codex, Cursor, Copilot, etc.)" [ref=f14e403]
+                        - row [ref=f14e404]:
+                          - cell "lxf746/any-auto-register" [ref=f14e405]
+                          - cell "3.1k" [ref=f14e406]
+                          - cell "Python" [ref=f14e407]
+                          - cell "Auto-register/manage accounts for ChatGPT, Cursor, Kiro, Grok, Windsurf, Trae + 13+ AI platforms" [ref=f14e408]
+                    - separator [ref=f14e409]
+                    - heading "Core Project Data (from direct GitHub fetches)" [level=2] [ref=f14e410]
+                    - heading "Jan (janhq/jan) — 44k stars, Apache 2.0, Tauri (Rust)" [level=3] [ref=f14e411]
+                    - list [ref=f14e412]:
+                      - listitem [ref=f14e413]:
+                        - text: "Positioning: open-source ChatGPT alternative running"
+                        - strong [ref=f14e414]: 100% offline
+                        - text: ; "easy-to-use product" for open-source AI.
+                      - listitem [ref=f14e415]:
+                        - text: "Features: download/run local LLMs (Llama, Gemma, Qwen, GPT-oss) from HuggingFace; cloud integration (OpenAI, Anthropic/Claude, Mistral, Groq, MiniMax); custom assistants;"
+                        - strong [ref=f14e416]:
+                          - text: OpenAI-compatible API server at
+                          - code [ref=f14e417]: localhost:1337
+                        - text: ; MCP integration; privacy-first.
+                      - listitem [ref=f14e418]:
+                        - text: "Downloads:"
+                        - code [ref=f14e419]: jan.exe
+                        - text: (Win),
+                        - code [ref=f14e420]: jan.dmg
+                        - text: (macOS),
+                        - code [ref=f14e421]: jan.deb
+                        - text: /
+                        - code [ref=f14e422]: jan.AppImage
+                        - text: /Arm64 (Linux); also via jan.ai or GitHub Releases.
+                      - listitem [ref=f14e423]:
+                        - text: "Build: Node.js ≥20.0.0, Yarn ≥4.5.3, Make ≥3.81, Rust + Metal toolchain (macOS Apple Silicon);"
+                        - code [ref=f14e424]: make dev
+                        - text: available.
+                      - listitem [ref=f14e425]: "System reqs: macOS 13.6+ (8GB RAM for 3B models, 16GB for 7B, 32GB for 13B); Windows 10+ w/ NVIDIA/AMD/Intel Arc GPU support; most Linux distros, GPU acceleration available."
+                      - listitem [ref=f14e426]: "Repo stats: 3k forks, 352 open issues, 8,260 commits. Community via Discord."
+                    - heading "Cherry Studio (CherryHQ/cherry-studio) — 50.3k stars, AGPL-3.0, Electron" [level=3] [ref=f14e427]
+                    - list [ref=f14e428]:
+                      - listitem [ref=f14e429]: Multi-provider LLM desktop client (Windows/Mac/Linux); README in 20 languages incl. 简体中文.
+                      - listitem [ref=f14e430]:
+                        - text: "Features: OpenAI/Gemini/Anthropic cloud; AI web services (Claude, Perplexity, Poe); local models via"
+                        - strong [ref=f14e431]: Ollama & LM Studio
+                        - text: ; 300+ pre-configured assistants; multi-model simultaneous conversations; docs processing (text/images/Office/PDF); WebDAV backup; Mermaid charts; code highlighting; global search; topic management; MCP servers; light/dark themes; no env setup required.
+                      - listitem [ref=f14e432]: "Roadmap: Deep Research, MCP Marketplace, knowledge management/notes/canvas/OCR/TTS, HarmonyOS PC edition, Android/iOS apps, multi-window, plugin system, ASR, Intel AI PC (Core Ultra) support. Themes gallery: cherrycss.com."
+                      - listitem [ref=f14e433]:
+                        - strong [ref=f14e434]: Contributor rewards program
+                        - text: ": per tracking quarter (first = Q3 2025, rewards Oct 1), 30+ meaningful commits → $70 Cursor subscription credit, unlimited DeepSeek/Qwen API, occasional access to Claude/Gemini/OpenAI APIs."
+                      - listitem [ref=f14e435]: "Editions: Community + Enterprise. Repo stats: 4.8k forks, 853 issues, 8,170 commits."
+                    - heading "GPT4All (nomic-ai/gpt4all) — 77.4k stars, MIT, commercial use OK" [level=3] [ref=f14e436]
+                    - list [ref=f14e437]:
+                      - listitem [ref=f14e438]:
+                        - text: Local LLM runner on everyday desktops/laptops;
+                        - strong [ref=f14e439]: no API calls or GPU required
+                        - text: ; now supports DeepSeek R1 Distillations.
+                      - listitem [ref=f14e440]:
+                        - text: "Python client around llama.cpp:"
+                        - code [ref=f14e441]: pip install gpt4all
+                        - text: ", e.g."
+                        - code [ref=f14e442]: GPT4All("Meta-Llama-3-8B-Instruct.Q4_0.gguf")
+                        - text: (4.66GB).
+                      - listitem [ref=f14e443]: "Integrations: LangChain, Weaviate, OpenLIT (OTel-native monitoring)."
+                      - listitem [ref=f14e444]:
+                        - text: "Release history:"
+                        - strong [ref=f14e445]: V3.0.0 July 2, 2024
+                        - text: (chat UI redesign, LocalDocs workflow, more model architectures); Oct 19, 2023 GGUF support (Mistral 7b, Rift Coder v1.5, Nomic Vulkan for Q4_0/Q4_1 on NVIDIA/AMD GPUs); Sep 18, 2023 Nomic Vulkan; July 2023 LocalDocs; June 28, 2023 Docker-based OpenAI-compatible API server.
+                      - listitem [ref=f14e446]:
+                        - text: "Platform reqs: Windows needs Intel Core i3 2nd Gen/AMD Bulldozer+; Windows ARM supports Qualcomm Snapdragon + Microsoft SQ1/SQ2; Linux"
+                        - strong [ref=f14e447]: x86-64 only
+                        - text: ;
+            - generic [ref=f14e448]: 复杂问题测试
+            - generic [ref=f14e453]:
+              - generic [ref=f14e454]:
+                - generic [ref=f14e456]:
+                  - button "已完成 18 个步骤 · 11 个工具 18 步 · 11 个工具" [expanded] [ref=f14e457]:
+                    - generic [ref=f14e460]: 已完成 18 个步骤 · 11 个工具
+                    - generic [ref=f14e461]: 18 步 · 11 个工具
+                  - list [ref=f14e465]:
+                    - listitem [ref=f14e466]:
+                      - button "查看思考过程" [expanded] [ref=f14e467]:
+                        - generic [ref=f14e468]: 思考
+                      - generic [ref=f14e475]:
+                        - paragraph [ref=f14e476]: "The user is asking me to do a \"复杂问题测试\" (complex question test). Given the context from the checkpoint, I was in the middle of researching open-source AI desktop applications and hadn't produced the final report yet. Let me recall what was gathered:"
+                        - list [ref=f14e477]:
+                          - listitem [ref=f14e478]: I had collected data from GitHub about various open-source AI desktop applications
+                          - listitem [ref=f14e479]: "Key projects identified: Jan, Cherry Studio, GPT4All, and many others"
+                          - listitem [ref=f14e480]: The task was to "研究开源 AI 桌面应用" — research open-source AI desktop applications
+                        - paragraph [ref=f14e481]: "The user now says \"复杂问题测试\" which means \"complex question test.\" This could mean:"
+                        - list [ref=f14e482]:
+                          - listitem [ref=f14e483]: They want me to continue/finish the research and produce the final report
+                          - listitem [ref=f14e484]: Or they're testing me with a complex question
+                        - paragraph [ref=f14e485]: "Since the checkpoint summary shows the task is incomplete, and the user is now asking for a \"complex question test,\" I think they want me to:"
+                        - list [ref=f14e486]:
+                          - listitem [ref=f14e487]: Complete the previous research task
+                          - listitem [ref=f14e488]: Possibly do something more complex on top of it
+                        - paragraph [ref=f14e489]: Let me look at the current working directory and any existing files first, then produce a comprehensive research report on open-source AI desktop applications.
+                        - paragraph [ref=f14e490]: Let me first check if there's anything in the working directory.
+                    - listitem [ref=f14e491]:
+                      - button "查看 list_files 结果" [expanded] [ref=f14e492]:
+                        - generic [ref=f14e493]:
+                          - generic "列出文件" [ref=f14e494]
+                          - generic [ref=f14e495]: 已完成
+                      - generic [ref=f14e498]:
+                        - generic [ref=f14e499]: "dirPath: D:\\studyspace\\project\\my-agent"
+                        - generic [ref=f14e501]: <persisted-output ref="d1580e76982020e4" tool="list_files" size="46133" estimated_tokens="10615" status="success"> 📁 D:\studyspace\project\my-agent 📁 .git/ 📁
+                        - generic [ref=f14e502]: <persisted-output ref="d1580e76982020e4" tool="list_files" size="46133" estimated_tokens="10615" status="success"> 📁 D:\studyspace\project\my-agent 📁 .git/ 📁 .git/cursor/ 📁 .git/cursor/crepe/ 📁 .git/gk/ 📄 .git/gk/config (740 B) 📁 .git/hooks/ 📄 .git/hooks/applypatch-msg.sample (478 B) 📄 .git/hooks/commit-msg.sample (896 B) 📄 .git/hooks/fsmonitor-watchman.sample (4.6 KB) 📄 .git/hooks/post-update.sample (189 B) 📄 .git/hooks/pre-applypatch.sample (424 B) 📄 .git/hooks/pre-commit.sample (1.6 KB) 📄 .git/hooks/pre-merge-commit.sample (416 B) 📄 .git/hooks/pre-push.sample (1.3 KB) 📄 .git/hooks/pre-rebase.sample (4.8 KB) 📄 .git/hooks/pre-receive.sample (544 B) 📄 .git/hooks/prepare-commit-msg.sample (1.5 KB) 📄 .git/hooks/push-to-checkout.sample (2.7 KB) 📄 .git/hooks/sendemail-validate.sample (2.3 KB) 📄 .git/hooks/update.sample (3.6 KB) 📁 .git/info/ 📄 .git/info/exclude (541 B) 📁 .git/logs/ 📁 .git/logs/refs/ 📄 .git/logs/HEAD (19.3 KB) 📁 .git/objects/ 📁 .git/objects/00/ 📁 .git/objects/01/ 📁 .git/objects/02/ 📁 .git/objects/03/ 📁 .git/objects/04/ 📁 .git/objects/05/ 📁 .git/objects/06/ 📁 .git/objects/07/ 📁 .git/objects/08/ 📁 .git/objects/09/ 📁 .git/objects/0a/ 📁 .git/objects/0b/ 📁 .git/objects/0c/ 📁 .git/objects/0d/ 📁 .git/objects/0e/ 📁 .git/objects/0f/ 📁 .git/objects/10/ 📁 .git/objects/11/ 📁 .git/objects/12/ 📁 .git/objects/13/ 📁 .git/objects/14/ 📁 .git/objects/15/ 📁 .git/objects/16/ 📁 .git/objects/17/ 📁 .git/objects/18/ 📁 .git/objects/19/ 📁 .git/objects/1a/ 📁 .git/objects/1b/ 📁 .git/objects/1c/ 📁 .git/objects/1d/ 📁 .git/objects/1e/ 📁 .git/objects/1f/ 📁 .git/objects/20/ 📁 .git/objects/21/ 📁 .git/objects/22/ 📁 .git/objects/23/ 📁 .git/objects/24/ 📁 .git/objects/25/ 📁 .git/objects/26/ 📁 .git/objects/27/ 📁 .git/objects/28/ 📁 .git/objects/29/ 📁 .git/objects/2a/ 📁 .git/objects/2b/ 📁 .git/objects/2c/ 📁 .gi ... [41014 字符省略] ... ) 📄 .env.example (108 B) 📄 .gitignore (340 B) 📄 .mcp.json (226 B) 📄 .server.log (17.1 KB) 📄 AGENTS.md (6.1 KB) 📄 brainstorm-cycle-full.png (255.2 KB) 📄 brainstorm-cycle-v2.png (255.3 KB) 📄 chat.ts (32.5 KB) 📄 CLAUDE.md (915 B) 📄 config.json (670 B) 📄 cycle-grouping-empty.png (149.1 KB) 📄 cycle-grouping-multi.png (217.2 KB) 📄 cycle-grouping-multi2.png (149.1 KB) 📄 cycle-grouping-verified.png (182.8 KB) 📄 cycle-grouping-white.png (148.6 KB) 📄 manage.ps1 (18.6 KB) 📄 manage.sh (10.9 KB) 📄 package-lock.json (64.5 KB) 📄 package.json (548 B) 📄 README.md (5.8 KB) 📄 run-trace-typing-overview.png (171.4 KB) 📄 tsconfig.json (416 B) 📄 vitest.config.ts (311 B) 共 1277 项 [Full content is stored under result ref d1580e76982020e4. Use tool_result_search(ref, query) first, or tool_result_read_chunk(ref, cursor, maxTokens) for an exact bounded slice. Do not use read_file on the stored path. </persisted-output>
+                    - listitem [ref=f14e503]:
+                      - button "查看思考过程" [expanded] [ref=f14e504]:
+                        - generic [ref=f14e505]: 思考
+                      - generic [ref=f14e512]:
+                        - paragraph [ref=f14e513]: This is the user's existing project directory (my-agent). It seems to be a TypeScript project with an MCP server setup. The user's question "复杂问题测试" (complex question test) seems to be asking me to complete the previous research task with a comprehensive output.
+                        - paragraph [ref=f14e514]: Let me look at the key files to understand what this project is about and then produce the research report. Let me check the README and AGENTS.md to understand the project context better, and also check if there's a previous research file.
+                        - paragraph [ref=f14e515]: Actually, given the checkpoint summary, the user was asking me to research open-source AI desktop apps. I had collected a lot of data but hadn't produced the final report. Now they're saying "复杂问题测试" which likely means they want me to complete the task properly - this is a test of handling complex multi-step tasks.
+                        - paragraph [ref=f14e516]: Let me produce a comprehensive research report based on all the data collected. I'll write it to a markdown file in the working directory.
+                        - paragraph [ref=f14e517]: Let me also check if there are any existing research files.
+                    - listitem [ref=f14e518]:
+                      - button "查看 search_files 结果" [expanded] [ref=f14e519]:
+                        - generic [ref=f14e520]:
+                          - generic "搜索文件" [ref=f14e521]
+                          - generic [ref=f14e522]: 已完成
+                      - generic [ref=f14e525]:
+                        - generic [ref=f14e526]: "pattern: *research*"
+                        - generic [ref=f14e528]: "🔍 搜索 \"*research*\" (1 个结果): harness-kit\\artifact-templates\\research-report.md"
+                        - generic [ref=f14e529]: "🔍 搜索 \"*research*\" (1 个结果): harness-kit\\artifact-templates\\research-report.md"
+                    - listitem [ref=f14e530]:
+                      - button "查看 search_files 结果" [expanded] [ref=f14e531]:
+                        - generic [ref=f14e532]:
+                          - generic "搜索文件" [ref=f14e533]
+                          - generic [ref=f14e534]: 已完成
+                      - generic [ref=f14e537]:
+                        - generic [ref=f14e538]: "pattern: *report*"
+                        - generic [ref=f14e540]: "🔍 搜索 \"*report*\" (1 个结果): harness-kit\\artifact-templates\\research-report.md"
+                        - generic [ref=f14e541]: "🔍 搜索 \"*report*\" (1 个结果): harness-kit\\artifact-templates\\research-report.md"
+                    - listitem [ref=f14e542]:
+                      - button "查看 search_files 结果" [expanded] [ref=f14e543]:
+                        - generic [ref=f14e544]:
+                          - generic "搜索文件" [ref=f14e545]
+                          - generic [ref=f14e546]: 已完成
+                      - generic [ref=f14e549]:
+                        - generic [ref=f14e550]: "pattern: *.md"
+                        - generic [ref=f14e552]: "🔍 搜索 \"*.md\" (50 个结果): AGENTS.md CLAUDE.md docs\\plan\\AgentRunner实现文档.md docs\\plan\\Skill系统实现文档.md docs\\plan\\第一阶段实现指南.md docs\\spec\\Orkas内置组件完整参考.md docs\\spec\\Syst"
+                        - generic [ref=f14e553]: "🔍 搜索 \"*.md\" (50 个结果): AGENTS.md CLAUDE.md docs\\plan\\AgentRunner实现文档.md docs\\plan\\Skill系统实现文档.md docs\\plan\\第一阶段实现指南.md docs\\spec\\Orkas内置组件完整参考.md docs\\spec\\SystemPrompt架构文档.md docs\\spec\\仿写Agent前端框架指南.md docs\\spec\\仿写Agent框架指南.md docs\\spec\\仿写子Agent系统指南.md fixtures\\skills\\hello-skill\\SKILL.md harness-kit\\adapters\\claude\\bindings.md harness-kit\\adapters\\claude\\README.md harness-kit\\adapters\\cursor\\bindings.md harness-kit\\adapters\\cursor\\README.md harness-kit\\adapters\\cursor\\VENDOR.md harness-kit\\adapters\\trae\\bindings.md harness-kit\\adapters\\trae\\README.md harness-kit\\adapters\\trae\\VENDOR.md harness-kit\\AGENTS.md harness-kit\\artifact-templates\\code-review.md harness-kit\\artifact-templates\\collective-test.md harness-kit\\artifact-templates\\decision.md harness-kit\\artifact-templates\\dispatch-track.md harness-kit\\artifact-templates\\dispatch.harness-overlay.md harness-kit\\artifact-templates\\document-review.md harness-kit\\artifact-templates\\execution-log.md harness-kit\\artifact-templates\\handoff.md harness-kit\\artifact-templates\\plan.harness-overlay.md harness-kit\\artifact-templates\\plan.md harness-kit\\artifact-templates\\progress.md harness-kit\\artifact-templates\\research-report.md harness-kit\\artifact-templates\\spec.harness-overlay.md harness-kit\\artifact-templates\\spec.md harness-kit\\artifact-templates\\verification-lite.md harness-kit\\artifact-templates\\verification.md harness-kit\\artifact-templates\\wu-checklist.md harness-kit\\context-map.md harness-kit\\core\\artifacts.md harness-kit\\core\\capabilities\\primitives.md harness-kit\\core\\capabilities\\registry.md harness-kit\\core\\extensions\\hooks\\content\\block-native-plan-mode.md harness-kit\\core\\extensions\\hooks\\content\\session-init.md harness-kit\\core\\extensions\\hooks\\content\\subagent-stop.md harness-kit\\core\\extensions\\hooks\\README.md harness-kit\\core\\extensions\\mcp\\README.md harness-kit\\core\\extensions\\README.md harness-kit\\core\\harness.md harness-kit\\core\\orchestration\\agents\\code-simplifier.md harness-kit\\core\\orchestration\\agents\\coder.md"
+                    - listitem [ref=f14e554]:
+                      - button "查看思考过程" [expanded] [ref=f14e555]:
+                        - generic [ref=f14e556]: 思考
+                      - generic [ref=f14e563]:
+                        - paragraph [ref=f14e564]:
+                          - text: I see there's a
+                          - code [ref=f14e565]: harness-kit/artifact-templates/research-report.md
+                          - text: template. Let me read it to understand the expected format, then produce the research report.
+                        - paragraph [ref=f14e566]: Let me also read the AGENTS.md to understand the project better.
+                    - listitem [ref=f14e567]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e568]:
+                        - generic [ref=f14e569]:
+                          - generic "读取文件" [ref=f14e570]
+                          - generic [ref=f14e571]: 已完成
+                      - generic [ref=f14e574]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\harness-kit\\artifact-templates\\research-report.md" [ref=f14e576]: research-report.md
+                        - generic [ref=f14e577]: "📄 research-report.md (51 行, 593 字符) 1| --- 2| artifact: research-report 3| route: web-investigator 4| skills: 5| - agent-browser 6| source: 7| - core/routing.m"
+                        - generic [ref=f14e578]: "📄 research-report.md (51 行, 593 字符) 1| --- 2| artifact: research-report 3| route: web-investigator 4| skills: 5| - agent-browser 6| source: 7| - core/routing.md 8| - user-query 9| created_at: YYYY-MM-DD 10| topic: <short-topic-slug> 11| --- 12| 13| # <调研主题> 14| 15| ## 调研目标 16| 17| （用户问题或 Leader 委派目标） 18| 19| ## 搜索结果摘要 20| 21| | # | 来源 | 标题 | 关键信息 | 22| |---|------|------|----------| 23| | 1 | bocha / bing | | | 24| 25| ## 详细发现 26| 27| ### <主题 1> 28| 29| - 来源: <URL> 30| - 内容: ... 31| 32| ## 截图证据 33| 34| | 描述 | 路径 | 35| |------|------| 36| | | `.ai-runtime-artifacts/research/screenshots/...` | 37| 38| ## 结论 39| 40| - ... 41| 42| ## 建议 43| 44| - ... 45| 46| ## Next 47| 48| - 需要写 spec → 说「写计划」或「制定实施计划」 49| - 仅需存档 → 无需继续 50| - 补充调研 → 说明要深挖的方向 51|"
+                    - listitem [ref=f14e579]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e580]:
+                        - generic [ref=f14e581]:
+                          - generic "读取文件" [ref=f14e582]
+                          - generic [ref=f14e583]: 已完成
+                      - generic [ref=f14e586]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\AGENTS.md" [ref=f14e588]: AGENTS.md
+                        - generic [ref=f14e589]: 📄 AGENTS.md (89 行, 4441 字符) 1| <!-- 自主性指令 — 请勿删除 --> 2| 你是一个自主编码代理。**自主性仅适用于实现阶段**，且须满足全部条件： 3| 1. 用户在本会话**已单独说过**「开始实现 / 直接做 / 并行执行」（或等价），**或** spec/plan FM 已
+                        - generic [ref=f14e590]: "📄 AGENTS.md (89 行, 4441 字符) 1| <!-- 自主性指令 — 请勿删除 --> 2| 你是一个自主编码代理。**自主性仅适用于实现阶段**，且须满足全部条件： 3| 1. 用户在本会话**已单独说过**「开始实现 / 直接做 / 并行执行」（或等价），**或** spec/plan FM 已 `approved: true` 且引用该授权原话； 4| 2. **不**含同句组合指令里的「然后执行」（见 `routing.md` § 组合指令）； 5| 3. 当前任务 **非**「写方案 / 写计划」阶段。 6| 满足后无需逐步征求许可，执行至完成（Tier 2+ 仍须尾盘产物）。 7| **Harness 阶段门禁优先：** 写入 spec / plan / decision 后须暂停；「写方案」「写计划」不属于实现阶段，未获用户继续指令前不得 auto-continue 改代码。详见 `routing.md` § 阶段门禁。Cursor 平台额外见 `.cursor/rules/ai-entry.mdc` § 文件写入与阶段门禁。 8| **Harness 尾盘优先（Cursor）：** 「完成」指本 GROUP / 批次已通过**集体测试**与**集体审查**并落盘（`collective-test` + `code-review`），而非末个 WU 返回即可停。见 `harness-kit/docs/superpowers/specs/2026-05-28-batch-closeout-review-and-collective-test.md`。 9| **Tier 1 Leader 直做：** 须 Write `verifications/*-verification-lite.md`，不得零落盘。见 `routing.md` § 任务 Tier。 10| 若受阻，尝试替代方案。仅在真正歧义或具有破坏性时才提问。 11| 并行子任务：Cursor 用 `.agents/agents/<role>.md` 共享 subagent（见 `harness-kit/.agents/`）；Claude / Trae 同理。 12| <!-- 自主性指令结束 --> 13| 14| <!-- 项目 Harness 覆盖层 — 请勿删除 --> 15| 在开展任务专项工作之前，按 **Route-first** 加载 `harness-kit/`（勿预读全集）。 16| 17| ## 加载规则 18| 19| 1. **始终**：`harness-kit/core/routing.md`（路由判定、阶段门禁、§ 按判定加载） 20| 2. **按 routing 判定追加**（见 `routing.md` § 按判定加载；**先 stage skill，再 artifacts 契约**）： 21| - 设计 / spec → Load **`brainstorming`** → `artifacts.md`（勿用 `artifact-templates/spec.md` 作正文） 22| - 计划 → Load **`writing-plans`** → `artifacts.md` + `plan.harness-overlay.md`；并行时 `dispatch.harness-overlay.md` 23| - 验证 → Load **`verification-before-completion`** → `project.verification.md`、`core/verification.md` 24| - 编排产物（execution-log、track 等）→ `artifact-templates/` 对应文件 25| - 改代码前 → `project.profile.md`、`context-map.md`（涉及模块时） 26| - Git → **`git-xywh` skill** + `project.git.md` 27| - runbook 任务 → `core/runbooks.md` 对应节 28| 3. **架构总览（可选）**：`core/harness.md` 29| 30| `harness-kit/` 层负责项目边界、产物契约、验证门禁与迁移可移植性。 31| 默认 harness 路由是强制基线。若用户指定技能或工具，将其视为对 `harness-kit/core/routing.md` 的附加项，除非用户明确要求跳过、禁用或仅使用其他路由。 32| 33| 34| <!-- 项目 Harness 覆盖层结束 --> 35| 36| # Agent Harness 顶层契约 37| 38| 本文件是**工具中立**的 Harness 入口。平台专章分列，避免 Cursor 误读其他平台指令。 39| 40| ## 平台专章 41| 42| | 平台 | 加载 | 43| | --- | --- | 44| | **Cursor** | `harness-kit/entrypoints/AGENTS.cursor-overlay.md`、`.cursor/rules/`、`.agents/agents/`、`orchestration` skill | 45| | **Claude Code** | `CLAUDE.md`、`orchestration` skill、`adapters/claude/bindings.md` | 46| 47| ## 强制声明 48| 49| 每个任务第一句：`「Harness：<route 或 Tier 0/1>」`；stage skill / Tier 1+ 次行 `Skills:`（见 `routing.md` § 阶段指定 skill 必用）。 50| 路由表见 `harness-kit/core/routing.md`（含 Capability / Cursor / Claude 列）。 51| 52| ## 路由摘要 53| 54| | 任务 | Cursor | Claude | 55| | --- | --- | --- | 56| | 设计 | `superpowers:brainstorming` | 同左 | 57| | 计划 | `superpowers:writing-plans` | 同左 | 58| | 多 task 实现 | `orchestration` | `orchestration` | 59| | 验证 / 集体测试 | `superpowers:verification-before-completion` | 同左 | 60| | 尾盘（批次收尾） | `verification-before-completion` → `requesting-code-review` | 同左 | 61| | 信息调研 | `web-investigator` | Task + web-investigator | 62| | Git（提交 / 分支 / MR） | `git-xywh` + `project.git.md` | 同左 | 63| 64| 涉及提交、分支、MR 时由 **Leader** invoke `git-xywh`；子 Agent 默认不 commit。组织规范在 skill，项目差异在 `project.git.md`。 65| 66| ## 可选：Cursor Hooks 67| 68| 启用 Harness 路由提示 hook：见 `harness-kit/adapters/cursor/.cursor/hooks/README.md`。 69| 70| ## 参考资料索引 71| 72| 以下参考资料统一存放在 `harness-kit/references/`（集中式）。**不是\"按需参考\"，而是对应阶段路由的强制门禁。** Leader 进入路由时必须 Read 关联 references 并逐项对照执行（见 `routing.md` § 参考资料强制加载）。 73| 74| | 文件 | 用途 | 被引用的 skill | 75| |------|------|---------------| 76| | `harness-kit/references/definition-of-done.md` | 项目级完成定义（20+ 检查项） | `verification-before-completion`, `incremental-implementation`, `shipping-and-launch` | 77| | `harness-kit/references/testing-patterns.md` | 测试模式（AAA、Mock 层次、反模式） | `test-driven-development`, `debugging-and-error-recovery` | 78| | `harness-kit/references/security-checklist.md` | Web 安全 + OWASP/LLM Top 10 | `security-and-hardening`, `code-review-and-quality`, `shipping-and-launch` | 79| | `harness-kit/references/performance-checklist.md` | Web 性能（CWV、前后端清单） | `performance-optimization`, `code-review-and-quality`, `shipping-and-launch` | 80| | `harness-kit/references/orchestration-patterns.md` | 编排模式 + 反模式 + 决策流 | `orchestration`, `doubt-driven-development` | 81| | `harness-kit/references/observability-checklist.md` | 可观测性（RED/USE、日志/指标/告警） | `observability-and-instrumentation` | 82| | `harness-kit/references/accessibility-checklist.md` | WCAG 2.1 AA 无障碍检查 | `frontend-ui-engineering`, `shipping-and-launch` | 83| 84| **违反：** 未 Read references 即声称完成 → 无效；产物无 `### References 检查` → 退回。 85| 86| ## 可选：Continuous Loop 87| 88| 长期自治循环（opt-in）：见 `harness-kit/core/orchestration/continuous-loop.md`。 89|"
+                    - listitem [ref=f14e591]:
+                      - button "查看思考过程" [expanded] [ref=f14e592]:
+                        - generic [ref=f14e593]: 思考
+                      - generic [ref=f14e600]:
+                        - paragraph [ref=f14e601]:
+                          - text: The AGENTS.md tells me that for "信息调研" (information research), the route is
+                          - code [ref=f14e602]: web-investigator
+                          - text: . The artifact template is
+                          - code [ref=f14e603]: research-report.md
+                          - text: . Let me now produce a comprehensive research report.
+                        - paragraph [ref=f14e604]: Now let me also check if there are any existing research artifacts in the project.
+                        - paragraph [ref=f14e605]: Based on the checkpoint summary, I have extensive data about open-source AI desktop apps. Let me now produce a comprehensive report. I'll also do some fresh web searches to make sure the data is current (the checkpoint data might be from a previous session).
+                        - paragraph [ref=f14e606]: "Actually, wait - the checkpoint says the data was collected but the report was never written. The user is now asking for a \"复杂问题测试\" (complex question test). I think this means they want me to:"
+                        - list [ref=f14e607]:
+                          - listitem [ref=f14e608]: Complete the research task properly
+                          - listitem [ref=f14e609]: Maybe do additional analysis beyond just listing apps
+                        - paragraph [ref=f14e610]: Let me do some fresh searches to get current data, then produce the report. Let me also check the routing.md for the web-investigator route requirements.
+                        - paragraph [ref=f14e611]: Let me focus on producing the actual deliverable now. I have plenty of data from the checkpoint. Let me also do a quick current search for any new developments.
+                        - paragraph [ref=f14e612]: Actually, the checkpoint data is quite comprehensive. Let me also search for a few more projects that might have emerged recently, focusing on 2025-2026 developments.
+                        - paragraph [ref=f14e613]:
+                          - text: Let me produce the report now. I'll write it to
+                          - code [ref=f14e614]: research-report-open-source-ai-desktop-apps.md
+                          - text: .
+                        - paragraph [ref=f14e615]: "Let me organize the data:"
+                        - paragraph [ref=f14e616]:
+                          - strong [ref=f14e617]: "Top Projects (by stars):"
+                        - list [ref=f14e618]:
+                          - listitem [ref=f14e619]:
+                            - strong [ref=f14e620]: GPT4All
+                            - text: (nomic-ai) — 77.4k stars, MIT, C++/Python, local LLM runner
+                          - listitem [ref=f14e621]:
+                            - strong [ref=f14e622]: Cherry Studio
+                            - text: (CherryHQ) — 50.3k stars, AGPL-3.0, Electron, multi-provider LLM client
+                          - listitem [ref=f14e623]:
+                            - strong [ref=f14e624]: Jan
+                            - text: (janhq) — 44k stars, Apache 2.0, Tauri/Rust, offline ChatGPT alternative
+                          - listitem [ref=f14e625]:
+                            - strong [ref=f14e626]: lencx/ChatGPT
+                            - text: — 54.4k stars, Rust, ChatGPT desktop wrapper
+                          - listitem [ref=f14e627]:
+                            - strong [ref=f14e628]: HBAI-Ltd/Toonflow-app
+                            - text: — 13.7k stars, TypeScript, AI short-drama creation
+                          - listitem [ref=f14e629]:
+                            - strong [ref=f14e630]: dice2o/BingGPT
+                            - text: — 8.9k stars, JS, Bing AI desktop app
+                          - listitem [ref=f14e631]:
+                            - strong [ref=f14e632]: ValueCell-ai/ClawX
+                            - text: — 7.6k stars, TypeScript, GUI for OpenClaw AI agents
+                          - listitem [ref=f14e633]:
+                            - strong [ref=f14e634]: Sylinko/Everywhere
+                            - text: — 6.2k stars, C#, on-screen-aware desktop AI assistant
+                          - listitem [ref=f14e635]:
+                            - strong [ref=f14e636]: lightningpixel/modly
+                            - text: — 4.9k stars, TypeScript, 3D model gen from images
+                          - listitem [ref=f14e637]:
+                            - strong [ref=f14e638]: buxuku/SmartSub
+                            - text: — 4.6k stars, TypeScript, video subtitles + AI dubbing
+                          - listitem [ref=f14e639]:
+                            - strong [ref=f14e640]: JabRef/jabref
+                            - text: — 4.6k stars, Java, reference manager with AI
+                          - listitem [ref=f14e641]:
+                            - strong [ref=f14e642]: xingkongliang/skills-manager
+                            - text: — 3.7k stars, Rust, AI agent skills manager
+                          - listitem [ref=f14e643]:
+                            - strong [ref=f14e644]: lxf746/any-auto-register
+                            - text: — 3.1k stars, Python, auto-register AI accounts
+                        - paragraph [ref=f14e645]: Let me also do fresh web searches to see if there are other notable projects I might have missed.
+                        - paragraph [ref=f14e646]: Actually let me just do the report. I have enough data. Let me organize it well.
+                    - listitem [ref=f14e647]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e648]:
+                        - generic [ref=f14e649]:
+                          - generic "获取网页" [ref=f14e650]
+                          - generic [ref=f14e651]: 已完成
+                      - generic [ref=f14e654]:
+                        - generic "url=https://github.com/nomic-ai/gpt4all" [ref=f14e656]: github.com/nomic-ai/gpt4all
+                        - generic [ref=f14e657]: "GitHub - nomic-ai/gpt4all: GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. · GitHub Skip to content Navigation Menu Sign in"
+                        - generic [ref=f14e658]: "GitHub - nomic-ai/gpt4all: GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they start EXPLORE Why GitHub Documentation Blog Changelog Marketplace View all features Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support Pricing Type / to search Sign in Sign up Appearance settings You signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert {{ message }} Uh oh! There was an error while loading. Please reload this page . nomic-ai / gpt4all Public Notifications You must be signed in to change notification settings Fork 8.3k Star 77.4k Code Issues 730 Pull requests 44 Discussions Actions Projects Wiki Security and quality 0 Insights Additional navigation options Code Issues Pull requests Discussions Actions Projects Wiki Security and quality Insights main Branches Tags Go to file Code Open more actions menu Folders and files Name Name Last commit message Last commit date Latest commit History 2,289 Commits 2,289 Commits .circleci .circleci .github .github common common gpt4all-backend gpt4all-backend gpt4all-bindings gpt4all-bindings gpt4all-chat gpt4all-chat gpt4all-training gpt4all-training .codespellrc .codespellrc .gitignore .gitignore .gitmodules .gitmodules CONTRIBUTING.md CONTRIBUTING.md LICENSE.txt LICENSE.txt MAINTAINERS.md MAINTAINERS.md README.md README.md gpt4all-lora-demo.gif gpt4all-lora-demo.gif roadmap.md roadmap.md View all files Repository files navigation README Contributing MIT license More items GPT4All Now with support for DeepSeek R1 Distillations Website • Documentation • Discord • YouTube Tutorial GPT4All runs large language models (LLMs) privately on everyday desktops & laptops. No API calls or GPUs required - you can just download the application and get started . Read about what's new in our blog . Subscribe to the newsletter gpt4all_2.mp4 GPT4All is made possible by our compute partner Paperspace . Download Links — Windows Installer — — Windows ARM Installer — — macOS Installer — — Ubuntu Installer — The Windows and Linux builds require Intel Core i3 2nd Gen / AMD Bulldozer, or better. The Windows ARM build supports Qualcomm Snapdragon and Microsoft SQ1/SQ2 processors. The Linux build is x86-64 only (no ARM). The macOS build requires Monterey 12.6 or newer. Best results with Apple Silicon M-series processors. See the full System Requirements for more details. Flathub (community maintained) Install GPT4All Python gpt4all gives you access to LLMs with our Python client around llama.cpp implementations. Nomic contributes to open source software like llama.cpp to make LLMs accessible and efficient for all . pip install gpt4all from gpt4all import GPT4All model = GPT4All ( \"Meta-Llama-3-8B-Instruct.Q4_0.gguf\" ) # downloads / loads a 4.66GB LLM with model . chat_session (): print ( model . generate ( \"How can I run LLMs efficiently on my laptop?\" , max_tokens = 1024 )) Integrations 🦜🔗 Langchain 🗃️ Weaviate Vector Database - module docs 🔭 OpenLIT (OTel-native Monitoring) - Docs Release History July 2nd, 2024 : V3.0.0 Release Fresh redesign of the chat application UI Improved user workflow for LocalDocs Expanded access to more model architectures October 19th, 2023 : GGUF Support Launches with Support for: Mistral 7b base model, an updated model gallery on our website, several new local code models including Rift Coder v1.5 Nomic Vulkan support for Q4_0 and Q4_1 quantizations in GGUF. Offline build support for running old versions of the GPT4All Local LLM Chat Client. September 18th, 2023 : Nomic Vulkan launches supporting local LLM inference on NVIDIA and AMD GPUs. July 2023 : Stable support for LocalDocs, a feature that allows you to privately and locally chat with your data. June 28th, 2023 : Docker-based API server launches allowing inference of local LLMs from an OpenAI-compatible HTTP endpoint. Contributing GPT4All welcomes contributions, involvement, and discussion from the open source community! Please see CONTRIBUTING.md and follow the issues, bug reports, and PR markdown templates. Check project discord, with project owners, or through existing issues/PRs to avoid duplicate work. Please make sure to tag all of the above with relevant project identifiers or your contribution could potentially get lost. Example tags: backend , bindings , python-bindings , documentation , etc. Citation If you utilize this repository, models or data in a downstream project, please consider citing it with: @misc{gpt4all, author = {Yuvanesh Anand and Zach Nussbaum and Brandon Duderstadt and Benjamin Schmidt and Andriy Mulyar}, title = {GPT4All: Training an Assistant-style Chatbot with Large Scale Data Distillation from GPT-3.5-Turbo}, year = {2023}, publisher = {GitHub}, journal = {GitHub repository}, howpublished = {\\url{https://github.com/nomic-ai/gpt4all}}, } About GPT4All: Run Local LLMs on Any Device. Open-source and available for commercial use. nomic.ai/gpt4all Topics ai-chat llm-inference Resources Readme MIT license Contributing Contributing Activity Custom properties Stars 77.4k stars Watchers 698 watching Forks 8.3k forks Report repository Releases Packages Used by Contributors Languages Footer &copy; 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs Contact Manage cookies Do not share my personal information You can’t perform that action at this time."
+                    - listitem [ref=f14e659]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e660]:
+                        - generic [ref=f14e661]:
+                          - generic "获取网页" [ref=f14e662]
+                          - generic [ref=f14e663]: 已完成
+                      - generic [ref=f14e666]:
+                        - generic "url=https://github.com/CherryHQ/cherry-studio" [ref=f14e668]: github.com/CherryHQ/cherry-studio
+                        - generic [ref=f14e669]: "GitHub - CherryHQ/cherry-studio: AI productivity studio with smart chat, autonomous agents, and 300+ assistants. Unified access to frontier LLMs · GitHub Skip t"
+                        - generic [ref=f14e670]: "GitHub - CherryHQ/cherry-studio: AI productivity studio with smart chat, autonomous agents, and 300+ assistants. Unified access to frontier LLMs · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they start EXPLORE Why GitHub Documentation Blog Changelog Marketplace View all features Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support Pricing Type / to search Sign in Sign up Appearance settings You signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert {{ message }} Uh oh! There was an error while loading. Please reload this page . CherryHQ / cherry-studio Public Notifications You must be signed in to change notification settings Fork 4.8k Star 50.3k Code Issues 866 Pull requests 415 Discussions Actions Projects Security and quality 4 Insights Additional navigation options Code Issues Pull requests Discussions Actions Projects Security and quality Insights main Branches Tags Go to file Code Open more actions menu Folders and files Name Name Last commit message Last commit date Latest commit History 8,193 Commits 8,193 Commits .agents/ skills .agents/ skills .changeset .changeset .claude/ skills .claude/ skills .github .github .vscode .vscode .zed .zed build build docs docs migrations migrations packages packages patches patches resources resources scripts scripts src src tests tests v2-refactor-temp v2-refactor-temp .editorconfig .editorconfig .env.example .env.example .git-blame-ignore-revs .git-blame-ignore-revs .gitattributes .gitattributes .gitignore .gitignore .node-version .node-version .npmrc .npmrc .nvmrc .nvmrc .oxlintrc.json .oxlintrc.json .pre-commit-config.yaml .pre-commit-config.yaml AGENTS.md AGENTS.md CLAUDE.md CLAUDE.md CODE_OF_CONDUCT.md CODE_OF_CONDUCT.md CONTRIBUTING.md CONTRIBUTING.md DESIGN.md DESIGN.md LICENSE LICENSE PRIVACY.md PRIVACY.md README.md README.md SECURITY.md SECURITY.md biome.jsonc biome.jsonc dev-app-update.yml dev-app-update.yml electron-builder.yml electron-builder.yml electron.vite.config.ts electron.vite.config.ts eslint.config.mjs eslint.config.mjs i18next.config.ts i18next.config.ts package.json package.json playwright.config.ts playwright.config.ts pnpm-lock.yaml pnpm-lock.yaml pnpm-workspace.yaml pnpm-workspace.yaml tsconfig.json tsconfig.json tsconfig.node.json tsconfig.node.json tsconfig.web.json tsconfig.web.json vitest.config.ts vitest.config.ts View all files Repository files navigation README Code of conduct Contributing AGPL-3.0 license Security More items 🌐 Language English 简体中文 繁體中文 日本語 한국어 हिन्दी ไทย Français Deutsch Español Italiano Русский Português Nederlands Polski العربية فارسی Türkçe Tiếng Việt Bahasa Indonesia English | Official Site | Documents | Development | Feedback 🍒 Cherry Studio Cherry Studio is a desktop client that supports multiple LLM providers, available on Windows, Mac and Linux. 👏 Join Telegram Group ｜ Discord | QQ Group(575014769) ❤️ Like Cherry Studio? Give it a star 🌟 or Sponsor to support the development! 🌠 Screenshot 🌟 Key Features Diverse LLM Provider Support : ☁️ Major LLM Cloud Services: OpenAI, Gemini, Anthropic, and more 🔗 AI Web Service Integration: Claude, Perplexity, Poe , and others 💻 Local Model Support with Ollama, LM Studio AI Assistants & Conversations : 📚 300+ Pre-configured AI Assistants 🤖 Custom Assistant Creation 💬 Multi-model Simultaneous Conversations Document & Data Processing : 📄 Supports Text, Images, Office, PDF, and more ☁️ WebDAV File Management and Backup 📊 Mermaid Chart Visualization 💻 Code Syntax Highlighting Practical Tools Integration : 🔍 Global Search Functionality 📝 Topic Management System 🔤 AI-powered Translation 🎯 Drag-and-drop Sorting 🔌 Mini Program Support ⚙️ MCP(Model Context Protocol) Server Enhanced User Experience : 🖥️ Cross-platform Support for Windows, Mac, and Linux 📦 Ready to Use - No Environment Setup Required 🎨 Light/Dark Themes and Transparent Window 📝 Complete Markdown Rendering 🤲 Easy Content Sharing 📝 Roadmap We're actively working on the following features and improvements: 🎯 Core Features Selection Assistant with smart content selection enhancement Deep Research with advanced research capabilities Document Preprocessing with improved document handling MCP Marketplace for Model Context Protocol ecosystem 🗂 Knowledge Management Notes and Collections Dynamic Canvas visualization OCR capabilities TTS (Text-to-Speech) support 📱 Platform Support HarmonyOS Edition (PC) Android App (Phase 1) iOS App (Phase 1) Multi-Window support Window Pinning functionality Intel AI PC (Core Ultra) Support 🔌 Advanced Features Plugin System ASR (Automatic Speech Recognition) Assistant and Topic Interaction Refactoring Track our progress and contribute on our project board . Want to influence our roadmap? Join our GitHub Discussions to share your ideas and feedback! 🌈 Theme Theme Gallery: https://cherrycss.com Aero Theme: https://github.com/hakadao/CherryStudio-Aero PaperMaterial Theme: https://github.com/rainoffallingstar/CherryStudio-PaperMaterial Claude dynamic-style: https://github.com/bjl101501/CherryStudio-Claudestyle-dynamic Maple Neon Theme: https://github.com/BoningtonChen/CherryStudio_themes Welcome PR for more themes 🤝 Contributing We welcome contributions to Cherry Studio! Here are some ways you can contribute: Contribute Code : Develop new features or optimize existing code. Fix Bugs : Submit fixes for any bugs you find. Maintain Issues : Help manage GitHub issues. Product Design : Participate in design discussions. Write Documentation : Improve user manuals and guides. Community Engagement : Join discussions and help users. Promote Usage : Spread the word about Cherry Studio. Refer to the Branching Strategy for contribution guidelines Getting Started Fork the Repository : Fork and clone it to your local machine. Create a Branch : For your changes. Submit Changes : Commit and push your changes. Open a Pull Request : Describe your changes and reasons. For more detailed guidelines, please refer to our Contributing Guide . Thank you for your support and contributions! 🔧 Developer Co-creation Program We are launching the Cherry Studio Developer Co-creation Program to foster a healthy and positive-feedback loop within the open-source ecosystem. We believe that great software is built collaboratively, and every merged pull request breathes new life into the project. We sincerely invite you to join ...(已截断)"
+                    - listitem [ref=f14e671]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e672]:
+                        - generic [ref=f14e673]:
+                          - generic "获取网页" [ref=f14e674]
+                          - generic [ref=f14e675]: 已完成
+                      - generic [ref=f14e678]:
+                        - generic "url=https://github.com/janhq/jan" [ref=f14e680]: github.com/janhq/jan
+                        - generic [ref=f14e681]: "GitHub - janhq/jan: Jan is an open source alternative to ChatGPT that runs 100% offline on your computer. · GitHub Skip to content Navigation Menu Sign in Appea"
+                        - generic [ref=f14e682]: "GitHub - janhq/jan: Jan is an open source alternative to ChatGPT that runs 100% offline on your computer. · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they start EXPLORE Why GitHub Documentation Blog Changelog Marketplace View all features Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support Pricing Type / to search Sign in Sign up Appearance settings You signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert {{ message }} Uh oh! There was an error while loading. Please reload this page . janhq / jan Public Notifications You must be signed in to change notification settings Fork 3k Star 44k Code Issues 354 Pull requests 91 Discussions Actions Projects Wiki Security and quality 0 Insights Additional navigation options Code Issues Pull requests Discussions Actions Projects Wiki Security and quality Insights main Branches Tags Go to file Code Open more actions menu Folders and files Name Name Last commit message Last commit date Latest commit History 8,260 Commits 8,260 Commits .devcontainer .devcontainer .github .github .husky .husky autoqa autoqa core core docs docs extensions extensions flatpak flatpak mlx-server mlx-server scripts scripts src-tauri src-tauri tests tests web-app web-app .gitattributes .gitattributes .gitignore .gitignore .prettierignore .prettierignore .prettierrc .prettierrc .yarnrc.yml .yarnrc.yml CONTRIBUTING.md CONTRIBUTING.md JanBanner.png JanBanner.png LICENSE LICENSE Makefile Makefile README.ja.md README.ja.md README.md README.md README.zh.md README.zh.md demo.gif demo.gif package.json package.json vitest.config.ts vitest.config.ts yarn.lock yarn.lock View all files Repository files navigation README Code of conduct Contributing License Security More items Jan - Open-source ChatGPT replacement English · 中文 · 日本語 Getting Started - Community - Changelog - Bug reports Jan is bringing the best of open-source AI in an easy-to-use product. Download and run LLMs with full control and privacy . Installation The easiest way to get started is by downloading one of the following versions for your respective operating system: Platform Download Windows jan.exe macOS jan.dmg Linux (deb) jan.deb Linux (AppImage) jan.AppImage Linux (Arm64) How-to Download from jan.ai or GitHub Releases . Features Local AI Models : Download and run LLMs (Llama, Gemma, Qwen, GPT-oss etc.) from HuggingFace Cloud Integration : Connect to GPT models via OpenAI, Claude models via Anthropic, Mistral, Groq, MiniMax, and others Custom Assistants : Create specialized AI assistants for your tasks OpenAI-Compatible API : Local server at localhost:1337 for other applications Model Context Protocol : MCP integration for agentic capabilities Privacy First : Everything runs locally when you want it to Build from Source For those who enjoy the scenic route: Prerequisites Node.js ≥ 20.0.0 Yarn ≥ 4.5.3 Make ≥ 3.81 Rust (for Tauri) (macOS Apple Silicon only) MetalToolchain xcodebuild -downloadComponent MetalToolchain Run with Make git clone https://github.com/janhq/jan cd jan make dev This handles everything: installs dependencies, builds core components, and launches the app. Available make targets: make dev - Full development setup and launch make build - Production build make test - Run tests and linting make clean - Delete everything and start fresh Manual Commands yarn install yarn build yarn dev System Requirements Minimum specs for a decent experience: macOS : 13.6+ (8GB RAM for 3B models, 16GB for 7B, 32GB for 13B) Windows : 10+ with GPU support for NVIDIA/AMD/Intel Arc Linux : Most distributions work, GPU acceleration available For detailed compatibility, check our installation guides . Troubleshooting If things go sideways: Check our troubleshooting docs Copy your error logs and system specs Ask for help in our Discord #🆘|jan-help channel Contributing Contributions welcome. See CONTRIBUTING.md for the full spiel. Links Documentation - The manual you should read API Reference - For the technically inclined Changelog - What we broke and fixed Discord - Where the community lives Contact Bugs : GitHub Issues Business : hello@jan.ai Jobs : hr@jan.ai General Discussion : Discord License Apache 2.0 - Because sharing is caring. Acknowledgements Built on the shoulders of giants: Llama.cpp Tauri Scalar About Jan is an open source alternative to ChatGPT that runs 100% offline on your computer. jan.ai/ Topics chatgpt gpt llamacpp llm localai open-source self-hosted tauri Resources Readme License Code of conduct Code of conduct Contributing Contributing Security policy Security policy Activity Custom properties Stars 44.0k stars Watchers 218 watching Forks 3.0k forks Report repository Releases Packages Used by Contributors Languages Footer &copy; 2026 GitHub, Inc. Footer navigation Terms Privacy Security Status Community Docs Contact Manage cookies Do not share my personal information You can’t perform that action at this time."
+                    - listitem [ref=f14e683]:
+                      - button "查看思考过程" [expanded] [ref=f14e684]:
+                        - generic [ref=f14e685]: 思考
+                      - generic [ref=f14e692]:
+                        - paragraph [ref=f14e693]: "Now I have the latest data. Let me also check a few more projects to round out the report. Let me check:"
+                        - list [ref=f14e694]:
+                          - listitem [ref=f14e695]: lencx/ChatGPT (54.4k stars)
+                          - listitem [ref=f14e696]: Sylinko/Everywhere (6.2k)
+                          - listitem [ref=f14e697]: ValueCell-ai/ClawX (7.6k)
+                          - listitem [ref=f14e698]: xingkongliang/skills-manager (3.7k)
+                        - paragraph [ref=f14e699]: Actually, I think I have enough data. Let me also do a quick web search for any major new entrants since the checkpoint data was collected. Then I'll write the report.
+                        - paragraph [ref=f14e700]: Actually, let me focus on writing the report now. I have comprehensive data. Let me structure it well and produce the deliverable.
+                        - paragraph [ref=f14e701]:
+                          - text: The report should follow the template from
+                          - code [ref=f14e702]: research-report.md
+                          - text: ":"
+                        - list [ref=f14e703]:
+                          - listitem [ref=f14e704]: 调研目标
+                          - listitem [ref=f14e705]: 搜索结果摘要
+                          - listitem [ref=f14e706]: 详细发现
+                          - listitem [ref=f14e707]: 截图证据 (skip)
+                          - listitem [ref=f14e708]: 结论
+                          - listitem [ref=f14e709]: 建议
+                          - listitem [ref=f14e710]: Next
+                        - paragraph [ref=f14e711]: Let me write this as a comprehensive, well-structured report.
+                    - listitem [ref=f14e712]:
+                      - button "查看 write_file 结果" [expanded] [ref=f14e713]:
+                        - generic [ref=f14e714]:
+                          - generic "写入文件" [ref=f14e715]
+                          - generic [ref=f14e716]: 已完成
+                      - generic [ref=f14e719]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\research-report-open-source-ai-desktop-apps.md" [ref=f14e721]: research-report-open-source-ai-d…
+                        - generic [ref=f14e722]: ✅ 已写入 research-report-open-source-ai-desktop-apps.md (6.9 KB)
+                        - generic [ref=f14e723]: ✅ 已写入 research-report-open-source-ai-desktop-apps.md (6.9 KB)
+                    - listitem [ref=f14e724]:
+                      - button "查看思考过程" [expanded] [ref=f14e725]:
+                        - generic [ref=f14e726]: 思考
+                      - paragraph [ref=f14e734]: The report has been written. Let me verify it was written correctly by reading a portion of it, then present a summary to the user.
+                    - listitem [ref=f14e735]:
+                      - button "查看 stat_file 结果" [expanded] [ref=f14e736]:
+                        - generic [ref=f14e737]:
+                          - generic "stat_file" [ref=f14e738]
+                          - generic [ref=f14e739]: 已完成
+                      - generic [ref=f14e742]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\research-report-open-source-ai-desktop-apps.md" [ref=f14e744]: research-report-open-source-ai-d…
+                        - generic [ref=f14e745]: "📄 research-report-open-source-ai-desktop-apps.md 大小: 10.3 KB 行数: 217 字符: 7102 修改: 2026-08-12T02:18:09.840Z"
+                        - generic [ref=f14e746]: "📄 research-report-open-source-ai-desktop-apps.md 大小: 10.3 KB 行数: 217 字符: 7102 修改: 2026-08-12T02:18:09.840Z"
+                    - listitem [ref=f14e747]:
+                      - button "查看思考过程" [expanded] [ref=f14e748]:
+                        - generic [ref=f14e749]: 思考
+                      - paragraph [ref=f14e757]: The report is complete at 217 lines, 10.3 KB. Now let me present a summary to the user.
+                - generic [ref=f14e760]:
+                  - heading "我先看看当前工作目录的状态，然后基于之前收集的所有数据，产出一份完整的开源 AI 桌面应用研究报告。 让我检查一下项目中是否有之前的调研相关文件。 好的，我现在基于之前收集的全部数据，产出一份完整的开源 AI 桌面应用研究报告。先让我做一次快速的最新数据确认。 数据已确认。现在产出完整的研究报告。 报告已生成。让我快速验证一下文件完整性。" [level=2] [ref=f14e761]
+                  - heading "✅ 开源 AI 桌面应用调研报告已完成" [level=2] [ref=f14e762]
+                  - paragraph [ref=f14e763]:
+                    - text: 报告已写入
+                    - code [ref=f14e764]: research-report-open-source-ai-desktop-apps.md
+                    - text: （217 行，10.3 KB）。
+                  - heading "核心发现速览" [level=3] [ref=f14e765]
+                  - table [ref=f14e766]:
+                    - rowgroup [ref=f14e767]:
+                      - row [ref=f14e768]:
+                        - columnheader "维度" [ref=f14e769]
+                        - columnheader "结论" [ref=f14e770]
+                    - rowgroup [ref=f14e771]:
+                      - row [ref=f14e772]:
+                        - cell [ref=f14e773]:
+                          - strong [ref=f14e774]: Star 最高
+                        - cell "GPT4All（77.4k），MIT 许可，纯本地 LLM 运行" [ref=f14e775]
+                      - row [ref=f14e776]:
+                        - cell [ref=f14e777]:
+                          - strong [ref=f14e778]: 增长最快 / 功能最全
+                        - cell "Cherry Studio（50.3k），300+ 助手、MCP、多模型聚合" [ref=f14e779]
+                      - row [ref=f14e780]:
+                        - cell [ref=f14e781]:
+                          - strong [ref=f14e782]: 离线优先标杆
+                        - cell "Jan（44k），Apache 2.0，localhost:1337 API 服务器" [ref=f14e783]
+                      - row [ref=f14e784]:
+                        - cell [ref=f14e785]:
+                          - strong [ref=f14e786]: 框架趋势
+                        - cell "Tauri（Rust）正在替代 Electron 成为新项目首选" [ref=f14e787]
+                      - row [ref=f14e788]:
+                        - cell [ref=f14e789]:
+                          - strong [ref=f14e790]: 能力趋势
+                        - cell "MCP 集成已成标配，agentic 能力是当前竞争焦点" [ref=f14e791]
+                      - row [ref=f14e792]:
+                        - cell [ref=f14e793]:
+                          - strong [ref=f14e794]: 早期项目
+                        - cell "lencx/ChatGPT、BingGPT 已停滞，被新项目全面超越" [ref=f14e795]
+                  - heading "报告覆盖内容" [level=3] [ref=f14e796]
+                  - list [ref=f14e797]:
+                    - listitem [ref=f14e798]: 13 个项目的逐一分析（stars、技术栈、功能、活跃度）
+                    - listitem [ref=f14e799]: 按定位 / 技术栈 / 许可证的横向对比
+                    - listitem [ref=f14e800]: 活跃度评级（1-5 星）
+                    - listitem [ref=f14e801]: 选型建议（按场景推荐）
+                  - paragraph [ref=f14e802]: 如需深入某个项目的架构分析或安装体验对比，可以继续。
+              - button "复制消息" [ref=f14e803]
+            - generic [ref=f14e807]: 用 web_fetch 依次抓取这五个页面，提取每个页面的主标题、第一段内容、和发布时间，然后把结果整理成 markdown 表格：https://news.ycombinator.com/ https://github.com/trending https://www.producthunt.com/ https://dev.to/ https://lobste.rs/
+            - generic [ref=f14e812]:
+              - generic [ref=f14e813]:
+                - generic [ref=f14e815]:
+                  - button "已完成 7 个步骤 · 5 个工具 7 步 · 5 个工具" [expanded] [ref=f14e816]:
+                    - generic [ref=f14e819]: 已完成 7 个步骤 · 5 个工具
+                    - generic [ref=f14e820]: 7 步 · 5 个工具
+                  - list [ref=f14e824]:
+                    - listitem [ref=f14e825]:
+                      - button "查看思考过程" [expanded] [ref=f14e826]:
+                        - generic [ref=f14e827]: 思考
+                      - generic [ref=f14e834]:
+                        - paragraph [ref=f14e835]: 用户要求用 web_fetch 依次抓取五个页面：
+                        - list [ref=f14e836]:
+                          - listitem [ref=f14e837]:
+                            - link "https://news.ycombinator.com/" [ref=f14e838] [cursor=pointer]:
+                              - /url: https://news.ycombinator.com/
+                          - listitem [ref=f14e839]:
+                            - link "https://github.com/trending" [ref=f14e840] [cursor=pointer]:
+                              - /url: https://github.com/trending
+                          - listitem [ref=f14e841]:
+                            - link "https://www.producthunt.com/" [ref=f14e842] [cursor=pointer]:
+                              - /url: https://www.producthunt.com/
+                          - listitem [ref=f14e843]:
+                            - link "https://dev.to/" [ref=f14e844] [cursor=pointer]:
+                              - /url: https://dev.to/
+                          - listitem [ref=f14e845]:
+                            - link "https://lobste.rs/" [ref=f14e846] [cursor=pointer]:
+                              - /url: https://lobste.rs/
+                        - paragraph [ref=f14e847]: 提取每个页面的：主标题、第一段内容、发布时间，然后整理成 markdown 表格。
+                        - paragraph [ref=f14e848]: 这五个页面之间没有依赖关系，可以并行抓取。让我同时发起五个 web_fetch 调用。
+                        - paragraph [ref=f14e849]: 注意：producthunt 可能被 Cloudflare 拦截，lobste.rs 应该没问题。让我试试。
+                    - listitem [ref=f14e850]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e851]:
+                        - generic [ref=f14e852]:
+                          - generic "获取网页" [ref=f14e853]
+                          - generic [ref=f14e854]: 已完成
+                      - generic [ref=f14e857]:
+                        - generic "url=https://news.ycombinator.com/" [ref=f14e859]: news.ycombinator.com/
+                        - generic [ref=f14e860]: Hacker News Hacker News new | past | comments | ask | show | jobs | submit login 1. WorldClaw Agentic 3D open-world generation at scale ( tencent-hunyuan.github
+                        - generic [ref=f14e861]: "Hacker News Hacker News new | past | comments | ask | show | jobs | submit login 1. WorldClaw Agentic 3D open-world generation at scale ( tencent-hunyuan.github.io ) 130 points by EwanG 4 hours ago | hide | 44 comments 2. Compression is prediction ( ngrok.com ) 265 points by nikolay 6 hours ago | hide | 122 comments 3. Nvidia Nemotron 3.5 Lightning and NeMo Switchyard ( nvidia.com ) 184 points by droidjj 6 hours ago | hide | 93 comments 4. Mojo 1.0 ( modular.com ) 298 points by dayanruben 9 hours ago | hide | 132 comments 5. Stealing Reasoning Traces from Proprietary LLM APIs ( stolen-thoughts.com ) 503 points by quantumgarbage 12 hours ago | hide | 209 comments 6. OpenAI’s head of ethics leaves less than a year after joining ( ft.com ) 291 points by ilamont 13 hours ago | hide | 345 comments 7. CFTC declares market emergency, orders Kalshi to continue to operate in New York ( cftc.gov ) 119 points by michaefe 1 hour ago | hide | 101 comments 8. Making holograms with a pen plotter ( matelsky.com ) 119 points by DemiGuru 7 hours ago | hide | 12 comments 9. Show HN: iPhone app takes simultaneous images from 2 lenses, fuses into 1 photo ( photosynthesis.camera ) 210 points by sajomes 10 hours ago | hide | 214 comments 10. Show HN: Line9 – A Mermaid rendering engine with its own layout ( line9.ai ) 30 points by jumpalongjim 3 hours ago | hide | 6 comments 11. Grok Bot ( x.ai ) 150 points by rvz 8 hours ago | hide | 139 comments 12. Go is an ideal language for AI-assisted software engineering ( googleblog.com ) 281 points by 0xedb 9 hours ago | hide | 324 comments 13. How we used to get jobs: A newspaper classifieds story ( ironicsans.ghost.io ) 114 points by speckx 8 hours ago | hide | 91 comments 14. Retire the Abstractions ( stanford.edu ) 11 points by convexstrictly 2 hours ago | hide | 9 comments 15. Show HN: Tamron Lens Utility Alternative on Linux ( github.com/yikerman ) 24 points by xiaoyu2006 4 hours ago | hide | discuss 16. Neutrinos from Deep Inside Earth Provide a New Picture of the Mantle ( quantamagazine.org ) 5 points by rbanffy 1 hour ago | hide | discuss 17. Suzanne: AI tool for designing and manufacturing physical products ( suzanne3d.com ) 39 points by Samanthajeanneb 4 hours ago | hide | 28 comments 18. England set to be one of the first countries to eliminate hepatitis C ( bbc.com ) 492 points by stevekemp 13 hours ago | hide | 355 comments 19. New Bedford police officer accused of using Flock cameras to track ex-partner ( newbedfordlight.org ) 10 points by newsomix9xl 34 minutes ago | hide | 5 comments 20. pg_clickhouse v0.10: Subquery pushdown and 1000x faster TPC-H queries ( clickhouse.com ) 36 points by saisrirampur 4 hours ago | hide | 2 comments 21. Jolt: Clojure compiler implemented with Chez Scheme ( jolt-lang.github.io ) 151 points by mark_l_watson 11 hours ago | hide | 56 comments 22. Nvidia&#x27;s Risky Business ( stratechery.com ) 296 points by jonbaer 16 hours ago | hide | 141 comments 23. RSI Simulator ( paradigm.xyz ) 32 points by ckraeuter 5 hours ago | hide | 12 comments 24. Manus will return to operating as an independent company ( manus.im ) 138 points by thm 12 hours ago | hide | 68 comments 25. London Underground begins scanning passengers&#x27; faces ( btp.police.uk ) 232 points by BlueBerry2001 16 hours ago | hide | 256 comments 26. Emergent Introspective Awareness in Large Language Models ( arxiv.org ) 33 points by doener 5 hours ago | hide | 10 comments 27. Show HN: Git-knife – Edit commit messages, authors, and dates like a spreadsheet ( github.com/therealyt ) 133 points by YonathanTesfaye 11 hours ago | hide | 87 comments 28. CSS properties you should know for better text designs ( master.dev ) 79 points by ibobev 9 hours ago | hide | 7 comments 29. DEF CON crowd suspected in fake-hotspot attack on Delta flight ( arstechnica.com ) 19 points by dangle1 1 hour ago | hide | 4 comments 30. US hires over 2k video gamers as air traffic controllers ( cbsnews.com ) 84 points by shagie 2 hours ago | hide | 77 comments More Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:"
+                    - listitem [ref=f14e862]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e863]:
+                        - generic [ref=f14e864]:
+                          - generic "获取网页" [ref=f14e865]
+                          - generic [ref=f14e866]: 已完成
+                      - generic [ref=f14e869]:
+                        - generic "url=https://github.com/trending" [ref=f14e871]: github.com/trending
+                        - generic [ref=f14e872]: Trending repositories on GitHub today · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better
+                        - generic [ref=f14e873]: "Trending repositories on GitHub today · GitHub Skip to content Navigation Menu Sign in Appearance settings Platform AI CODE CREATION GitHub Copilot Write better code with AI GitHub Copilot app Direct agents from issue to merge MCP Registry Integrate external tools DEVELOPER WORKFLOWS Actions Automate any workflow Codespaces Instant dev environments Issues Plan and track work Code Review Manage code changes Code Quality Enforce quality at merge APPLICATION SECURITY GitHub Advanced Security Find and fix vulnerabilities Code security Secure your code as you build Secret protection Stop leaks before they start EXPLORE Why GitHub Documentation Blog Changelog Marketplace View all features Solutions BY COMPANY SIZE Enterprises Small and medium teams Startups Nonprofits BY USE CASE App Modernization DevSecOps DevOps CI/CD View all use cases BY INDUSTRY Healthcare Financial services Manufacturing Government View all industries View all solutions Resources EXPLORE BY TOPIC AI Software Development DevOps Security View all topics EXPLORE BY TYPE Customer stories Events & webinars Ebooks & reports Business insights GitHub Skills SUPPORT & SERVICES Documentation Customer support Community forum Trust center Partners View all resources Open Source COMMUNITY GitHub Sponsors Fund open source developers PROGRAMS Security Lab Maintainer Community Accelerator GitHub Stars Archive Program REPOSITORIES Topics Trending Collections Enterprise ENTERPRISE SOLUTIONS Enterprise platform AI-powered developer platform AVAILABLE ADD-ONS GitHub Advanced Security Enterprise-grade security features Copilot for Business Enterprise-grade AI features Premium Support Enterprise-grade 24/7 support Pricing Type / to search Sign in Sign up Appearance settings You signed in with another tab or window. Reload to refresh your session. You signed out in another tab or window. Reload to refresh your session. You switched accounts on another tab or window. Reload to refresh your session. Dismiss alert {{ message }} Explore Topics Trending Collections Events GitHub Sponsors Trending See what the GitHub community is most excited about today. Repositories Developers Spoken Language: Any Select a spoken language Abkhazian Afar Afrikaans Akan Albanian Amharic Arabic Aragonese Armenian Assamese Avaric Avestan Aymara Azerbaijani Bambara Bashkir Basque Belarusian Bengali Bihari languages Bislama Bosnian Breton Bulgarian Burmese Catalan, Valencian Chamorro Chechen Chichewa, Chewa, Nyanja Chinese Chuvash Cornish Corsican Cree Croatian Czech Danish Divehi, Dhivehi, Maldivian Dutch, Flemish Dzongkha English Esperanto Estonian Ewe Faroese Fijian Finnish French Fulah Galician Georgian German Greek, Modern Guarani Gujarati Haitian, Haitian Creole Hausa Hebrew Herero Hindi Hiri Motu Hungarian Interlingua (International Auxil... Indonesian Interlingue, Occidental Irish Igbo Inupiaq Ido Icelandic Italian Inuktitut Japanese Javanese Kalaallisut, Greenlandic Kannada Kanuri Kashmiri Kazakh Central Khmer Kikuyu, Gikuyu Kinyarwanda Kirghiz, Kyrgyz Komi Kongo Korean Kurdish Kuanyama, Kwanyama Latin Luxembourgish, Letzeburgesch Ganda Limburgan, Limburger, Limburgish Lingala Lao Lithuanian Luba-Katanga Latvian Manx Macedonian Malagasy Malay Malayalam Maltese Maori Marathi Marshallese Mongolian Nauru Navajo, Navaho North Ndebele Nepali Ndonga Norwegian Bokmål Norwegian Nynorsk Norwegian Sichuan Yi, Nuosu South Ndebele Occitan Ojibwa Church Slavic, Old Slavonic, Chu... Oromo Oriya Ossetian, Ossetic Punjabi, Panjabi Pali Persian Polish Pashto, Pushto Portuguese Quechua Romansh Rundi Romanian, Moldavian, Moldovan Russian Sanskrit Sardinian Sindhi Northern Sami Samoan Sango Serbian Gaelic, Scottish Gaelic Shona Sinhala, Sinhalese Slovak Slovenian Somali Southern Sotho Spanish, Castilian Sundanese Swahili Swati Swedish Tamil Telugu Tajik Thai Tigrinya Tibetan Turkmen Tagalog Tswana Tonga (Tonga Islands) Turkish Tsonga Tatar Twi Tahitian Uighur, Uyghur Ukrainian Urdu Uzbek Venda Vietnamese Volapük Walloon Welsh Wolof Western Frisian Xhosa Yiddish Yoruba Zhuang, Chuang Zulu Loading Language: Any Select a language Unknown languages 1C Enterprise 2-Dimensional Array 4D ABAP ABAP CDS ABNF ActionScript Ada Adblock Filter List Adobe Font Metrics Agda AGS Script AIDL Aiken AL ALGOL Alloy Alpine Abuild Altium Designer AMPL AngelScript Answer Set Programming Ant Build System Antlers ANTLR ApacheConf Apex API Blueprint APL Apollo Guidance Computer AppleScript Arc AsciiDoc ASL ASN.1 Classic ASP ASP.NET AspectJ Assembly Astro Asymptote ATS Augeas AutoHotkey AutoIt Avro IDL Awk B (Formal Method) B4X Ballerina BAML BASIC Batchfile Beef Befunge Berry BibTeX BibTeX Style Bicep Bikeshed Bison BitBake Blade BlitzBasic BlitzMax Bluespec Bluespec BH Boo Boogie BQN Brainfuck BrighterScript Brightscript Zeek Browserslist Bru BuildStream C C# C++ C-ObjDump C2hs Haskell C3 Cabal Config Caddyfile Cadence Cairo Cairo Zero CameLIGO Cangjie CAP CDS Cap'n Proto Carbon CartoCSS Ceylon Chapel Charity Checksums ChucK CIL Circom Cirru Clarion Clarity Classic ASP Clean Click CLIPS Clojure Closure Templates Cloud Firestore Security Rules Clue CMake COBOL CODEOWNERS CodeQL CoffeeScript ColdFusion ColdFusion CFC COLLADA Common Lisp Common Workflow Language Component Pascal CoNLL-U Cooklang Cool Rocq Prover Cpp-ObjDump CQL Creole crontab Crystal CSON Csound Csound Document Csound Score CSS CSV Cuda CUE Cue Sheet cURL Config Curry CWeb Cycript Cylc Cypher Cython D D-ObjDump D2 Dafny Darcs Patch Dart Daslang DataWeave Debian Package Control File DenizenScript desktop Dhall Diff DIGITAL Command Language dircolors DirectX 3D File DM DNS Zone Dockerfile Dogescript Dotenv DTrace Dune Dylan E E-mail Eagle Earthly Easybuild EBNF eC Ecere Projects ECL ECLiPSe Ecmarkup Edge EdgeQL EditorConfig Edje Data Collection edn Eiffel EJS Elixir Elm Elvish Elvish Transcript Emacs Lisp EmberScript E-mail EQ Erlang Euphoria F# F* Factor Fancy Fantom Faust Fennel FIGlet Font Filebench WML Filterscript FIRRTL fish Flix Fluent ...(已截断)"
+                    - listitem [ref=f14e874]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e875]:
+                        - generic [ref=f14e876]:
+                          - generic "获取网页" [ref=f14e877]
+                          - generic [ref=f14e878]: 已完成
+                      - generic [ref=f14e881]:
+                        - generic "url=https://www.producthunt.com/" [ref=f14e883]: www.producthunt.com/
+                        - generic [ref=f14e884]: Product Hunt – The best new products in tech. Best Products Launches Launch archive Most-loved launches by the community Launch Guide Checklists and pro tips fo
+                        - generic [ref=f14e885]: Product Hunt – The best new products in tech. Best Products Launches Launch archive Most-loved launches by the community Launch Guide Checklists and pro tips for launching News Newsletter The best of Product Hunt, every day Stories Tech news, interviews, and tips from makers Changelog New Product Hunt features and releases Forums Forums Ask questions, find support, and connect Kitty Points Leaderboard The highest scoring community members Streaks The most active community members Events Meet others online and in-person Advertise Subscribe Sign in Top Products Launching Today 1. Tines 3B The secure environment for agents, apps, and automations Developer Tools • Artificial Intelligence 41 375 2. BetterClaw Deploy AI Agent, 60 seconds & $0 forever Productivity • SaaS • Artificial Intelligence 82 295 3. Xirp The agentic development environment built by Spotify Spotify • Developer Tools • Bots 5 235 4. Equitybee Benchmark Compare your startup equity grant for free. Fintech • Data & Analytics • Career 31 222 5. Bullet 30-60% faster than Claude Code and Codex Productivity • Developer Tools • Vibe coding 34 204 Get the best of Product Hunt, directly in your inbox. Sign Up 6. bb The IDE that builds itself Developer Tools • Artificial Intelligence • GitHub 12 178 7. Continuum Remember what you know about the people you manage Mac • Productivity • Meetings 8 129 8. Vizard Agent One AI agent for every kind of video Productivity • Artificial Intelligence • Video 4 120 9. Product Analytics for Agents and Users Optimize Agent Actions with User Behavior. Analytics • Artificial Intelligence • Business Intelligence 5 114 Viktor.com An AI coworker that actually does the work Productivity • Artificial Intelligence • Business 126 691 10. Octomind Cloud and Hub One login, zero API keys — cloud agents + 27 models Productivity • Developer Tools • Artificial Intelligence 7 108 11. Gitar AI code review that fixes what it finds Software Engineering • Developer Tools • Artificial Intelligence 2 107 12. Cerenovus Proactively find the money your company is losing Artificial Intelligence • Consulting • Business Intelligence 9 107 13. agent-manager The fastest workflow for developing with AI Open Source • Developer Tools • Artificial Intelligence 5 98 14. Gotcha World&#x27;s First AI Copilot for Android. You talk. It acts. Android • Productivity • Artificial Intelligence 3 94 Fin Startups get Fin free for a year + 93% off Intercom Customer Communication • SaaS • Artificial Intelligence 24 605 15. VoiceGecko Open source, local voice-to-text Developer Tools • Audio 2 94 16. Lexi The operating system for legal work Productivity • SaaS • Legal 2 93 17. AMP by CanyonTechs AI AI agents that act. Automation that delivers. Software Engineering • Developer Tools • Artificial Intelligence 2 92 18. Switchy for Mac Switch your Magic Keyboard, Trackpad, and Mouse between Macs Mac • Productivity • Menu Bar Apps 4 84 19. ScreenMark Menu bar app for live annotations, whiteboard overlay + more Productivity • Education • Menu Bar Apps 3 81 Framer AI Agents Design and publish professional sites with AI Design Tools • Website Builder • Artificial Intelligence 28 887 20. AdmitRaven Duolingo for college applications Productivity • Writing • Education 3 78 See all of today&#x27;s products Trending Forum Threads p/ murror Your users prefer the AI that agrees with them. That&#x27;s the trap you have to design against. Upvote • 0 p/ general When is the right time to launch on Product Hunt? Upvote (430) • 362 p/ runevr 🎨 Do solo makers need a UI/UX designer? Upvote (105) • 47 p/ pushary Your agent does something wrong. How far does it reach before anyone notices? Upvote (191) • 156 View all Start new thread Subscribe Sign in Matt Swulinski I run growth at Wispr Flow, so I spend most of my time deep in AI tools and automation. I&#x27;d been following Fryderyk and the Zeta Labs team since Jace, their AI email assistant, and was impressed by how fast they shipped product. When Fryderyk showed me Viktor, it clicked immediately. I&#x27;d been spending hours building automations in Claude Code - stitching together context, writing scripts, trying to make things persistent and scheduled. Viktor did all of that natively. It just lives in Slack, already has the context from your tools and conversations, and runs on its own. But the thing that genuinely blew me away was the proactive behavior. Viktor doesn&#x27;t just wait for you to ask. It observes how your team works, chimes in when it spots something relevant, and suggests automations you didn&#x27;t think to set up. I&#x27;ve never seen an AI tool take initiative like that. I ended up advising the team on growth strategy because I believe this is how every team will work within a few years. Not another tab. Not another tool. A coworker that lives where your team already communicates. If you&#x27;re skeptical, give it your worst task. That&#x27;s what convinced me. Mamaku Gutre Cost-effective support solution for startups!thanks for sharing. Jurre Houtkamp Hey everyone, we’re shipping three huge Framer updates today. 1. Use Agents on the canvas to design, write, analyze, and organize your site. Including ways to connect your own AI’s like Claude Code or Codex to Framer. 2. Branching gives your team a safer way to try ideas before you publish. 3. The new Framer Community gives creators a place to share work and earn from it. Try them out and tell us what you think! Yesterday&#x27;s Top Products 1. oqoqo Build evals and custom benchmarks for real-world tasks Software Engineering • Developer Tools • Artificial Intelligence 37 365 2. Portfolio Lab AI investing, done responsibly Productivity • Investing • Artificial Intelligence 32 317 3. Paritok Spend up to 85% less and run 3× longer coding agent sessions Open Source • Developer Tools • Artificial Intelligence 30 267 4. SecondBrain Note by GenSpark A MagSafe AI Recorder That Acts for You Sales • Meetings • Artificial Intelligence 11 226 Fin Startups get ...(已截断)
+                    - listitem [ref=f14e886]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e887]:
+                        - generic [ref=f14e888]:
+                          - generic "获取网页" [ref=f14e889]
+                          - generic [ref=f14e890]: 已完成
+                      - generic [ref=f14e893]:
+                        - generic "url=https://dev.to/" [ref=f14e895]: dev.to/
+                        - generic [ref=f14e896]: DEV Community Skip to content Navigation menu Search Powered by Algolia Search Log in Create account DEV Community Close DEV Community is a community of 4,040,0
+                        - generic [ref=f14e897]: "DEV Community Skip to content Navigation menu Search Powered by Algolia Search Log in Create account DEV Community Close DEV Community is a community of 4,040,049 amazing developers We're a place where coders share, stay up-to-date and grow their careers. Create account Log in Home DEV Challenges DEV++ Videos DEV Education Tracks DEV Help Advertise on DEV Organization Accounts DEV Showcase About Contact Free Postgres Database DEV Shop mlh-logo-color-dark MLH Trends Other Code of Conduct Privacy Policy Terms of Use Twitter Facebook Github Instagram Twitch Mastodon Bluesky Popular Tags #ai #webdev #programming #productivity #javascript #tutorial #python #beginners #devops #opensource #security #machinelearning #automation #career #api #architecture #reviews #llm #crypto #discuss #news #seo #react #web3 #blockchain #typescript #node #aws #agents #database DEV Community A space to discuss and keep up software development and manage your software career Built on Forem — the open source software that powers DEV and other inclusive communities. Made with love and Ruby on Rails . DEV Community &copy; 2016 - 2026. Posts Relevant Latest Top 🚀 DEV Challenges Dropdown menu What's a billboard? Manage preferences Report billboard x Open a restaurant that doesn't exist. The Perfect Landing prompt is wide open: a real cafe, an imaginary diner, a recipe collection, or a food festival. Your call. Join our latest Frontend Challenge: Comfort Food Edition 🍲 Jess Lee Jess Lee Jess Lee Follow for The DEV Team Jul 29 Join our latest Frontend Challenge: Comfort Food Edition 🍲 # devchallenge # frontendchallenge # css # javascript 7 reactions Comments 1 comment 4 min read I Joined dev.to because... Overcoming personal hurdles through tech blogging FrancisTRᴅᴇᴠ (っ◔◡◔)っ FrancisTRᴅᴇᴠ (っ◔◡◔)っ FrancisTRᴅᴇᴠ (っ◔◡◔)っ Follow Aug 10 I Joined dev.to because... # discuss # community # writing # motivation 88 reactions Comments 46 comments 5 min read Hey all! I’m Jem, the DEV Community Program Coordinator Jem steps up as part-time coordinator Jem Jem Jem Follow for The DEV Team Aug 10 Hey all! I’m Jem, the DEV Community Program Coordinator # meta 97 reactions Comments 34 comments 2 min read How Many Introductions Away Are You From Pedro Pascal? A Practical Introduction to Graph Search Explains BFS using celebrity social networks Alexandra Alexandra Alexandra Follow Aug 11 How Many Introductions Away Are You From Pedro Pascal? A Practical Introduction to Graph Search # algorithms # datastructures # webdev 20 reactions Comments 17 comments 4 min read Backend Engineer (Me) Ships a Browser Game With One Unintentional System Requirement: My Monitor Summer Bug Smash: Smash Stories 🐛🛹 Giorgi Kobaidze Giorgi Kobaidze Giorgi Kobaidze Follow Aug 9 Backend Engineer (Me) Ships a Browser Game With One Unintentional System Requirement: My Monitor # devchallenge # bugsmash 43 reactions Comments 19 comments 10 min read The Mechanical vs. The Semantic: What Happens When AI Memory is Wrong? Tested on a 50K LOC Python codebase Mikhail Mikhail Mikhail Follow Aug 11 The Mechanical vs. The Semantic: What Happens When AI Memory is Wrong? # ai # agents # architecture # mcp 4 reactions Comments 17 comments 6 min read Nuxt 4.5 SSR Streaming Is Kind Of A Big Deal Erik Hanchett Erik Hanchett Erik Hanchett Follow Aug 11 Nuxt 4.5 SSR Streaming Is Kind Of A Big Deal # nuxt # vue # ssr # webdev 18 reactions Comments 2 comments 5 min read The End of Undetectable AI Text? Claude’s New Watermark Explained Sylwia Laskowska Sylwia Laskowska Sylwia Laskowska Follow Aug 11 The End of Undetectable AI Text? Claude’s New Watermark Explained # news # ai # llm 16 reactions Comments 7 comments 6 min read MAI-Code-1-Flash Highlights Microsoft’s Lower-Cost Approach to Coding AI Ali Farhat Ali Farhat Ali Farhat Follow Aug 11 MAI-Code-1-Flash Highlights Microsoft’s Lower-Cost Approach to Coding AI # ai # automation # tools # microsoft Comments Add Comment 5 min read Apple quietly shipped everything you need to build a real-time translator — so I built one Yuiko Koyanagi Yuiko Koyanagi Yuiko Koyanagi Follow Aug 11 Apple quietly shipped everything you need to build a real-time translator — so I built one # showdev # swift # ai # macos 6 reactions Comments Add Comment 6 min read Jem has quietly been working behind-the-scenes here at DEV for YEARS, and I'm so happy that they are finally introducing themselves to everyone!! Jess Lee Jess Lee Jess Lee Follow Aug 10 Jem has quietly been working behind-the-scenes here at DEV for YEARS, and I'm so happy that they are finally introducing themselves to everyone!! Hey all! I’m Jem, the DEV Community Program Coordinator It feels good to finally be writing this. I've been working part-time behind the scenes at DEV for... dev.to 25 reactions Comments Add Comment 1 min read Top 7 Featured DEV Posts of the Week Jem Jem Jem Follow for The DEV Team Aug 11 Top 7 Featured DEV Posts of the Week # discuss # top7 35 reactions Comments 12 comments 3 min read Ignition: Flashing 2,300 conference badges with Temporal Shy Ruparel Shy Ruparel Shy Ruparel Follow for Temporal Aug 11 Ignition: Flashing 2,300 conference badges with Temporal # temporal # durableexecution # retries # badges Comments 1 comment 11 min read Ayo GitHub Quietly Killed the Unreviewable Mega-PR How AI-driven coding made massive diffs worse Athreya aka Maneshwar Athreya aka Maneshwar Athreya aka Maneshwar Follow Aug 10 Ayo GitHub Quietly Killed the Unreviewable Mega-PR # webdev # programming # productivity # github 33 reactions Comments 6 comments 7 min read Mistral AI Third-Party Model Claim Raises Key Questions for Enterprise AI Teams Ali Farhat Ali Farhat Ali Farhat Follow Aug 12 Mistral AI Third-Party Model Claim Raises Key Questions for Enterprise AI Teams # ai # automation # tools # mistral Comments Add Comment 4 min read The Accidental DDOS: How a Single React Bracket Triggered 100,000 API Requests and Melted Our Database Summer Bug Smash: Smash Stories 🐛🛹 Pooja Bhavani ...(已截断)"
+                    - listitem [ref=f14e898]:
+                      - button "查看 web_fetch 结果" [expanded] [ref=f14e899]:
+                        - generic [ref=f14e900]:
+                          - generic "获取网页" [ref=f14e901]
+                          - generic [ref=f14e902]: 已完成
+                      - generic [ref=f14e905]:
+                        - generic "url=https://lobste.rs/" [ref=f14e907]: lobste.rs/
+                        - generic [ref=f14e908]: Lobsters Active Recent Comments Search Login Login 49 GNOME Shell Design Dreams design blogs.gnome.org via FedericoSchonborn 2026-08-11 09:08:21 | caches Archiv
+                        - generic [ref=f14e909]: "Lobsters Active Recent Comments Search Login Login 49 GNOME Shell Design Dreams design blogs.gnome.org via FedericoSchonborn 2026-08-11 09:08:21 | caches Archive.org Ghostarchive | 12 comments 12 40 Reviewing code is a skill practices vibecoding typesanitizer.com authored by typesanitizer 2026-08-11 00:37:40 | caches Archive.org Ghostarchive | 13 comments 13 8 My Anti AI computer &#x2636; vibecoding punkx.org authored by jackdoe 2026-08-11 12:31:53 | caches Archive.org Ghostarchive | 18 comments 18 12 Compression is prediction ai programming ngrok.com via gmem 2026-08-11 14:35:12 | caches Archive.org Ghostarchive | 4 comments 4 23 Briar is in maintenance mode mobile networking briarproject.org via patternist 2026-08-11 07:22:26 | caches Archive.org Ghostarchive | 7 comments 7 2 Text Watermarking for Non-Academics &#x2636; ai blog.gaborkoos.com authored by gkoos 2026-08-11 19:29:31 | caches Archive.org Ghostarchive | 3 comments 3 17 The fastest double-to-string algorithm you’ve never heard of performance vitaut.net via fanf 2026-08-11 11:42:55 | caches Archive.org Ghostarchive | 3 comments 3 83 Chicken Scheme 6.0 released lisp release code.call-cc.org via eatonphil 2026-08-10 19:24:07 | caches Archive.org Ghostarchive | 6 comments 6 10 There's a dungeon under this blog games vibecoding web blog.lvmbdv.dev authored by lvmbdv 2026-08-11 04:02:29 | caches Archive.org Ghostarchive | 16 comments 16 13 Making [etched] holograms with a pen plotter show art graphics math blog.jordan.matelsky.com authored by jor 2026-08-11 07:13:18 | caches Archive.org Ghostarchive | 1 comment 1 12 msword: Port of Microsoft Word 1.1a to x64 retrocomputing windows github.com/jmarshall23 via malxau 2026-08-11 09:20:29 | caches Archive.org Ghostarchive | 3 comments 3 12 Mojo 1.0 is here programming python vibecoding modular.com via dayanruben 2026-08-11 11:59:09 | caches Archive.org Ghostarchive | no comments 0 13 A noob learns FFT math visualization entropicthoughts.com via abhin4v 2026-08-11 07:41:37 | caches Archive.org Ghostarchive | 3 comments 3 23 No, local models will not win vibecoding seangoedecke.com via liberty 2026-08-10 22:27:08 | caches Archive.org Ghostarchive | 41 comments 41 38 Bevy's Sixth Birthday games rust bevy.org via andyfriesen 2026-08-10 22:36:25 | caches Archive.org Ghostarchive | 2 comments 2 65 A researcher bought noreply.net. Companies started sending him secrets privacy security arstechnica.com via hoistbypetard 2026-08-10 11:47:33 | caches Archive.org Ghostarchive | 18 comments 18 6 Performance impact of Alignment java performance eme64.github.io via dbremner 2026-08-11 11:00:14 | caches Archive.org Ghostarchive | 1 comment 1 30 Odd Comments and Strange Doings in Unix historical unix 9p.io via orib 2026-08-10 22:10:05 | caches Archive.org Ghostarchive | 4 comments 4 8 Reducing Graphics API Complexity: A Clean Slate Design for Modern GPUs &#x2636; video api graphics youtube.com via payne 2026-08-11 10:53:46 | caches Archive.org Ghostarchive | no comments 0 47 GitHub Actions needs OIDC audience constraints security blog.yossarian.net authored by yossarian 2026-08-10 08:30:18 | caches Archive.org Ghostarchive | 14 comments 14 19 Squeak 6.1 release squeak.org via sanxiyn 2026-08-11 01:40:53 | caches Archive.org Ghostarchive | 1 comment 1 85 a pure css implementation of some sunlight streaming in through the window css design web github.com/jackyzha0 via juliethefoxcoon 2026-08-10 10:29:34 | caches Archive.org Ghostarchive | 6 comments 6 100 Firefox Containers Preview browsers blog.mozilla.org via freddyb 2026-08-10 04:37:18 | caches Archive.org Ghostarchive | 30 comments 30 104 Toggles Considered Harmful design ignorethecode.net via wezm 2026-08-10 03:04:12 | caches Archive.org Ghostarchive | 35 comments 35 7 Cleaning costs, or, examining the OpenBSD -fret-clean flag openbsd briancallahan.net via nomnp 2026-08-11 09:44:05 | caches Archive.org Ghostarchive | no comments 0 Page 2 About Tags Filter Moderation Log"
+                    - listitem [ref=f14e910]:
+                      - button "查看思考过程" [expanded] [ref=f14e911]:
+                        - generic [ref=f14e912]: 思考
+                      - generic [ref=f14e919]:
+                        - paragraph [ref=f14e920]: 我已经抓取到了五个页面。现在需要提取每个页面的：
+                        - list [ref=f14e921]:
+                          - listitem [ref=f14e922]: 主标题（Main title）
+                          - listitem [ref=f14e923]: 第一段内容（First paragraph）
+                          - listitem [ref=f14e924]: 发布时间（Publication time）
+                        - paragraph [ref=f14e925]: 让我逐个分析：
+                        - heading [level=3] [ref=f14e926]:
+                          - text: 1. Hacker News (
+                          - link "https://news.ycombinator.com/" [ref=f14e927] [cursor=pointer]:
+                            - /url: https://news.ycombinator.com/
+                          - text: )
+                        - list [ref=f14e928]:
+                          - listitem [ref=f14e929]: "主标题: \"Hacker News\""
+                          - listitem [ref=f14e930]: "第一段内容: Hacker News 首页没有传统意义上的\"第一段内容\"，它是一个标题列表。最热门的帖子是 \"WorldClaw Agentic 3D open-world generation at scale\"（130 points）或者按 points 看第一个。通常 HN 首页第一条就是第一个帖子。第一条是 \"WorldClaw Agentic 3D open-world generation at scale\"，130 points，4 hours ago。"
+                          - listitem [ref=f14e931]: "发布时间: HN 是实时更新的新闻聚合，首页内容持续更新。发布时间可以用第一条帖子 \"4 hours ago\"（2026-08-12，相对当前日期）。"
+                        - paragraph [ref=f14e932]: 其实用户要求的是"主标题、第一段内容、发布时间"——对于新闻聚合类网站，主标题就是站点名，第一段内容可以理解为第一条新闻条目，发布时间就是第一条新闻的时间。
+                        - paragraph [ref=f14e933]: 让我按这个思路提取：
+                        - heading "1. Hacker News" [level=3] [ref=f14e934]
+                        - list [ref=f14e935]:
+                          - listitem [ref=f14e936]: "主标题: Hacker News"
+                          - listitem [ref=f14e937]: "第一段（首条帖子）: \"WorldClaw Agentic 3D open-world generation at scale\"（130 points, 44 comments）"
+                          - listitem [ref=f14e938]: "发布时间: 4 hours ago（约 2026-08-12）"
+                        - heading [level=3] [ref=f14e939]:
+                          - text: 2. GitHub Trending (
+                          - link "https://github.com/trending" [ref=f14e940] [cursor=pointer]:
+                            - /url: https://github.com/trending
+                          - text: )
+                        - list [ref=f14e941]:
+                          - listitem [ref=f14e942]: "主标题: \"Trending repositories on GitHub today\" / 页面标题 \"Trending repositories on GitHub today · GitHub\""
+                          - listitem [ref=f14e943]: "第一段内容: 页面描述 \"See what the GitHub community is most excited about today.\""
+                          - listitem [ref=f14e944]: "发布时间: 动态页面，无具体发布时间；以\"today\"标注。仓库列表内容是动态的。实际上 GitHub trending 页面没有明确的发布时间戳，是\"today\"。"
+                        - heading [level=3] [ref=f14e945]:
+                          - text: 3. Product Hunt (
+                          - link "https://www.producthunt.com/" [ref=f14e946] [cursor=pointer]:
+                            - /url: https://www.producthunt.com/
+                          - text: )
+                        - list [ref=f14e947]:
+                          - listitem [ref=f14e948]: "主标题: \"Product Hunt – The best new products in tech.\""
+                          - listitem [ref=f14e949]: "第一段内容: \"Top Products Launching Today\" 下的第一项 \"Tines 3B — The secure environment for agents, apps, and automations\"（Developer Tools • Artificial Intelligence，41 upvotes，375 comments）。或者按 featured 排序，Viktor.com 是 featured（126 691）。但列表第一项是 Tines 3B。"
+                          - listitem [ref=f14e950]: "发布时间: 每天更新，今天的 Top Products。Viktor.com 是 featured，有 691 comments。"
+                        - heading [level=3] [ref=f14e951]:
+                          - text: 4. DEV Community (
+                          - link "https://dev.to/" [ref=f14e952] [cursor=pointer]:
+                            - /url: https://dev.to/
+                          - text: )
+                        - list [ref=f14e953]:
+                          - listitem [ref=f14e954]: "主标题: \"DEV Community\""
+                          - listitem [ref=f14e955]: "第一段内容: \"DEV Community is a community of 4,040,049 amazing developers\" 或 \"We're a place where coders share, stay up-to-date and grow their careers.\" 第一篇文章是 Frontend Challenge: Comfort Food Edition (Jess Lee, Jul 29)。"
+                          - listitem [ref=f14e956]: "发布时间: 最新文章 \"Mistral AI Third-Party Model Claim Raises Key Questions for Enterprise AI Teams\"（Aug 12）。第一篇文章（Featured）是 \"Join our latest Frontend Challenge: Comfort Food Edition\"（Jul 29）。"
+                        - heading [level=3] [ref=f14e957]:
+                          - text: 5. Lobsters (
+                          - link "https://lobste.rs/" [ref=f14e958] [cursor=pointer]:
+                            - /url: https://lobste.rs/
+                          - text: )
+                        - list [ref=f14e959]:
+                          - listitem [ref=f14e960]: "主标题: \"Lobsters\""
+                          - listitem [ref=f14e961]: "第一段内容: 第一篇文章 \"GNOME Shell Design Dreams\"（design blogs.gnome.org，12 comments）"
+                          - listitem [ref=f14e962]: "发布时间: 2026-08-11 09:08:21"
+                        - paragraph [ref=f14e963]: 现在整理成 markdown 表格。表格列：网站 | 主标题 | 第一段内容 | 发布时间。
+                        - paragraph [ref=f14e964]: 用户要求"把结果整理成 markdown 表格"。我应该给出一张清晰的表格，把五个站点的信息整理好。同时可以补充说明提取方式（例如新闻聚合站点的"第一段内容"取的是首页首条条目）。
+                        - paragraph [ref=f14e965]: 注意发布时间：
+                        - list [ref=f14e966]:
+                          - listitem [ref=f14e967]: "HN: 首条帖子 4 hours ago（抓取时间为 2026-08-12，Asia/Shanghai，所以约 2026-08-12 凌晨/上午）"
+                          - listitem [ref=f14e968]: "GitHub Trending: 无固定发布时间，动态更新（\"today\"）"
+                          - listitem [ref=f14e969]: "Product Hunt: 每日更新（\"Launching Today\"）"
+                          - listitem [ref=f14e970]: "dev.to: 最新帖子 Aug 12（\"Mistral AI Third-Party Model Claim...\"）"
+                          - listitem [ref=f14e971]: "Lobsters: 首条帖子 2026-08-11 09:08:21"
+                        - paragraph [ref=f14e972]: 这样整理即可。
+                - generic [ref=f14e975]:
+                  - paragraph [ref=f14e976]: 好的，我并行抓取这五个页面。 五个页面已全部抓取成功。以下是提取结果：
+                  - heading "抓取结果汇总表" [level=2] [ref=f14e977]
+                  - table [ref=f14e978]:
+                    - rowgroup [ref=f14e979]:
+                      - row [ref=f14e980]:
+                        - columnheader "网站" [ref=f14e981]
+                        - columnheader "主标题" [ref=f14e982]
+                        - columnheader "第一段内容（首页首条）" [ref=f14e983]
+                        - columnheader "发布时间" [ref=f14e984]
+                    - rowgroup [ref=f14e985]:
+                      - row [ref=f14e986]:
+                        - cell [ref=f14e987]:
+                          - strong [ref=f14e988]: Hacker News
+                          - text: (news.ycombinator.com)
+                        - cell "Hacker News" [ref=f14e989]
+                        - cell "WorldClaw Agentic 3D open-world generation at scale（tencent-hunyuan.github.io，130 points / 44 comments）" [ref=f14e990]
+                        - cell "4 hours ago（约 2026-08-12，实时更新）" [ref=f14e991]
+                      - row [ref=f14e992]:
+                        - cell [ref=f14e993]:
+                          - strong [ref=f14e994]: GitHub Trending
+                          - text: (github.com/trending)
+                        - cell "Trending repositories on GitHub today" [ref=f14e995]
+                        - cell "\"See what the GitHub community is most excited about today.\"（首页无条目式正文，仅此副标题描述）" [ref=f14e996]
+                        - cell "无固定时间戳，按\"today\"动态刷新" [ref=f14e997]
+                      - row [ref=f14e998]:
+                        - cell [ref=f14e999]:
+                          - strong [ref=f14e1000]: Product Hunt
+                          - text: (producthunt.com)
+                        - cell "Product Hunt – The best new products in tech." [ref=f14e1001]
+                        - cell "Tines 3B — The secure environment for agents, apps, and automations（Developer Tools • AI，41 upvotes / 375 comments；另有置顶精选 Viktor.com，126 upvotes / 691 comments）" [ref=f14e1002]
+                        - cell "每日更新（\"Launching Today\"，2026-08-12）" [ref=f14e1003]
+                      - row [ref=f14e1004]:
+                        - cell [ref=f14e1005]:
+                          - strong [ref=f14e1006]: DEV Community
+                          - text: (dev.to)
+                        - cell "DEV Community" [ref=f14e1007]
+                        - 'cell "\"DEV Community is a community of 4,040,049 amazing developers\"（社区简介）；首条内容为 Frontend Challenge: Comfort Food Edition 活动帖（Jess Lee，Jul 29）" [ref=f14e1008]'
+                        - cell "最新帖 Aug 12（Mistral AI Third-Party Model Claim…）" [ref=f14e1009]
+                      - row [ref=f14e1010]:
+                        - cell [ref=f14e1011]:
+                          - strong [ref=f14e1012]: Lobsters
+                          - text: (lobste.rs)
+                        - cell "Lobsters" [ref=f14e1013]
+                        - cell "GNOME Shell Design Dreams（design blogs.gnome.org，12 comments）" [ref=f14e1014]
+                        - cell "2026-08-11 09:08:21（首条帖子）" [ref=f14e1015]
+                  - heading "说明" [level=2] [ref=f14e1016]
+                  - list [ref=f14e1017]:
+                    - listitem [ref=f14e1018]:
+                      - strong [ref=f14e1019]: 主标题
+                      - text: 取各站
+                      - code [ref=f14e1020]: <title>
+                      - text: / 站点品牌名；
+                      - strong [ref=f14e1021]: 第一段内容
+                      - text: 对新闻聚合站（HN、Lobsters、Product Hunt）取首页首条条目，对社区站（dev.to）取简介句。
+                    - listitem [ref=f14e1022]:
+                      - strong [ref=f14e1023]: 发布时间
+                      - text: ：HN 和 GitHub Trending 是实时动态页，无固定发布日期；HN 首条帖子标注 4 小时前，其余站点为当日或最近日期。
+                    - listitem [ref=f14e1024]: 抓取时点：2026-08-12（Asia/Shanghai）。
+                  - paragraph [ref=f14e1025]: 需要我进一步抓取某个站点的完整首屏文章列表，或对某个条目深入分析，随时说。
+              - button "复制消息" [ref=f14e1026]
+            - generic [ref=f14e1030]: 请帮我详细分析下 vite 配置文件中的 proxy 配置对前端开发的影响，特别是 /api 代理的行为
+            - generic [ref=f14e1035]:
+              - generic [ref=f14e1036]:
+                - generic [ref=f14e1038]:
+                  - button "已完成 15 个步骤 · 9 个工具 15 步 · 9 个工具" [expanded] [ref=f14e1039]:
+                    - generic [ref=f14e1042]: 已完成 15 个步骤 · 9 个工具
+                    - generic [ref=f14e1043]: 15 步 · 9 个工具
+                  - list [ref=f14e1047]:
+                    - listitem [ref=f14e1048]:
+                      - button "查看思考过程" [expanded] [ref=f14e1049]:
+                        - generic [ref=f14e1050]: 思考
+                      - generic [ref=f14e1057]:
+                        - paragraph [ref=f14e1058]: 用户问的是 Vite 配置文件中的 proxy 配置对前端开发的影响，特别是 /api 代理的行为。这是一个技术问题，不涉及时效性数据，不需要网络搜索。我可以直接基于知识回答。
+                        - paragraph [ref=f14e1059]: 不过，用户提到"vite 配置文件"，也许我应该看看他们的项目里是否有 vite 配置文件？但工作目录是 D:\studyspace\project\my-agent，之前看到的是 TypeScript 项目（chat.ts 等），看起来是个 agent 项目，不是标准 Vite 前端项目。让我检查一下是否有 vite 配置文件可以结合实际分析。
+                        - paragraph [ref=f14e1060]: 先搜索一下项目里的 vite 配置文件。之前 list_files 显示有 package.json、tsconfig.json、vitest.config.ts，没看到 vite.config.ts。让我确认一下。
+                        - paragraph [ref=f14e1061]: 如果项目里没有 vite 配置文件，我就基于通用知识回答。但为了"详细分析"，结合实际文件更好。让我搜索一下。
+                        - paragraph [ref=f14e1062]: 其实用户的问题更像是一个通用技术问题："请帮我详细分析下 vite 配置文件中的 proxy 配置对前端开发的影响，特别是 /api 代理的行为"。可能用户在开发前端项目，想了解 proxy 的作用。
+                        - paragraph [ref=f14e1063]: 让我先快速检查项目里是否有 vite 配置，然后给出详细回答。如果没有，就给出通用分析。
+                    - listitem [ref=f14e1064]:
+                      - button "查看 search_files 结果" [expanded] [ref=f14e1065]:
+                        - generic [ref=f14e1066]:
+                          - generic "搜索文件" [ref=f14e1067]
+                          - generic [ref=f14e1068]: 已完成
+                      - generic [ref=f14e1071]:
+                        - generic [ref=f14e1072]: "pattern: vite.config.*"
+                        - generic [ref=f14e1074]: "🔍 搜索 \"vite.config.*\" (1 个结果): web\\vite.config.ts"
+                        - generic [ref=f14e1075]: "🔍 搜索 \"vite.config.*\" (1 个结果): web\\vite.config.ts"
+                    - listitem [ref=f14e1076]:
+                      - button "查看 grep_files 结果" [expanded] [ref=f14e1077]:
+                        - generic [ref=f14e1078]:
+                          - generic "搜索内容" [ref=f14e1079]
+                          - generic [ref=f14e1080]: 已完成
+                      - generic [ref=f14e1083]:
+                        - generic "query=proxy" [ref=f14e1085]: proxy
+                        - generic [ref=f14e1086]: "🔍 grep \"proxy\" (1 个结果): web\\vite.config.ts:25: proxy: {"
+                        - generic [ref=f14e1087]: "🔍 grep \"proxy\" (1 个结果): web\\vite.config.ts:25: proxy: {"
+                    - listitem [ref=f14e1088]:
+                      - button "查看思考过程" [expanded] [ref=f14e1089]:
+                        - generic [ref=f14e1090]: 思考
+                      - paragraph [ref=f14e1098]:
+                        - text: 项目里确实有
+                        - code [ref=f14e1099]: web/vite.config.ts
+                        - text: ，并且第 25 行有 proxy 配置。让我读取这个文件看看实际配置。
+                    - listitem [ref=f14e1100]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e1101]:
+                        - generic [ref=f14e1102]:
+                          - generic "读取文件" [ref=f14e1103]
+                          - generic [ref=f14e1104]: 已完成
+                      - generic [ref=f14e1107]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\web\\vite.config.ts" [ref=f14e1109]: vite.config.ts
+                        - generic [ref=f14e1110]: "📄 vite.config.ts (30 行, 558 字符) 1| import { defineConfig } from 'vite'; 2| import react from '@vitejs/plugin-react'; 3| import path from 'node:path'; 4| 5| exp"
+                        - generic [ref=f14e1111]: "📄 vite.config.ts (30 行, 558 字符) 1| import { defineConfig } from 'vite'; 2| import react from '@vitejs/plugin-react'; 3| import path from 'node:path'; 4| 5| export default defineConfig({ 6| base: './', 7| plugins: [react()], 8| resolve: { 9| alias: { 10| '@': path.resolve(__dirname, 'src'), 11| }, 12| }, 13| build: { 14| target: 'es2022', 15| rollupOptions: { 16| output: { 17| manualChunks: { 18| 'react-vendor': ['react', 'react-dom'], 19| }, 20| }, 21| }, 22| }, 23| server: { 24| port: 5173, 25| proxy: { 26| '/api': 'http://localhost:4321', 27| }, 28| }, 29| }); 30|"
+                    - listitem [ref=f14e1112]:
+                      - button "查看思考过程" [expanded] [ref=f14e1113]:
+                        - generic [ref=f14e1114]: 思考
+                      - generic [ref=f14e1121]:
+                        - paragraph [ref=f14e1122]: 现在我有实际的配置文件了。让我看一下项目的其他部分，了解 /api 是做什么的。让我看看 package.json 和 web 目录结构，以及是否有后端服务在 4321 端口。
+                        - paragraph [ref=f14e1123]: 让我快速查看一下项目结构和 package.json，了解前端和后端的关系。
+                    - listitem [ref=f14e1124]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e1125]:
+                        - generic [ref=f14e1126]:
+                          - generic "读取文件" [ref=f14e1127]
+                          - generic [ref=f14e1128]: 已完成
+                      - generic [ref=f14e1131]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\package.json" [ref=f14e1133]: package.json
+                        - generic [ref=f14e1134]: "📄 package.json (27 行, 548 字符) 1| { 2| \"name\": \"my-agent\", 3| \"version\": \"0.1.0\", 4| \"type\": \"module\", 5| \"bin\": { 6| \"my-agent-web\": \"bin/my-agent-web.ts\" 7| }"
+                        - generic [ref=f14e1135]: "📄 package.json (27 行, 548 字符) 1| { 2| \"name\": \"my-agent\", 3| \"version\": \"0.1.0\", 4| \"type\": \"module\", 5| \"bin\": { 6| \"my-agent-web\": \"bin/my-agent-web.ts\" 7| }, 8| \"scripts\": { 9| \"check\": \"tsc --noEmit\", 10| \"test\": \"vitest run\", 11| \"test:watch\": \"vitest\", 12| \"chat\": \"tsx chat.ts\", 13| \"web\": \"tsx bin/my-agent-web.ts\" 14| }, 15| \"dependencies\": { 16| \"async-mutex\": \"^0.5.0\", 17| \"dotenv\": \"^16.6.1\", 18| \"zod\": \"^3.24.0\" 19| }, 20| \"devDependencies\": { 21| \"@types/node\": \"^22.0.0\", 22| \"tsx\": \"^4.0.0\", 23| \"typescript\": \"^5.7.0\", 24| \"vitest\": \"^2.0.0\" 25| } 26| } 27|"
+                    - listitem [ref=f14e1136]:
+                      - button "查看 list_files 结果" [expanded] [ref=f14e1137]:
+                        - generic [ref=f14e1138]:
+                          - generic "列出文件" [ref=f14e1139]
+                          - generic [ref=f14e1140]: 已完成
+                      - generic [ref=f14e1143]:
+                        - generic [ref=f14e1144]: "dirPath: D:\\studyspace\\project\\my-agent\\web, depth: 2"
+                        - generic [ref=f14e1146]: <persisted-output ref="2d21d3f824e29fc9" tool="list_files" size="98925" estimated_tokens="23178" status="success"> 📁 D:\studyspace\project\my-agent\web 📁 dist
+                        - generic [ref=f14e1147]: <persisted-output ref="2d21d3f824e29fc9" tool="list_files" size="98925" estimated_tokens="23178" status="success"> 📁 D:\studyspace\project\my-agent\web 📁 dist/ 📁 dist/assets/ 📄 dist/assets/index-D0i4P0Jc.css (76.9 KB) 📄 dist/assets/index-jEIXZ1bn.js (1.7 MB) 📄 dist/assets/react-vendor-CYSfZuHu.js (11.5 KB) 📁 dist/fonts/ 📄 dist/fonts/Inter-Bold.woff2 (0 B) 📄 dist/fonts/Inter-Regular.woff2 (0 B) 📄 dist/fonts/JetBrainsMono-Regular.woff2 (0 B) 📄 dist/brainstorm-cycle.html (18.6 KB) 📄 dist/index.html (786 B) 📁 node_modules/ 📁 node_modules/@adobe/ 📁 node_modules/@adobe/css-tools/ 📁 node_modules/@alloc/ 📁 node_modules/@alloc/quick-lru/ 📁 node_modules/@asamuzakjp/ 📁 node_modules/@asamuzakjp/css-color/ 📁 node_modules/@axe-core/ 📁 node_modules/@axe-core/playwright/ 📁 node_modules/@babel/ 📁 node_modules/@babel/code-frame/ 📁 node_modules/@babel/compat-data/ 📁 node_modules/@babel/core/ 📁 node_modules/@babel/generator/ 📁 node_modules/@babel/helper-compilation-targets/ 📁 node_modules/@babel/helper-globals/ 📁 node_modules/@babel/helper-module-imports/ 📁 node_modules/@babel/helper-module-transforms/ 📁 node_modules/@babel/helper-plugin-utils/ 📁 node_modules/@babel/helper-string-parser/ 📁 node_modules/@babel/helper-validator-identifier/ 📁 node_modules/@babel/helper-validator-option/ 📁 node_modules/@babel/helpers/ 📁 node_modules/@babel/parser/ 📁 node_modules/@babel/plugin-transform-react-jsx-self/ 📁 node_modules/@babel/plugin-transform-react-jsx-source/ 📁 node_modules/@babel/runtime/ 📁 node_modules/@babel/template/ 📁 node_modules/@babel/traverse/ 📁 node_modules/@babel/types/ 📁 node_modules/@csstools/ 📁 node_modules/@csstools/color-helpers/ 📁 node_modules/@csstools/css-calc/ 📁 node_modules/@csstools/css-color-parser/ 📁 node_modules/@csstools/css-parser-algorithms/ 📁 node_modules/@csstools/css-tokenizer/ 📁 node_modules/@es ... [92323 字符省略] ... ts.test.tsx (1.6 KB) 📄 tests/unit/sse.test.ts (1.6 KB) 📄 tests/unit/static-ext.test.ts (564 B) 📄 tests/unit/task-suggestions.test.ts (3.1 KB) 📄 tests/unit/theme.test.ts (501 B) 📄 tests/unit/tools-hooks.test.tsx (3.2 KB) 📄 tests/unit/tools-page.test.tsx (5.7 KB) 📄 tests/unit/upload-attachment-stub.test.ts (2.6 KB) 📄 tests/unit/use-task-suggestions.test.tsx (4.0 KB) 📄 tests/unit/validate-attachment.test.ts (6.1 KB) 📄 index.html (602 B) 📄 package-lock.json (238.6 KB) 📄 package.json (1.4 KB) 📄 playwright.config.ts (650 B) 📄 postcss.config.js (61 B) 📄 tsconfig.json (468 B) 📄 tsconfig.tsbuildinfo (3.7 KB) 📄 vite.config.ts (558 B) 📄 vitest.config.ts (371 B) 共 2072 项 [Full content is stored under result ref 2d21d3f824e29fc9. Use tool_result_search(ref, query) first, or tool_result_read_chunk(ref, cursor, maxTokens) for an exact bounded slice. Do not use read_file on the stored path. </persisted-output>
+                    - listitem [ref=f14e1148]:
+                      - button "查看 grep_files 结果" [expanded] [ref=f14e1149]:
+                        - generic [ref=f14e1150]:
+                          - generic "搜索内容" [ref=f14e1151]
+                          - generic [ref=f14e1152]: 已完成
+                      - generic [ref=f14e1155]:
+                        - generic "query=4321" [ref=f14e1157]: "4321"
+                        - generic [ref=f14e1158]: "🔍 grep \"4321\" (10 个结果): bin\\my-agent-web.ts:13: * - `MY_AGENT_WEB_PORT` 监听端口，默认 4321 bin\\my-agent-web.ts:60: const port = parsePort(process.env.MY_AGENT_WEB_PO"
+                        - generic [ref=f14e1159]: "🔍 grep \"4321\" (10 个结果): bin\\my-agent-web.ts:13: * - `MY_AGENT_WEB_PORT` 监听端口，默认 4321 bin\\my-agent-web.ts:60: const port = parsePort(process.env.MY_AGENT_WEB_PORT ?? \"4321\"); manage.ps1:19: $BackendPort = 4321 manage.sh:17: PORT=4321 README.md:117: 除 CLI 外，亦提供浏览器版，启动后默认监听 `http://localhost:4321`。 README.md:122: npm run web # 启动 Web 模式（默认端口 4321） README.md:126: 启动后，`open-browser` 模块会**自动唤起默认浏览器**（macOS / Linux / Windows 跨平台支持）；若需手动打开，请访问 <http://localhost:4321>。 src\\web\\server\\index.ts:62: /** 监听端口（默认 4321；环境变量由 bin 入口注入） */ src\\web\\server\\index.ts:138: const port = deps.port ?? 4321; src\\web\\server\\open-browser.test.ts:139: const result = await openBrowser(\"http://127.0.0.1:4321/\");"
+                    - listitem [ref=f14e1160]:
+                      - button "查看思考过程" [expanded] [ref=f14e1161]:
+                        - generic [ref=f14e1162]: 思考
+                      - generic [ref=f14e1169]:
+                        - paragraph [ref=f14e1170]: 现在我理解了项目的整体架构：
+                        - list [ref=f14e1171]:
+                          - listitem [ref=f14e1172]:
+                            - text: 前端：
+                            - code [ref=f14e1173]: web/
+                            - text: 目录，React + Vite，开发端口 5173
+                          - listitem [ref=f14e1174]:
+                            - text: 后端：
+                            - code [ref=f14e1175]: bin/my-agent-web.ts
+                            - text: 启动 Web 服务，监听 4321 端口（
+                            - code [ref=f14e1176]: MY_AGENT_WEB_PORT
+                            - text: ）
+                          - listitem [ref=f14e1177]:
+                            - text: Vite proxy 配置：
+                            - code [ref=f14e1178]: "'/api': 'http://localhost:4321'"
+                        - paragraph [ref=f14e1179]: 让我快速看下后端服务的 API 路由，确认 /api 前缀，这样分析更准确。
+                    - listitem [ref=f14e1180]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e1181]:
+                        - generic [ref=f14e1182]:
+                          - generic "读取文件" [ref=f14e1183]
+                          - generic [ref=f14e1184]: 已完成
+                      - generic [ref=f14e1187]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\src\\web\\server\\index.ts" [ref=f14e1189]: index.ts
+                        - generic [ref=f14e1190]: 📄 index.ts (346 行, 10462 字符) 1| /** 2| * my-agent Web 前端 — HTTP 服务器骨架（WU-01 / B1 + WU-02e 错误层接入）。 3| * 4| * 来源：spec § 6.1 / § 6.3 / § 6.6 + contract § 7 / § 8
+                        - generic [ref=f14e1191]: "📄 index.ts (346 行, 10462 字符) 1| /** 2| * my-agent Web 前端 — HTTP 服务器骨架（WU-01 / B1 + WU-02e 错误层接入）。 3| * 4| * 来源：spec § 6.1 / § 6.3 / § 6.6 + contract § 7 / § 8 / § 9。 5| * 6| * 本文件是**装配层**，把以下模块串成可启动的 HTTP server： 7| * - `csp.ts`：CSP / Permissions-Policy / 安全头 8| * - `static.ts`：静态文件中间件（白名单 + 路径防御） 9| * - `router.ts`：21 个 API 路由占位（统一回 404 ROUTE_NOT_FOUND） 10| * - `graceful-shutdown.ts`：SIGINT/SIGTERM 优雅退出 11| * - `errors.ts`（WU-02e）：ApiErrorCode / ERROR_STATUS_MAP / ApiError / 12| * handleError —— 异常路径统一写响应（contract § 3） 13| * 14| * 本期**不做**（留给后续 WU）： 15| * - 21 个业务 handler 真实实现（WU-02a/b/c，GROUP-2） 16| * - SSE 适配器（WU-02b，sse.ts） 17| * - Zod 校验 + PAYLOAD_TOO_LARGE（路由边界加入，handleError 已具备基础） 18| * 19| * @see .ai-runtime-artifacts/contracts/2026-08-07-web-frontend-api-contract.md 20| */ 21| 22| import * as http from \"node:http\"; 23| import * as path from \"node:path\"; 24| import { randomUUID } from \"node:crypto\"; 25| import type { IncomingMessage, ServerResponse } from \"node:http\"; 26| 27| import type { Logger } from \"../../shared/logger.js\"; 28| import type { ProvidersStore } from \"../../storage/providers-store.js\"; 29| import type { SessionStore } from \"../../storage/session-store.js\"; 30| import type { CoreAgentConfig } from \"../../config/schema.js\"; 31| import type { ProviderRegistry } from \"../../providers/registry.js\"; 32| import type { AgentRunner } from \"../../agent/runner.js\"; 33| import type { RunnerFactory } from \"./routes/messages.js\"; 34| 35| import { applySecurityHeaders } from \"./csp.js\"; 36| import { matchRoute, ROUTES } from \"./router.js\"; 37| import { tryServeStatic } from \"./static.js\"; 38| import { handleError, ApiErrorCode, ApiError } from \"./errors.js\"; 39| import { wireApiRoutes } from \"./wire-routes.js\"; 40| 41| // ============================================================ 42| // 公开类型 43| // ============================================================ 44| 45| /** 46| * createServer 的依赖。 47| * 48| * **本期全 optional**：done criteria #2 明示\"注入为 undefined 时不崩溃\"。 49| * 后续 WU 会按需收紧： 50| * - logger：F0 起需要结构化日志（先 console 兜底） 51| * - providersStore / sessionStore：WU-02a/b/c 起需要接 store 52| */ 53| export type CreateServerDeps = { 54| logger?: Logger; 55| providersStore?: ProvidersStore; 56| sessionStore?: SessionStore; 57| config?: CoreAgentConfig; 58| providers?: ProviderRegistry; 59| agentRunner?: AgentRunner; 60| runnerFactory?: RunnerFactory; 61| 62| /** 监听端口（默认 4321；环境变量由 bin 入口注入） */ 63| port?: number; 64| /** 监听主机（默认 `127.0.0.1`，仅本机） */ 65| host?: string; 66| /** 静态资源根目录（默认 `<cwd>/web`） */ 67| webRoot?: string; 68| }; 69| 70| /** 71| * Server 句柄：暴露端口 + 底层 http.Server + close()。 72| * 73| * 端口传 0 时返回系统分配的空闲端口（测试用）。 74| */ 75| export type WebServer = { 76| readonly port: number; 77| readonly raw: http.Server; 78| /** 优雅关闭（停止 accept + 关 keep-alive 空闲 socket） */ 79| close(): Promise<void>; 80| };"
+                    - listitem [ref=f14e1192]:
+                      - button "查看 grep_files 结果" [expanded] [ref=f14e1193]:
+                        - generic [ref=f14e1194]:
+                          - generic "搜索内容" [ref=f14e1195]
+                          - generic [ref=f14e1196]: 已完成
+                      - generic [ref=f14e1199]:
+                        - generic "query=/api" [ref=f14e1201]: /api
+                        - generic [ref=f14e1202]: "🔍 grep \"/api\" (15 个结果): features\\agents\\useAgents.ts:2: import { apiGet } from '@/lib/api'; features\\agents\\useAgents.ts:22: queryFn: () => apiGet<AgentsRespon"
+                        - generic [ref=f14e1203]: "🔍 grep \"/api\" (15 个结果): features\\agents\\useAgents.ts:2: import { apiGet } from '@/lib/api'; features\\agents\\useAgents.ts:22: queryFn: () => apiGet<AgentsResponse>('/api/agents'), features\\attachments\\uploadAttachment.ts:8: * 未来替换：把内部 fetch 换成 POST /api/uploads（multipart/form-data）， features\\chat\\pending-message.ts:5: * 旧实现：访问 /chat → 立即 POST /api/sessions → 即使不发消息也留空记录。 features\\chat\\pending-message.ts:8: * 2. 用户敲完按 Enter → handleSend 先 POST /api/sessions 拿到新 id features\\chat\\useChatStream.ts:21: import { apiGet } from '@/lib/api'; features\\chat\\useChatStream.ts:347: `/api/sessions/${sessionId}/history`, features\\chat\\useChatStream.ts:501: `/api/sessions/${sessionId}/messages/stream`, features\\chat\\useChatStream.ts:969: `/api/sessions/${sessionId}/history`, features\\chat\\useChatStream.ts:1023: `/api/sessions/${sessionId}/history`, features\\dashboard\\taskSuggestions.ts:7: * 本期 8 条写死任务；通过 useTaskSuggestions hook 可被远程 GET /api/task-suggestions 覆盖。 features\\dashboard\\taskSuggestions.ts:45: /** 本期写死 8 条；后续接入 GET /api/task-suggestions 后可被覆盖 */ features\\dashboard\\useTaskSuggestions.ts:8: * 1. 启动时尝试 GET /api/task-suggestions（5s timeout） features\\dashboard\\useTaskSuggestions.ts:68: queryFn: ({ signal }) => fetchRemote('/api/task-suggestions', REMOTE_TIMEOUT_MS, signal), features\\providers\\ProviderForm.tsx:6: import { apiPost, apiPut, ApiError } from '@/lib/api';"
+                    - listitem [ref=f14e1204]:
+                      - button "查看思考过程" [expanded] [ref=f14e1205]:
+                        - generic [ref=f14e1206]: 思考
+                      - generic [ref=f14e1213]:
+                        - paragraph [ref=f14e1214]: 现在我完全理解了项目的架构：
+                        - paragraph [ref=f14e1215]:
+                          - strong [ref=f14e1216]: 架构：
+                        - list [ref=f14e1217]:
+                          - listitem [ref=f14e1218]:
+                            - text: 前端：
+                            - code [ref=f14e1219]: web/
+                            - text: React 应用，Vite dev server 跑在 5173
+                          - listitem [ref=f14e1220]:
+                            - text: 后端：
+                            - code [ref=f14e1221]: bin/my-agent-web.ts
+                            - text: →
+                            - code [ref=f14e1222]: src/web/server/index.ts
+                            - text: ，HTTP 服务监听 4321（127.0.0.1 仅本机）
+                          - listitem [ref=f14e1223]:
+                            - text: API 契约：21 个 API 路由，全部以
+                            - code [ref=f14e1224]: /api/
+                            - text: 前缀（如
+                            - code [ref=f14e1225]: /api/agents
+                            - text: 、
+                            - code [ref=f14e1226]: "/api/sessions/{id}/messages/stream"
+                            - text: 等）
+                          - listitem [ref=f14e1227]:
+                            - text: Vite proxy：
+                            - code [ref=f14e1228]: "'/api': 'http://localhost:4321'"
+                        - paragraph [ref=f14e1229]: 前端实际调用：
+                        - list [ref=f14e1230]:
+                          - listitem [ref=f14e1231]:
+                            - code [ref=f14e1232]: GET /api/agents
+                          - listitem [ref=f14e1233]:
+                            - code [ref=f14e1234]: POST /api/sessions
+                          - listitem [ref=f14e1235]:
+                            - code [ref=f14e1236]: "GET /api/sessions/${sessionId}/history"
+                          - listitem [ref=f14e1237]:
+                            - code [ref=f14e1238]: "POST /api/sessions/${sessionId}/messages/stream"
+                            - text: （SSE！）
+                          - listitem [ref=f14e1239]:
+                            - code [ref=f14e1240]: GET /api/task-suggestions
+                          - listitem [ref=f14e1241]: 等
+                        - paragraph [ref=f14e1242]: 现在我可以写一份详细分析了。用户要求"详细分析下 vite 配置文件中的 proxy 配置对前端开发的影响，特别是 /api 代理的行为"。
+                        - paragraph [ref=f14e1243]: 我要覆盖：
+                        - list [ref=f14e1244]:
+                          - listitem [ref=f14e1245]: 为什么需要 proxy（开发环境跨域问题）
+                          - listitem [ref=f14e1246]: 当前配置的行为机制（请求路径如何流转）
+                          - listitem [ref=f14e1247]: 对前端开发的正面影响
+                          - listitem [ref=f14e1248]: 需要注意的坑/边界情况（结合本项目）
+                          - listitem [ref=f14e1249]: 与生产环境的对比（构建后 dist 如何工作）
+                          - listitem [ref=f14e1250]: 可能的改进建议
+                        - paragraph [ref=f14e1251]: 关键点：
+                        - list [ref=f14e1252]:
+                          - listitem [ref=f14e1253]:
+                            - text: 开发时前端在 5173，后端在 4321，浏览器直接 fetch
+                            - link "http://localhost:5173/api/xxx" [ref=f14e1254] [cursor=pointer]:
+                              - /url: http://localhost:5173/api/xxx
+                            - text: 会跨域（origin 5173 → 4321）。Vite proxy 把 /api 前缀请求转发到 4321，同时
+                            - strong [ref=f14e1255]: 保持路径前缀
+                            - text: （默认不重写），即
+                            - code [ref=f14e1256]: /api/agents
+                            - text: →
+                            - code [ref=f14e1257]: http://localhost:4321/api/agents
+                            - text: 。
+                          - listitem [ref=f14e1258]: 后端在 4321 上 serve 静态文件（webRoot = web）加 API 路由，所以其实 4321 也能直接访问前端（构建产物）。生产模式是单端口：4321 同时提供静态资源和 API。
+                          - listitem [ref=f14e1259]: 而开发模式下用 Vite dev server（5173）提供前端热更新，proxy 转发 API 到 4321。注意：4321 后端默认 host 127.0.0.1 仅本机。
+                          - listitem [ref=f14e1260]:
+                            - text: SSE（/messages/stream）通过 proxy 需要注意：http-proxy 对 SSE 的支持一般没问题（默认不缓冲），但要注意
+                            - code [ref=f14e1261]: changeOrigin
+                            - text: 、超时等。
+                          - listitem [ref=f14e1262]:
+                            - text: 当前配置是简写形式
+                            - code [ref=f14e1263]: "'/api': 'http://localhost:4321'"
+                            - text: ，等价于
+                            - code [ref=f14e1264]: "{ target: 'http://localhost:4321', changeOrigin: true }"
+                            - text: ？不对，简写字符串形式等价于
+                            - code [ref=f14e1265]: "{ target: 'http://localhost:4321' }"
+                            - text: ，changeOrigin 默认是 false。实际上 Vite 文档说字符串简写形式等价于
+                            - code [ref=f14e1266]: "{ target: ... }"
+                            - text: 。
+                          - listitem [ref=f14e1267]: "changeOrigin 的影响：当 target 是 localhost 时，changeOrigin 影响不大；但如果后端通过 Host 头做虚拟主机路由，就需要 changeOrigin: true。"
+                          - listitem [ref=f14e1268]:
+                            - text: 路径保持：默认不重写，
+                            - code [ref=f14e1269]: /api/foo
+                            - text: →
+                            - code [ref=f14e1270]: http://localhost:4321/api/foo
+                            - text: 。这正是本项目的需求，因为后端路由本身就带 /api 前缀。
+                          - listitem [ref=f14e1271]:
+                            - text: 另一个常见模式是
+                            - code [ref=f14e1272]: "rewrite: (path) => path.replace(/^\\/api/, '')"
+                            - text: ，当后端不带 /api 前缀时用。本项目不需要。
+                          - listitem [ref=f14e1273]:
+                            - text: ws 支持：WebSocket 需要
+                            - code [ref=f14e1274]: "ws: true"
+                            - text: 。本项目用 SSE 而非 WebSocket，所以不需要，但值得一提。
+                          - listitem [ref=f14e1275]:
+                            - text: 生产构建后：
+                            - code [ref=f14e1276]: "base: './'"
+                            - text: + dist 被 4321 后端 serve，前端 fetch 相对路径
+                            - code [ref=f14e1277]: /api/xxx
+                            - text: 会直接打到 4321 同源，无跨域问题。这也解释了为什么 proxy 只在 dev 需要。
+                          - listitem [ref=f14e1278]:
+                            - text: 前端 fetch 使用相对路径
+                            - code [ref=f14e1279]: /api/...
+                            - text: （apiGet 等），这样 dev 和 prod 通用。
+                        - paragraph [ref=f14e1280]:
+                          - text: 让我确认一下 web/src/lib/api.ts 的用法，看看 fetch 是相对路径还是绝对路径。从 grep 结果看
+                          - code [ref=f14e1281]: apiGet<AgentsResponse>('/api/agents')
+                          - text: ，是相对路径。这样设计很好。
+                        - paragraph [ref=f14e1282]: 让我再看下 api.ts 确认一下 baseURL 的处理。
+                        - paragraph [ref=f14e1283]: 其实已经足够信息了。我可以直接写分析。不过为了严谨，快速看一眼 api.ts。
+                    - listitem [ref=f14e1284]:
+                      - button "查看 read_file 结果" [expanded] [ref=f14e1285]:
+                        - generic [ref=f14e1286]:
+                          - generic "读取文件" [ref=f14e1287]
+                          - generic [ref=f14e1288]: 已完成
+                      - generic [ref=f14e1291]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\web\\src\\lib\\api.ts" [ref=f14e1293]: api.ts
+                        - generic [ref=f14e1294]: "📄 api.ts (143 行, 4458 字符) 1| import { z } from 'zod'; 2| 3| /** 27 API error codes — kept in sync with backend error codes */ 4| export enum ApiErrorCode { 5|"
+                        - generic [ref=f14e1295]: "📄 api.ts (143 行, 4458 字符) 1| import { z } from 'zod'; 2| 3| /** 27 API error codes — kept in sync with backend error codes */ 4| export enum ApiErrorCode { 5| SESSION_NOT_FOUND = 'SESSION_NOT_FOUND', 6| SESSION_EXPIRED = 'SESSION_EXPIRED', 7| SESSION_LIMIT_EXCEEDED = 'SESSION_LIMIT_EXCEEDED', 8| MESSAGE_NOT_FOUND = 'MESSAGE_NOT_FOUND', 9| MESSAGE_TOO_LARGE = 'MESSAGE_TOO_LARGE', 10| STREAM_NOT_FOUND = 'STREAM_NOT_FOUND', 11| STREAM_ALREADY_CLOSED = 'STREAM_ALREADY_CLOSED', 12| AGENT_NOT_FOUND = 'AGENT_NOT_FOUND', 13| AGENT_UNAVAILABLE = 'AGENT_UNAVAILABLE', 14| AGENT_RATE_LIMITED = 'AGENT_RATE_LIMITED', 15| PROVIDER_NOT_FOUND = 'PROVIDER_NOT_FOUND', 16| PROVIDER_UNAVAILABLE = 'PROVIDER_UNAVAILABLE', 17| PROVIDER_AUTH_FAILED = 'PROVIDER_AUTH_FAILED', 18| PROVIDER_TIMEOUT = 'PROVIDER_TIMEOUT', 19| SKILL_NOT_FOUND = 'SKILL_NOT_FOUND', 20| SKILL_EXECUTION_FAILED = 'SKILL_EXECUTION_FAILED', 21| INVALID_REQUEST = 'INVALID_REQUEST', 22| INVALID_PARAMETER = 'INVALID_PARAMETER', 23| MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD', 24| UNAUTHORIZED = 'UNAUTHORIZED', 25| FORBIDDEN = 'FORBIDDEN', 26| TOKEN_EXPIRED = 'TOKEN_EXPIRED', 27| TOKEN_INVALID = 'TOKEN_INVALID', 28| RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED', 29| INTERNAL_ERROR = 'INTERNAL_ERROR', 30| SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE', 31| UPSTREAM_ERROR = 'UPSTREAM_ERROR', 32| } 33| 34| /** Structured error thrown by all api* helpers on non-2xx responses */ 35| export class ApiError extends Error { 36| code: string; 37| status: number; 38| 39| constructor(code: string, status: number, message: string) { 40| super(message); 41| this.name = 'ApiError'; 42| this.code = code; 43| this.status = status; 44| } 45| } 46| 47| /** Zod schema for the generic JSON error body returned by the backend */ 48| const errorResponseSchema = z.object({ 49| code: z.string(), 50| message: z.string().optional(), 51| details: z.unknown().optional(), 52| }); 53| 54| const BASE_URL = ''; 55| 56| async function request<T>(url: string, options: RequestInit = {}): Promise<T> { 57| const res = await fetch(`${BASE_URL}${url}`, { 58| ...options, 59| headers: { 60| 'Content-Type': 'application/json',"
+                    - listitem [ref=f14e1296]:
+                      - button "查看思考过程" [expanded] [ref=f14e1297]:
+                        - generic [ref=f14e1298]: 思考
+                      - generic [ref=f14e1305]:
+                        - paragraph [ref=f14e1306]: 完美，现在我有了所有需要的信息：
+                        - list [ref=f14e1307]:
+                          - listitem [ref=f14e1308]:
+                            - text: 前端
+                            - code [ref=f14e1309]: api.ts
+                            - text: ：
+                            - code [ref=f14e1310]: BASE_URL = ''
+                            - text: ，所有请求使用相对路径
+                            - code [ref=f14e1311]: /api/...
+                          - listitem [ref=f14e1312]:
+                            - text: Vite dev server：5173，proxy
+                            - code [ref=f14e1313]: /api
+                            - text: →
+                            - code [ref=f14e1314]: http://localhost:4321
+                          - listitem [ref=f14e1315]:
+                            - text: 后端：4321，serve 静态文件 + 21 个
+                            - code [ref=f14e1316]: /api/
+                            - text: 路由，host 默认 127.0.0.1
+                          - listitem [ref=f14e1317]:
+                            - text: 生产：
+                            - code [ref=f14e1318]: "base: './'"
+                            - text: ，dist 构建产物，后端 serve，同源访问
+                        - paragraph [ref=f14e1319]: 现在写详细分析。结构：
+                        - list [ref=f14e1320]:
+                          - listitem [ref=f14e1321]: 一句话结论
+                          - listitem [ref=f14e1322]: 当前配置拆解（这个项目实际的配置）
+                          - listitem [ref=f14e1323]: proxy 为什么存在 / 解决什么问题（跨域）
+                          - listitem [ref=f14e1324]: /api 代理的行为细节（路径保持、changeOrigin、SSE 等）
+                          - listitem [ref=f14e1325]: 对前端开发的正面影响
+                          - listitem [ref=f14e1326]: 坑与边界情况（结合本项目）
+                          - listitem [ref=f14e1327]: 开发 vs 生产的行为差异
+                          - listitem [ref=f14e1328]: 改进建议
+                        - paragraph [ref=f14e1329]: 要详细但不冗长。用中文。
+                - generic [ref=f14e1332]:
+                  - paragraph [ref=f14e1333]:
+                    - text: 先检查一下项目里是否有 Vite 配置文件，以便结合实际分析。 项目里确实有
+                    - code [ref=f14e1334]: web/vite.config.ts
+                    - text: ，我来读取实际配置。 再看一下项目结构和端口 4321 对应的服务，让分析更贴合实际。 再看一下前端 API 封装，确认请求路径的写法。 已掌握完整信息，下面是详细分析。
+                  - separator [ref=f14e1335]
+                  - heading "结论先行" [level=2] [ref=f14e1336]
+                  - paragraph [ref=f14e1337]:
+                    - text: 这份配置
+                    - code [ref=f14e1338]: "'/api': 'http://localhost:4321'"
+                    - text: 是开发环境的
+                    - strong [ref=f14e1339]: 同源桥接
+                    - text: ：让浏览器里跑的 Vite 前端（5173）能以
+                    - strong [ref=f14e1340]: 同源相对路径
+                    - code [ref=f14e1341]: /api/*
+                    - text: 直接调用后端 HTTP 服务（4321），绕开 CORS。它只在
+                    - code [ref=f14e1342]: vite dev
+                    - text: 时生效，
+                    - strong [ref=f14e1343]: 不进入生产构建
+                    - text: ——生产环境由 4321 后端直接 serve 构建产物，天然同源。
+                  - separator [ref=f14e1344]
+                  - heading "一、当前配置拆解（结合本项目）" [level=2] [ref=f14e1345]
+                  - code [ref=f14e1347]: "// web/vite.config.ts server: { port: 5173, // ① Vite dev server proxy: { '/api': 'http://localhost:4321', // ② 简写形式 = { target: 'http://localhost:4321' } }, },"
+                  - paragraph [ref=f14e1348]: 本项目实际架构：
+                  - table [ref=f14e1349]:
+                    - rowgroup [ref=f14e1350]:
+                      - row [ref=f14e1351]:
+                        - columnheader "层" [ref=f14e1352]
+                        - columnheader "端口" [ref=f14e1353]
+                        - columnheader "职责" [ref=f14e1354]
+                    - rowgroup [ref=f14e1355]:
+                      - row [ref=f14e1356]:
+                        - cell "Vite dev server" [ref=f14e1357]
+                        - cell "5173" [ref=f14e1358]
+                        - cell "前端热更新、模块编译（仅开发）" [ref=f14e1359]
+                      - row [ref=f14e1360]:
+                        - cell [ref=f14e1361]:
+                          - text: 后端 HTTP 服务（
+                          - code [ref=f14e1362]: bin/my-agent-web.ts
+                          - text: ）
+                        - cell "4321" [ref=f14e1363]
+                        - cell [ref=f14e1364]:
+                          - text: 21 个
+                          - code [ref=f14e1365]: /api/*
+                          - text: 路由 + 静态文件服务（
+                          - code [ref=f14e1366]: webRoot
+                          - text: ），host 默认
+                          - code [ref=f14e1367]: 127.0.0.1
+                      - row [ref=f14e1368]:
+                        - cell [ref=f14e1369]:
+                          - text: 前端调用（
+                          - code [ref=f14e1370]: web/src/lib/api.ts
+                          - text: ）
+                        - cell "—" [ref=f14e1371]
+                        - cell [ref=f14e1372]:
+                          - code [ref=f14e1373]: BASE_URL = ''
+                          - text: ，一律相对路径如
+                          - code [ref=f14e1374]: /api/agents
+                          - text: 、
+                          - code [ref=f14e1375]: "/api/sessions/{id}/messages/stream"
+                  - separator [ref=f14e1376]
+                  - heading "二、proxy 解决了什么问题：开发期跨域" [level=2] [ref=f14e1377]
+                  - paragraph [ref=f14e1378]:
+                    - text: 浏览器直接
+                    - code [ref=f14e1379]: fetch('http://localhost:4321/api/agents')
+                    - text: 会因
+                    - strong [ref=f14e1380]: 跨域
+                    - text: 被拦：页面 origin 是
+                    - code [ref=f14e1381]: http://localhost:5173
+                    - text: ，目标 origin 是
+                    - code [ref=f14e1382]: http://localhost:4321
+                    - text: ，属于不同源，浏览器会先发 OPTIONS 预检，后端若未返回
+                    - code [ref=f14e1383]: Access-Control-Allow-Origin
+                    - text: 则请求失败。
+                  - paragraph [ref=f14e1384]:
+                    - text: proxy 的思路：
+                    - strong [ref=f14e1385]: 请求不直接发给 4321，而是发给同源的 5173
+                    - text: ，由 Vite 的 dev server 在
+                    - strong [ref=f14e1386]: 服务端
+                    - text: 转发到 4321。服务端转发不受浏览器同源策略约束，因此：
+                  - list [ref=f14e1387]:
+                    - listitem [ref=f14e1388]:
+                      - text: 浏览器视角：所有请求都是
+                      - code [ref=f14e1389]: http://localhost:5173/api/*
+                      - text: ，同源，无 CORS 问题；
+                    - listitem [ref=f14e1390]: 后端视角：请求来自 Vite dev server，普通 HTTP 转发，无需为开发场景写 CORS 中间件。
+                  - paragraph [ref=f14e1391]:
+                    - text: 前端代码因此可以统一写相对路径（本项目
+                    - code [ref=f14e1392]: BASE_URL = ''
+                    - text: ），
+                    - strong [ref=f14e1393]: 开发和生产零改动
+                    - text: 。
+                  - separator [ref=f14e1394]
+                  - heading [level=2] [ref=f14e1395]:
+                    - text: 三、
+                    - code [ref=f14e1396]: /api
+                    - text: 代理的行为细节
+                  - heading "1. 路径前缀默认保留，不重写" [level=3] [ref=f14e1397]
+                  - paragraph [ref=f14e1398]:
+                    - text: 简写字符串形式
+                    - strong [ref=f14e1399]: 不会重写路径
+                    - text: ，转发时保留完整
+                    - code [ref=f14e1400]: /api
+                    - text: 前缀：
+                  - code [ref=f14e1402]: 浏览器 → GET http://localhost:5173/api/agents ↓ (Vite proxy) 后端 → GET http://localhost:4321/api/agents
+                  - paragraph [ref=f14e1403]:
+                    - text: 这恰好匹配本项目的后端路由设计（
+                    - code [ref=f14e1404]: router.ts
+                    - text: 的 21 个路由都以
+                    - code [ref=f14e1405]: /api/
+                    - text: 开头），所以是正确配置。
+                  - paragraph [ref=f14e1406]:
+                    - text: ⚠️ 对比：如果后端路由
+                    - strong [ref=f14e1407]: 不带
+                    - code [ref=f14e1408]: /api
+                    - text: 前缀（如后端只有
+                    - code [ref=f14e1409]: /agents
+                    - text: ），就需要显式重写：
+                  - code [ref=f14e1411]:
+                    - text: "proxy: { '/api': { target: 'http://localhost:4321', rewrite:"
+                    - generic [ref=f14e1412]: (path) =>
+                    - text: "path.replace(/^\\/api/, ''), }, },"
+                  - heading [level=3] [ref=f14e1413]:
+                    - text: "2."
+                    - code [ref=f14e1414]: changeOrigin
+                    - text: 默认
+                    - code [ref=f14e1415]: "false"
+                    - text: （简写形式下）
+                  - paragraph [ref=f14e1416]:
+                    - text: 简写形式等价于
+                    - code [ref=f14e1417]: "{ target: 'http://localhost:4321' }"
+                    - text: ，
+                    - code [ref=f14e1418]: changeOrigin
+                    - text: 未设置。这意味着转发时
+                    - strong [ref=f14e1419]:
+                      - text: Host 请求头保持为
+                      - code [ref=f14e1420]: localhost:5173
+                    - text: 。
+                  - paragraph [ref=f14e1421]: 对本项目影响不大（后端按端口路由，不看 Host），但如果后端依赖 Host 头做虚拟主机/域名校验，就需要显式开启：
+                  - code [ref=f14e1423]: "'/api': { target: 'http://localhost:4321', changeOrigin: true, // 把 Host 改写为 localhost:4321 },"
+                  - heading "3. 匹配规则：前缀匹配" [level=3] [ref=f14e1424]
+                  - paragraph [ref=f14e1425]:
+                    - code [ref=f14e1426]: "'/api'"
+                    - text: 是
+                    - strong [ref=f14e1427]: 前缀匹配
+                    - text: ：
+                    - code [ref=f14e1428]: /api/agents
+                    - text: 、
+                    - code [ref=f14e1429]: /api/sessions/123/history
+                    - text: 、
+                    - code [ref=f14e1430]: /api/sessions/123/messages/stream
+                    - text: 都会命中转发。精确匹配用
+                    - code [ref=f14e1431]: "'^/api$'"
+                    - text: （正则键）。本项目需要的是前缀匹配，正确。
+                  - heading "4. SSE（流式响应）可以正常穿透" [level=3] [ref=f14e1432]
+                  - paragraph [ref=f14e1433]:
+                    - text: 本项目有
+                    - code [ref=f14e1434]: "/api/sessions/{id}/messages/stream"
+                    - text: （SSE 流），它经过 proxy 时：
+                  - list [ref=f14e1435]:
+                    - listitem [ref=f14e1436]:
+                      - text: Vite 底层用
+                      - code [ref=f14e1437]: http-proxy
+                      - text: ，默认
+                      - strong [ref=f14e1438]: 不缓冲响应体
+                      - text: ，SSE 的
+                      - code [ref=f14e1439]: text/event-stream
+                      - text: 分块可以实时转发，无需额外配置；
+                    - listitem [ref=f14e1440]: 但要注意：如果后端 SSE 长连接 + 前端页面刷新，旧连接可能残留（HTTP/1.1 keep-alive 行为），开发期常见"重复事件"现象，这是连接管理问题而非 proxy 问题。
+                  - heading "5. WebSocket 不适用" [level=3] [ref=f14e1441]
+                  - paragraph [ref=f14e1442]:
+                    - text: 本项目用 SSE 而非 WebSocket，所以不需要
+                    - code [ref=f14e1443]: "ws: true"
+                    - text: 。如果未来改用 WebSocket，必须加：
+                  - code [ref=f14e1445]: "'/api': { target: 'http://localhost:4321', ws: true },"
+                  - separator [ref=f14e1446]
+                  - heading "四、对前端开发的正向影响" [level=2] [ref=f14e1447]
+                  - list [ref=f14e1448]:
+                    - listitem [ref=f14e1449]:
+                      - strong [ref=f14e1450]: 后端可独立重启，前端零感知
+                      - text: ：改后端代码重启 4321 进程，浏览器里 Vite 前端照常工作，proxy 只是转发通道，不缓存响应。
+                    - listitem [ref=f14e1451]:
+                      - strong [ref=f14e1452]: 请求路径与生产完全一致
+                      - text: ：
+                      - code [ref=f14e1453]: BASE_URL = ''
+                      - text: + 相对路径，代码里不存在"开发写 4321、生产改域名"的分支，避免环境分支泄漏。
+                    - listitem [ref=f14e1454]:
+                      - strong [ref=f14e1455]: 调试直观
+                      - text: ：DevTools Network 里看到的 URL 就是
+                      - code [ref=f14e1456]: /api/...
+                      - text: ，与后端日志路径一致，排查链路清晰。
+                    - listitem [ref=f14e1457]:
+                      - strong [ref=f14e1458]: 天然支持 HMR + 后端联调
+                      - text: ：前端热更新（5173）与后端数据（4321 转发）同时可用，这是 Vite + 独立后端最常见的开发拓扑。
+                  - separator [ref=f14e1459]
+                  - heading "五、坑与边界情况（务必注意）" [level=2] [ref=f14e1460]
+                  - table [ref=f14e1461]:
+                    - rowgroup [ref=f14e1462]:
+                      - row [ref=f14e1463]:
+                        - columnheader "场景" [ref=f14e1464]
+                        - columnheader "现象" [ref=f14e1465]
+                        - columnheader "说明" [ref=f14e1466]
+                    - rowgroup [ref=f14e1467]:
+                      - row [ref=f14e1468]:
+                        - cell "后端未启动" [ref=f14e1469]
+                        - cell [ref=f14e1470]:
+                          - text: 请求返回
+                          - strong [ref=f14e1471]: 500/ECONNREFUSED
+                          - text: （或 502）
+                        - cell [ref=f14e1472]:
+                          - text: proxy 转发失败，浏览器看到的是 Vite 的错误响应，
+                          - strong [ref=f14e1473]: 不是
+                          - text: 后端的错误体。先启动
+                          - code [ref=f14e1474]: npm run web
+                          - text: （4321）再
+                          - code [ref=f14e1475]: vite dev
+                      - row [ref=f14e1476]:
+                        - cell [ref=f14e1477]:
+                          - text: 后端只监听
+                          - code [ref=f14e1478]: 127.0.0.1
+                        - cell "正常" [ref=f14e1479]
+                        - cell [ref=f14e1480]:
+                          - text: 本项目 host 默认
+                          - code [ref=f14e1481]: 127.0.0.1
+                          - text: ，同机转发没问题；但若后端绑定
+                          - code [ref=f14e1482]: ::1
+                          - text: （IPv6），
+                          - code [ref=f14e1483]: localhost
+                          - text: 解析可能走 IPv6 导致连接失败，可改用
+                          - code [ref=f14e1484]: http://127.0.0.1:4321
+                          - text: 规避
+                      - row [ref=f14e1485]:
+                        - cell [ref=f14e1486]:
+                          - code [ref=f14e1487]: "base: './'"
+                          - text: 与生产
+                        - cell "生产走 4321 单端口" [ref=f14e1488]
+                        - cell [ref=f14e1489]:
+                          - text: 构建后
+                          - code [ref=f14e1490]: dist/
+                          - text: 由 4321 后端 serve，前端相对路径
+                          - code [ref=f14e1491]: /api/*
+                          - text: 同源直达，
+                          - strong [ref=f14e1492]: proxy 完全退出
+                          - text: 。所以 proxy 只解决开发，生产正确性取决于后端静态服务 + 路由挂载顺序（先 API 后静态）
+                      - row [ref=f14e1493]:
+                        - cell "请求体大（上传）" [ref=f14e1494]
+                        - cell "无 proxy 层限制" [ref=f14e1495]
+                        - cell [ref=f14e1496]:
+                          - code [ref=f14e1497]: http-proxy
+                          - text: 不做 body 大小限制，但后端
+                          - code [ref=f14e1498]: PAYLOAD_TOO_LARGE
+                          - text: （contract 提到）会拦截，行为一致
+                      - row [ref=f14e1499]:
+                        - cell "错误响应体被包装" [ref=f14e1500]
+                        - cell "需注意" [ref=f14e1501]
+                        - cell [ref=f14e1502]:
+                          - text: proxy 转发失败时（后端挂了），错误来自 Vite 而非后端，前端
+                          - code [ref=f14e1503]: ApiError
+                          - text: 解析到的
+                          - code [ref=f14e1504]: code
+                          - text: 可能不是后端 27 个错误码之一，错误处理要有兜底
+                  - separator [ref=f14e1505]
+                  - heading "六、改进建议（可选）" [level=2] [ref=f14e1506]
+                  - list [ref=f14e1507]:
+                    - listitem [ref=f14e1508]:
+                      - strong [ref=f14e1509]: 显式对象形式
+                      - text: ，为后续加
+                      - code [ref=f14e1510]: changeOrigin
+                      - text: /
+                      - code [ref=f14e1511]: timeout
+                      - text: /
+                      - code [ref=f14e1512]: onError
+                      - text: 留口子：
+                  - code [ref=f14e1514]: "proxy: { '/api': { target: 'http://localhost:4321', changeOrigin: true, timeout: 60_000, // 防止 LLM 长请求被意外截断 // onError: (err, req, res) => { ... } // 后端未启动时返回友好 JSON 而非 500 }, },"
+                  - list [ref=f14e1515]:
+                    - listitem [ref=f14e1516]:
+                      - paragraph [ref=f14e1517]:
+                        - strong [ref=f14e1518]: SSE 场景
+                        - text: ：确认后端对
+                        - code [ref=f14e1519]: "Cache-Control: no-cache"
+                        - text: 的处理，避免 dev 下流式响应被中间层缓存（一般不会，但值得在联调时验证）。
+                    - listitem [ref=f14e1520]:
+                      - paragraph [ref=f14e1521]:
+                        - strong [ref=f14e1522]: 多环境
+                        - text: ：如果后续要对接测试/预发后端，可改为读取环境变量：
+                  - code [ref=f14e1524]: "proxy: { '/api': process.env.VITE_API_TARGET ?? 'http://localhost:4321', },"
+                  - separator [ref=f14e1525]
+                  - paragraph [ref=f14e1526]:
+                    - text: 需要我验证一下 4321 后端当前的
+                    - code [ref=f14e1527]: router.ts
+                    - text: 路由前缀是否与 proxy 完全匹配，或者实际跑一次
+                    - code [ref=f14e1528]: vite dev
+                    - text: + 后端做连通性测试吗？
+              - button "复制消息" [ref=f14e1529]
+        - generic [ref=f14e256]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f14e258]
+          - generic [ref=f14e259]:
+            - button "添加附件" [ref=f14e261]
+            - button "选择模型" [ref=f14e265]
+            - generic [ref=f14e273]:
+              - generic [ref=f14e282]: Effort
+              - generic [ref=f14e283]: MED
+              - slider "Effort" [ref=f14e285] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f14e286]

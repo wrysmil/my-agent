@@ -1831,3 +1831,312 @@ describe("路径防御 + 404 兜底", () => {
     expect(body.error.code).toBe("VALIDATION_FAILED");
   });
 });
+
+// ============================================================
+// ⑩ WU-02：子 Agent 事件透传（actor 身份 + agent_message）
+// ============================================================
+
+describe("子 Agent 事件透传", () => {
+  it("tool_start/tool_end 携带 actorName/actorKind → SSE tool_use/tool_result 帧含 actor_name/actor_kind", async () => {
+    const session = sessionStore.create("gconv");
+    const events: StreamEvent[] = [
+      {
+        type: "tool_start",
+        name: "read_file",
+        id: "sub:w1:0",
+        input: { path: "src/a.ts" },
+        actorName: "Coder",
+        actorKind: "agent",
+      },
+      {
+        type: "tool_end",
+        name: "read_file",
+        id: "sub:w1:0",
+        result: "file content",
+        isError: false,
+        actorName: "Coder",
+        actorKind: "agent",
+      },
+      { type: "done", result: {} },
+    ];
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory(events),
+    });
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/stream`,
+        body: JSON.stringify({ text: "hi" }),
+      }),
+      res: makeMockRes(),
+    };
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+
+    const toolUse = parsed.find((f) => f.event === "tool_use");
+    expect(toolUse).toBeDefined();
+    const toolUseData = (toolUse!.data as SseEnvelope).data;
+    expect(toolUseData.actor_name).toBe("Coder");
+    expect(toolUseData.actor_kind).toBe("agent");
+
+    const toolResult = parsed.find((f) => f.event === "tool_result");
+    expect(toolResult).toBeDefined();
+    const toolResultData = (toolResult!.data as SseEnvelope).data;
+    expect(toolResultData.actor_name).toBe("Coder");
+    expect(toolResultData.actor_kind).toBe("agent");
+  });
+
+  it("agent_message → SSE 同名帧且字段完整", async () => {
+    const session = sessionStore.create("gconv");
+    const events: StreamEvent[] = [
+      {
+        type: "agent_message",
+        actorId: "coder",
+        actorName: "Coder",
+        actorKind: "agent",
+        text: "子 Agent 可见回复",
+        isFinal: false,
+      },
+      { type: "done", result: {} },
+    ];
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory(events),
+    });
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/stream`,
+        body: JSON.stringify({ text: "hi" }),
+      }),
+      res: makeMockRes(),
+    };
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+    const agentMsg = parsed.find((f) => f.event === "agent_message");
+    expect(agentMsg).toBeDefined();
+    expect((agentMsg!.data as SseEnvelope).data).toEqual({
+      type: "agent_message",
+      actorId: "coder",
+      actorName: "Coder",
+      actorKind: "agent",
+      text: "子 Agent 可见回复",
+      isFinal: false,
+    });
+  });
+
+  it("agent_message 帧在 tool_result 之后、done 之前输出（时序契约）", async () => {
+    const session = sessionStore.create("gconv");
+    // 模拟 hand_off_to 时序：主 Agent 工具执行（tool_start/tool_end）→ execute 内入队
+    // agent_reply → SSE agent_message → 回合结束 done。mock runner 按此顺序 yield，
+    // 断言 SSE 适配层保持该顺序（bin/my-agent-web.ts 的 prefetch+drain 排空保证
+    // 实际 worker 事件先于内层事件输出，结构走查确认，此处锁定 SSE 层顺序契约）。
+    const events: StreamEvent[] = [
+      {
+        type: "tool_start",
+        name: "hand_off_to",
+        id: "t1",
+        input: { to: "coder", task: "x" },
+      },
+      {
+        type: "tool_end",
+        name: "hand_off_to",
+        id: "t1",
+        result: "…",
+        isError: false,
+      },
+      {
+        type: "agent_message",
+        actorId: "coder",
+        actorName: "Coder",
+        actorKind: "agent",
+        text: "最终回答",
+        isFinal: true,
+      },
+      { type: "done", result: {} },
+    ];
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory(events),
+    });
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/stream`,
+        body: JSON.stringify({ text: "hi" }),
+      }),
+      res: makeMockRes(),
+    };
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+    const idxToolResult = parsed.findIndex((f) => f.event === "tool_result");
+    const idxAgentMsg = parsed.findIndex((f) => f.event === "agent_message");
+    const idxDone = parsed.findIndex((f) => f.event === "done");
+    expect(idxToolResult).toBeGreaterThanOrEqual(0);
+    expect(idxAgentMsg).toBeGreaterThan(idxToolResult);
+    expect(idxAgentMsg).toBeLessThan(idxDone);
+  });
+
+  // ============================================================
+  // WU-01：新增 5 种 SSE 事件帧（dispatch_started / worker_step_start /
+  //        worker_text_delta / worker_step_end / dispatch_done）透传
+  // ============================================================
+
+  it("dispatch_started → SSE 同名帧且字段完整（camelCase）", async () => {
+    const session = sessionStore.create("gconv");
+    const events: StreamEvent[] = [
+      {
+        type: "dispatch_started",
+        actorId: "coder",
+        actorName: "Coder",
+        toolName: "dispatch_to",
+        toolId: "sub:coder:0",
+        isFinal: false,
+      },
+      { type: "done", result: {} },
+    ];
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory(events),
+    });
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/stream`,
+        body: JSON.stringify({ text: "hi" }),
+      }),
+      res: makeMockRes(),
+    };
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+    const frame = parsed.find((f) => f.event === "dispatch_started");
+    expect(frame).toBeDefined();
+    expect((frame!.data as SseEnvelope).data).toEqual({
+      type: "dispatch_started",
+      actorId: "coder",
+      actorName: "Coder",
+      toolName: "dispatch_to",
+      toolId: "sub:coder:0",
+      isFinal: false,
+    });
+  });
+
+  it("worker_step_start / worker_text_delta / worker_step_end / dispatch_done → SSE 同名帧", async () => {
+    const session = sessionStore.create("gconv");
+    const events: StreamEvent[] = [
+      {
+        type: "worker_step_start",
+        actorId: "coder",
+        kind: "tool",
+        label: "read_file",
+        stepId: "step:1",
+      },
+      {
+        type: "worker_text_delta",
+        actorId: "coder",
+        text: "reading...",
+        stepId: "step:1",
+      },
+      {
+        type: "worker_step_end",
+        actorId: "coder",
+        stepId: "step:1",
+        summary: "file contents",
+        isError: false,
+      },
+      {
+        type: "dispatch_done",
+        actorId: "coder",
+        toolName: "dispatch_to",
+      },
+      { type: "done", result: {} },
+    ];
+    installMessageRoutes({
+      sessionStore,
+      // @ts-expect-error — test 注入简化
+      config: undefined,
+      // @ts-expect-error — test 注入简化
+      providers: undefined,
+      runnerFactory: makeMockRunnerFactory(events),
+    });
+
+    const { req, res } = {
+      req: makeMockReq({
+        method: "POST",
+        url: `/api/sessions/${session.sessionId}/messages/stream`,
+        body: JSON.stringify({ text: "hi" }),
+      }),
+      res: makeMockRes(),
+    };
+    const route = findStreamRoute();
+    await route!.handler(req, res, { id: session.sessionId });
+
+    const parsed = parseSse(res.body);
+
+    const stepStart = parsed.find((f) => f.event === "worker_step_start");
+    expect(stepStart).toBeDefined();
+    expect((stepStart!.data as SseEnvelope).data).toEqual({
+      type: "worker_step_start",
+      actorId: "coder",
+      kind: "tool",
+      label: "read_file",
+      stepId: "step:1",
+    });
+
+    const textDelta = parsed.find((f) => f.event === "worker_text_delta");
+    expect(textDelta).toBeDefined();
+    expect((textDelta!.data as SseEnvelope).data).toEqual({
+      type: "worker_text_delta",
+      actorId: "coder",
+      text: "reading...",
+      stepId: "step:1",
+    });
+
+    const stepEnd = parsed.find((f) => f.event === "worker_step_end");
+    expect(stepEnd).toBeDefined();
+    expect((stepEnd!.data as SseEnvelope).data).toEqual({
+      type: "worker_step_end",
+      actorId: "coder",
+      stepId: "step:1",
+      summary: "file contents",
+      isError: false,
+    });
+
+    const done = parsed.find((f) => f.event === "dispatch_done");
+    expect(done).toBeDefined();
+    expect((done!.data as SseEnvelope).data).toEqual({
+      type: "dispatch_done",
+      actorId: "coder",
+      toolName: "dispatch_to",
+    });
+  });
+});

@@ -183,4 +183,29 @@ describe('Composer attachment flow', () => {
     const sendBtn = screen.getByTestId('composer-send-button') as HTMLButtonElement;
     expect(sendBtn.disabled).toBe(true);
   });
+
+  it('发送按钮状态切换：空 → 输入启用 → 清空恢复禁用（含纯空格守卫）', () => {
+    renderComposer();
+    const textarea = screen.getByTestId('composer-textarea') as HTMLTextAreaElement;
+    const sendBtn = () => screen.getByTestId('composer-send-button') as HTMLButtonElement;
+
+    // 初始：空输入 → 禁用
+    expect(sendBtn().disabled).toBe(true);
+
+    // 输入文本 → 启用（状态切换 1）
+    fireEvent.change(textarea, { target: { value: '你好' } });
+    expect(sendBtn().disabled).toBe(false);
+
+    // 纯空格 → 仍禁用（trim 守卫，不发空白消息）
+    fireEvent.change(textarea, { target: { value: '   ' } });
+    expect(sendBtn().disabled).toBe(true);
+
+    // 再次输入 → 再启用（状态切换 2）
+    fireEvent.change(textarea, { target: { value: '你好世界' } });
+    expect(sendBtn().disabled).toBe(false);
+
+    // 清空 → 恢复禁用（状态切换 3）
+    fireEvent.change(textarea, { target: { value: '' } });
+    expect(sendBtn().disabled).toBe(true);
+  });
 });

@@ -1,0 +1,235 @@
+- generic [ref=f5e3]:
+  - complementary [ref=f5e4]:
+    - generic [ref=f5e5]: my-agent
+    - navigation [ref=f5e6]:
+      - link "控制台" [ref=f5e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f5e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f5e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f5e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f5e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f5e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f5e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f5e39]:
+      - generic [ref=f5e40]:
+        - generic [ref=f5e41]: 历史会话
+        - button "新对话" [ref=f5e42]
+      - list [ref=f5e44]:
+        - listitem [ref=f5e45]:
+          - link "研究开源 AI 桌面应用" [ref=f5e46] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f5e47]'
+        - listitem [ref=f5e51]:
+          - link "研究开源 AI 桌面应用" [ref=f5e52] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f5e53]'
+        - listitem [ref=f5e57]:
+          - link "研究开源 AI 桌面应用" [ref=f5e58] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f5e59]'
+        - listitem [ref=f5e63]:
+          - link "研究开源 AI 桌面应用" [ref=f5e64] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f5e65]'
+        - listitem [ref=f5e69]:
+          - link "项目目录看看" [ref=f5e70] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f5e71]'
+        - listitem [ref=f5e75]:
+          - link "项目目录看看" [ref=f5e76] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f5e77]'
+        - listitem [ref=f5e81]:
+          - link "项目目录看看" [ref=f5e82] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f5e83]'
+        - listitem [ref=f5e87]:
+          - link "项目目录看看" [ref=f5e88] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f5e89]'
+        - listitem [ref=f5e93]:
+          - link "项目目录看看" [ref=f5e94] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f5e95]'
+        - listitem [ref=f5e99]:
+          - link "项目目录看看" [ref=f5e100] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f5e101]'
+        - listitem [ref=f5e105]:
+          - link "项目目录看看" [ref=f5e106] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f5e107]'
+        - listitem [ref=f5e111]:
+          - link "项目目录看看" [ref=f5e112] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f5e113]'
+        - listitem [ref=f5e117]:
+          - link "看看项目目录" [ref=f5e118] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f5e119]'
+        - listitem [ref=f5e123]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e124] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e125]'
+        - listitem [ref=f5e129]:
+          - link "帮我看看项目目录" [ref=f5e130] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f5e131]'
+        - listitem [ref=f5e135]:
+          - link "帮我看看项目目录" [ref=f5e136] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f5e137]'
+        - listitem [ref=f5e141]:
+          - link "帮我看看项目目录" [ref=f5e142] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f5e143]'
+        - listitem [ref=f5e147]:
+          - link "帮我看看当前项目目录" [ref=f5e148] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f5e149]'
+        - listitem [ref=f5e153]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e154] [cursor=pointer]:
+            - /url: "#/chat/gconv-e14e25c5f758"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e155]'
+        - listitem [ref=f5e159]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e160] [cursor=pointer]:
+            - /url: "#/chat/gconv-eeea44f04a8c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f5e161]'
+  - generic [ref=f5e165]:
+    - banner [ref=f5e166]:
+      - generic [ref=f5e167]:
+        - button "Toggle theme" [ref=f5e168]
+        - button "Switch language" [ref=f5e175]
+        - generic [ref=f5e180]: K
+    - main [ref=f5e184]:
+      - generic [ref=f5e185]:
+        - heading "对话" [level=2] [ref=f5e193]
+        - log [ref=f5e196]:
+          - generic [ref=f5e197]:
+            - generic [ref=f5e198]: 研究开源 AI 桌面应用
+            - generic [ref=f5e203]:
+              - generic [ref=f5e204]:
+                - generic [ref=f5e206]:
+                  - button "已完成 8 个步骤 · 4 个工具 8 步 · 4 个工具" [expanded] [ref=f5e207]:
+                    - generic [ref=f5e210]: 已完成 8 个步骤 · 4 个工具
+                    - generic [ref=f5e211]: 8 步 · 4 个工具
+                  - list [ref=f5e215]:
+                    - listitem [ref=f5e216]:
+                      - button "查看思考过程" [ref=f5e217]:
+                        - generic [ref=f5e218]: 思考
+                    - listitem [ref=f5e223]:
+                      - button "查看思考过程" [ref=f5e224]:
+                        - generic [ref=f5e225]: 思考
+                    - listitem [ref=f5e230]:
+                      - button "查看 list_files 结果" [ref=f5e231]:
+                        - generic [ref=f5e232]:
+                          - generic "list_files" [ref=f5e233]
+                          - generic [ref=f5e234]: 已完成
+                    - listitem [ref=f5e237]:
+                      - button "查看思考过程" [ref=f5e238]:
+                        - generic [ref=f5e239]: 思考
+                    - listitem [ref=f5e244]:
+                      - button "查看 read_file 结果" [ref=f5e245]:
+                        - generic [ref=f5e246]:
+                          - generic "read_file" [ref=f5e247]
+                          - generic [ref=f5e248]: 已完成
+                    - listitem [ref=f5e251]:
+                      - button "查看 read_file 结果" [ref=f5e252]:
+                        - generic [ref=f5e253]:
+                          - generic "read_file" [ref=f5e254]
+                          - generic [ref=f5e255]: 已完成
+                    - listitem [ref=f5e258]:
+                      - button "查看 read_file 结果" [ref=f5e259]:
+                        - generic [ref=f5e260]:
+                          - generic "read_file" [ref=f5e261]
+                          - generic [ref=f5e262]: 已完成
+                    - listitem [ref=f5e265]:
+                      - button "查看思考过程" [ref=f5e266]:
+                        - generic [ref=f5e267]: 思考
+                - generic [ref=f5e274]:
+                  - paragraph [ref=f5e275]: 我看到目录中已有一份研究报告。让我先查看关键文件： 「Harness：web-investigator」
+                  - paragraph [ref=f5e276]:
+                    - text: 你的项目目录中已有一份
+                    - strong [ref=f5e277]: 2026-08-12
+                    - text: 的完整研究报告，覆盖了 GitHub 上主流的开源 AI 桌面应用。以下是核心结论：
+                  - separator [ref=f5e278]
+                  - heading "已研究的关键项目" [level=2] [ref=f5e279]
+                  - table [ref=f5e280]:
+                    - rowgroup [ref=f5e281]:
+                      - row [ref=f5e282]:
+                        - columnheader "项目" [ref=f5e283]
+                        - columnheader "Stars" [ref=f5e284]
+                        - columnheader "许可证" [ref=f5e285]
+                        - columnheader "技术栈" [ref=f5e286]
+                        - columnheader "一句话定位" [ref=f5e287]
+                    - rowgroup [ref=f5e288]:
+                      - row [ref=f5e289]:
+                        - cell [ref=f5e290]:
+                          - strong [ref=f5e291]: GPT4All
+                        - cell "77.4k" [ref=f5e292]
+                        - cell "MIT" [ref=f5e293]
+                        - cell "C++/Python/Qt" [ref=f5e294]
+                        - cell "纯本地 LLM 运行器，无需 GPU" [ref=f5e295]
+                      - row [ref=f5e296]:
+                        - cell [ref=f5e297]:
+                          - strong [ref=f5e298]: Cherry Studio
+                        - cell "50.3k" [ref=f5e299]
+                        - cell "AGPL-3.0" [ref=f5e300]
+                        - cell "TS/Electron" [ref=f5e301]
+                        - cell "多模型聚合 + 300 助手 + MCP" [ref=f5e302]
+                      - row [ref=f5e303]:
+                        - cell [ref=f5e304]:
+                          - strong [ref=f5e305]: Jan
+                        - cell "44.0k" [ref=f5e306]
+                        - cell "Apache 2.0" [ref=f5e307]
+                        - cell "Rust/Tauri" [ref=f5e308]
+                        - cell "离线 ChatGPT 替代品，MCP 集成" [ref=f5e309]
+                      - row [ref=f5e310]:
+                        - cell [ref=f5e311]:
+                          - strong [ref=f5e312]: ClawX
+                        - cell "7.6k" [ref=f5e313]
+                        - cell "—" [ref=f5e314]
+                        - cell "TypeScript" [ref=f5e315]
+                        - cell "Agent GUI，极高频更新" [ref=f5e316]
+                      - row [ref=f5e317]:
+                        - cell [ref=f5e318]:
+                          - strong [ref=f5e319]: Everywhere
+                        - cell "6.2k" [ref=f5e320]
+                        - cell "—" [ref=f5e321]
+                        - cell "C#" [ref=f5e322]
+                        - cell "屏幕感知桌面 AI 助手" [ref=f5e323]
+                  - heading "关键趋势" [level=2] [ref=f5e324]
+                  - list [ref=f5e325]:
+                    - listitem [ref=f5e326]:
+                      - strong [ref=f5e327]: MCP 已成标配
+                      - text: — Cherry Studio、Jan、Everywhere 均已集成
+                    - listitem [ref=f5e328]:
+                      - strong [ref=f5e329]: Tauri (Rust) 正在替代 Electron
+                      - text: — 更轻量、性能更好（Jan、skills-manager 采用）
+                    - listitem [ref=f5e330]:
+                      - strong [ref=f5e331]: 早期项目已停滞
+                      - text: — lencx/ChatGPT（54.4k ⭐，最后更新 2024-08）、BingGPT 不再维护
+                    - listitem [ref=f5e332]:
+                      - strong [ref=f5e333]: Cherry Studio 最活跃
+                      - text: — 8k+ commits，清晰的 roadmap，开发者激励计划
+                  - separator [ref=f5e334]
+                  - paragraph [ref=f5e335]:
+                    - strong [ref=f5e336]: 你是要
+                    - text: ：① 基于已有报告直接使用结论？② 更新到最新数据（重新抓取 star 数和活跃度）？③ 深入某个具体项目的架构分析？
+              - button "复制消息" [ref=f5e337]
+        - generic [ref=f5e342]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f5e344]
+          - generic [ref=f5e345]:
+            - button "添加附件" [ref=f5e347]
+            - button "选择模型" [ref=f5e351]
+            - generic [ref=f5e359]:
+              - generic [ref=f5e368]: Effort
+              - generic [ref=f5e369]: MED
+              - slider "Effort" [ref=f5e371] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f5e372]

@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子 Agent 调度渲染 v3 · 流式派发 + 实时步骤展开</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --border: rgba(15,18,28,.10);
+    --border-strong: rgba(15,18,28,.18);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-soft: rgba(108,92,231,.08);
+    --primary-soft-2: rgba(108,92,231,.14);
+    --primary-text-on: #4b3fcf;
+    --agent: #0e9f6e;
+    --agent-soft: rgba(14,159,110,.08);
+    --agent-soft-2: rgba(14,159,110,.16);
+    --agent-text-on: #067a55;
+    --danger: #d63b3b;
+    --warn: #c47b00;
+    --code-bg: #0d1117;
+    --code-text: #c9d1d9;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+    --shadow-active: 0 0 0 2px rgba(14,159,110,.18), 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--surface); color: var(--text); font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; }
+
+  header.page { position: sticky; top: 0; z-index: 10; background: rgba(247,247,248,.88); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  header.page .inner { max-width: 940px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header.page h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+  header.page .tag-rec { font-size: 11px; font-weight: 600; color: #fff; background: var(--agent); padding: 3px 10px; border-radius: 999px; }
+  header.page .replay { font-size: 12px; padding: 5px 10px; border: 1px solid var(--border-strong); border-radius: 6px; background: #fff; cursor: pointer; color: var(--text); font-weight: 500; }
+  header.page .replay:hover { background: var(--surface); }
+
+  main { max-width: 940px; margin: 24px auto 80px; padding: 0 24px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; font-size: 12.5px; color: var(--text-muted); }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+  .legend .dot { width: 12px; height: 12px; border-radius: 4px; }
+  .legend .dot.main { background: var(--primary); }
+  .legend .dot.sub { background: var(--agent); }
+  .legend b { color: var(--text); }
+
+  .chat-list { display: flex; flex-direction: column; gap: 16px; }
+
+  /* ===== Message wrapper ===== */
+  .msg { display: flex; gap: 12px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: #eaf2ff; color: #0b2d6b; padding: 10px 14px; border-radius: 16px; border-bottom-right-radius: 6px; max-width: 85%; font-size: 13.5px; line-height: 1.55; }
+
+  .msg.assistant, .msg.agent { flex-direction: row; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; flex: 0 0 28px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: #fff; margin-top: 2px; }
+  .avatar.main { background: linear-gradient(135deg, #6c5ce7, #8b5cf6); }
+  .avatar.sub { background: linear-gradient(135deg, #0e9f6e, #34d399); }
+  .body-col { flex: 1; min-width: 0; max-width: calc(100% - 40px); }
+  .role-line { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--text-muted); }
+  .role-line .name { font-weight: 600; color: var(--text); }
+  .role-line .tag { font-size: 10.5px; padding: 1px 7px; border-radius: 999px; font-weight: 600; }
+  .role-line .tag.sub { background: var(--agent-soft-2); color: var(--agent-text-on); }
+  .role-line .tag.final { background: rgba(108,92,231,.14); color: var(--primary-text-on); }
+  .role-line .status { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text-muted-2); margin-left: auto; }
+  .role-line .status .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--agent); animation: pulse 1.2s infinite; }
+  .role-line .status.done .pulse { background: var(--text-muted-2); animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* ===== Assistant main bubble (trace) ===== */
+  .bubble.main { background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px; border-top-left-radius: 4px; padding: 12px 14px; box-shadow: var(--shadow-card); }
+  .bubble.main .trace-summary { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; user-select: none; }
+  .bubble.main .trace-summary .check { color: var(--agent); font-weight: 700; }
+  .bubble.main .trace-summary .arrow { margin-left: auto; font-size: 11px; color: var(--text-muted-2); }
+  .bubble.main .trace-steps { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .trace-step { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-muted); padding: 6px 10px; border-radius: 8px; background: var(--surface); cursor: pointer; }
+  .trace-step:hover { background: var(--primary-soft); }
+  .trace-step .ico { width: 14px; height: 14px; border-radius: 4px; background: var(--primary-soft-2); display: inline-flex; align-items: center; justify-content: center; font-size: 9px; color: var(--primary-text-on); }
+  .trace-step .ico.t-thinking { background: rgba(196,123,0,.14); color: var(--warn); }
+  .trace-step .ico.t-tool { background: var(--primary-soft-2); color: var(--primary-text-on); }
+  .trace-step .label { flex: 1; }
+  .trace-step .arrow { font-size: 10px; color: var(--text-muted-2); }
+  .trace-step.streaming .ico { background: rgba(14,159,110,.14); color: var(--agent-text-on); animation: pulse 1.2s infinite; }
+
+  /* ===== Agent (sub) bubble ===== */
+  .bubble.agent {
+    background: var(--agent-soft);
+    border: 1px solid rgba(14,159,110,.30);
+    border-radius: 14px;
+    border-top-left-radius: 4px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow .25s ease;
+  }
+  .bubble.agent.working {
+    border-color: var(--agent);
+    box-shadow: var(--shadow-active);
+  }
+  .bubble.agent .summary-line {
+    display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--text-muted); cursor: pointer; user-select: none;
+  }
+  .bubble.agent .summary-line .check { color: var(--agent); font-weight: 700; }
+  .bubble.agent .summary-line .arrow { margin-left: auto; font-size: 11px; color: var(--text-muted-2); transition: transform .2s ease; }
+  .bubble.agent .summary-line[aria-expanded="true"] .arrow { transform: rotate(180deg); }
+
+  /* Agent trace steps list (collapsed by default for finished; expanded while working) */
+  .bubble.agent .agent-trace { margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(14,159,110,.22); display: none; flex-direction: column; gap: 6px; }
+  .bubble.agent .agent-trace.open { display: flex; }
+  .bubble.agent .agent-step { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text); padding: 6px 10px; border-radius: 8px; background: rgba(255,255,255,.55); cursor: pointer; }
+  .bubble.agent .agent-step:hover { background: rgba(255,255,255,.85); }
+  .bubble.agent .agent-step .ico { width: 16px; height: 16px; border-radius: 4px; background: rgba(108,92,231,.14); color: var(--primary-text-on); display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex: 0 0 16px; }
+  .bubble.agent .agent-step .ico.t-thinking { background: rgba(196,123,0,.14); color: var(--warn); }
+  .bubble.agent .agent-step .ico.t-tool { background: rgba(14,159,110,.16); color: var(--agent-text-on); }
+  .bubble.agent .agent-step .label { flex: 1; }
+  .bubble.agent .agent-step .meta { font-size: 11px; color: var(--text-muted-2); }
+  .bubble.agent .agent-step.streaming .ico { animation: pulse 1.2s infinite; }
+  .bubble.agent .agent-step .arrow { font-size: 10px; color: var(--text-muted-2); }
+
+  /* Agent text body (typewriter) */
+  .bubble.agent .text-body { margin-top: 10px; font-size: 13.5px; line-height: 1.65; color: var(--text); white-space: pre-wrap; }
+  .bubble.agent .text-body:empty { display: none; }
+  .bubble.agent .text-body .cursor { display: inline-block; width: 7px; height: 14px; background: var(--agent); vertical-align: -2px; margin-left: 1px; animation: blink 1s infinite; }
+  @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+
+  .bubble.agent .empty-state { margin-top: 10px; font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+  .bubble.agent .empty-state .dots::after { content: ''; display: inline-block; width: 1.5em; text-align: left; animation: dots 1.4s infinite step-end; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+  /* ===== Step detail panel (expanded) ===== */
+  .step-detail { margin: 6px 0 4px 26px; padding: 10px 12px; border-radius: 8px; background: rgba(15,18,28,.04); font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11.5px; color: var(--text); line-height: 1.5; max-height: 180px; overflow: auto; }
+  .step-detail .kv { display: flex; gap: 8px; }
+  .step-detail .k { color: var(--text-muted); flex: 0 0 auto; }
+  .step-detail .v { color: var(--text); white-space: pre-wrap; word-break: break-word; }
+
+  footer.notes { max-width: 940px; margin: 0 auto; padding: 24px; color: var(--text-muted); font-size: 12.5px; line-height: 1.7; border-top: 1px solid var(--border); background: var(--surface-2); }
+  footer.notes h3 { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 8px; }
+  footer.notes ul { margin: 0; padding-left: 18px; }
+  footer.notes li { margin-bottom: 4px; }
+  footer.notes code { background: var(--surface); padding: 1px 5px; border-radius: 4px; font-size: 11.5px; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>子 Agent 调度渲染 v3</h1>
+    <span class="sub">派发后立即弹出 · 气泡内步骤实时展开 · typewriter 文本</span>
+    <span class="spacer"></span>
+    <button class="replay" onclick="replay()">↻ 重放动画</button>
+    <span class="tag-rec">推荐方案</span>
+  </div>
+</header>
+
+<main>
+  <div class="legend">
+    <div class="item"><span class="dot main"></span><b>主 Agent</b> · 左侧紫色描边 / 头像</div>
+    <div class="item"><span class="dot sub"></span><b>子 Agent (dispatch_to)</b> · 左侧绿色描边 / 头像 · 派发后立即出现</div>
+    <div class="item"><span style="font-size:11px;color:var(--warn);">⏱</span> 工作中有脉冲指示</div>
+  </div>
+
+  <div class="chat-list" id="chatList">
+    <!-- rendered by JS -->
+  </div>
+</main>
+
+<footer class="notes">
+  <h3>设计要点（v3 相对 v2 的关键差异）</h3>
+  <ul>
+    <li><b>派发即时反馈</b>：dispatch_to 进入执行 → 立即创建绿色"工作中"气泡（avatar + name + "子 Agent 回复" + 脉冲点 + "思考中…"）</li>
+    <li><b>实时步骤展开</b>：气泡内嵌 thinking / tool_call / tool_result 列表，每收到 SSE 帧就 push 一条 step（含 icon、label、参数/结果摘要）</li>
+    <li><b>typewriter 文本</b>：worker text_delta → 实时 append 到气泡正文（不再等 run_worker tool_result 一次性显示）</li>
+    <li><b>完成态</b>：最后一个 step 标"已完成" + 脉冲消失 + 文本光标消失 + trace 默认折叠</li>
+    <li><b>主 Agent trace 仍保留子 Agent 步骤</b>（用户选 B）— 主 Agent 的 trace 气泡 + agent 气泡同时可见，互不干扰</li>
+    <li><b>历史路径</b>：刷新页面 → parseHistoryMessages + rebuildDispatchAgentMessages 从 tool_call + tool_result 派生 bubble + 一次性文本（保持兼容）</li>
+  </ul>
+</footer>
+
+<script>
+/* ============================================================
+ * 流式剧本（与 SSE 顺序对齐）
+ * ============================================================ */
+const script = [
+  { type: 'user_text', text: '请用 coder 子 Agent 写一个 50 行的 React 旅游页面组件。' },
+
+  /* 主 Agent：思考 */
+  { type: 'main_thinking_delta', text: '好的，用户要 coder 写 React 组件。先派给 coder。' },
+  { type: 'main_thinking_done' },
+  /* 主 Agent：调 dispatch_to */
+  { type: 'main_tool_call', name: 'dispatch_to', toolId: 'tc-d1', input: { to: 'coder', task: '写一个 50 行的 React 旅游页面组件，含 5 个景点卡片。' } },
+  /* 后端 dispatch_started → 前端创建 agent 气泡 */
+  { type: 'agent_open', actorId: 'a-coder', actorName: 'coder', isFinal: false },
+  /* 主 Agent 收到 tool_start（route 到 coder agent bubble） */
+  { type: 'agent_step_open', kind: 'thinking', label: '思考' },
+  { type: 'agent_thinking_delta', text: '用户要 50 行 React 旅游页面。我会列数据 + 内联样式 + 收藏 + 排序。' },
+  { type: 'agent_step_done' },
+  /* coder: 列出工作目录 */
+  { type: 'agent_step_open', kind: 'tool', label: '列出文件 · list_files', meta: 'src/' },
+  { type: 'agent_tool_end', summary: '找到 12 个文件，确认 React 项目结构', isError: false },
+  /* coder: 读 package.json */
+  { type: 'agent_step_open', kind: 'tool', label: '读取文件 · read_file', meta: 'package.json' },
+  { type: 'agent_tool_end', summary: '确认 react 18 + 无额外 UI 库依赖', isError: false },
+  /* coder: 思考 */
+  { type: 'agent_step_open', kind: 'thinking', label: '思考' },
+  { type: 'agent_thinking_delta', text: '不引入新依赖，用 useState + useMemo 内联样式。' },
+  { type: 'agent_step_done' },
+  /* coder: 写文件 */
+  { type: 'agent_step_open', kind: 'tool', label: '写入文件 · write_file', meta: 'TravelPage.jsx' },
+  { type: 'agent_tool_end', summary: '已写入 TravelPage.jsx · 53 行', isError: false },
+  /* coder: 文本流（typewriter） */
+  { type: 'agent_text_delta', text: '我创建了一个带收藏 + 价格排序的旅游页面组件。\n\n**亮点**：\n- 5 个景点卡片（黄山、九寨沟、张家界、丽江、长城）\n- 卡片右上角 🤍/❤️ 收藏交互\n- 顶部按价格升/降序排序（useMemo 优化）\n- 响应式网格 `repeat(auto-fill, minmax(260px, 1fr))`\n- 零外部依赖，仅 React 内置 hooks\n\n保存为 `TravelPage.jsx` 即可使用。' },
+  /* coder: agent_reply 完成 */
+  { type: 'agent_done' },
+  /* 主 Agent 收到 tool_result → dispatch_to 完成 */
+  { type: 'main_tool_end', toolId: 'tc-d1', summary: 'dispatch_to: 已返回 coder 输出' },
+  /* 主 Agent 收尾文本 */
+  { type: 'main_text_delta', text: '好的，coder 已完成。组件在 `TravelPage.jsx`，含 5 个景点卡片 + 收藏 + 排序交互，零外部依赖。\n\n**使用方式**：\n```jsx\nimport TravelPage from "./TravelPage";\n```\n\n如需调整景点数据 / 接入真实图片 / 改成 TypeScript 告诉我。' },
+  { type: 'main_text_done' },
+  { type: 'main_done' },
+];
+
+/* ============================================================
+ * 状态机
+ * ============================================================ */
+const chatList = document.getElementById('chatList');
+
+function el(tag, attrs = {}, children = []) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of [].concat(children)) {
+    if (c == null) continue;
+    e.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+
+let state = null;
+
+function resetState() {
+  chatList.innerHTML = '';
+  state = {
+    userMsg: null,
+    main: { bubble: null, roleLine: null, traceSummary: null, traceSteps: null, textBody: null, streamingStep: null, working: true },
+    agents: new Map(), // actorId → { bubble, roleLine, traceSteps, textBody, working, streamingStep, lastStep, isFinal }
+  };
+}
+
+function ensureUser(text) {
+  if (state.userMsg) return;
+  const m = el('div', { class: 'msg user' }, el('div', { class: 'bubble' }, text));
+  chatList.appendChild(m);
+  state.userMsg = m;
+}
+
+function ensureMain() {
+  if (state.main.bubble) return;
+  const avatar = el('div', { class: 'avatar main' }, 'K');
+  const roleLine = el('div', { class: 'role-line' }, [
+    el('span', { class: 'name' }, '主 Agent'),
+    el('span', { class: 'status', id: 'mainStatus' }, [
+      el('span', { class: 'pulse' }),
+      el('span', {}, '生成中…'),
+    ]),
+  ]);
+  const summary = el('div', { class: 'trace-summary' }, [
+    el('span', { class: 'check' }, '✓'),
+    el('span', { id: 'mainSummaryText' }, '已完成 0 步 · 0 个工具'),
+    el('span', { class: 'arrow' }, '▾'),
+  ]);
+  summary.addEventListener('click', () => {
+    const open = traceSteps.style.display === 'flex';
+    traceSteps.style.display = open ? 'none' : 'flex';
+    summary.querySelector('.arrow').textContent = open ? '▾' : '▴';
+  });
+  const traceSteps = el('div', { class: 'trace-steps', style: 'display:flex;' });
+  const textBody = el('div', { class: 'text-body', style: 'margin-top:10px;font-size:13.5px;line-height:1.65;' });
+  const bubble = el('div', { class: 'bubble main' }, [summary, traceSteps, textBody]);
+  const col = el('div', { class: 'body-col' }, [roleLine, bubble]);
+  const msg = el('div', { class: 'msg assistant' }, [avatar, col]);
+  chatList.appendChild(msg);
+  state.main.bubble = bubble;
+  state.main.roleLine = roleLine;
+  state.main.traceSummary = summary;
+  state.main.traceSteps = traceSteps;
+  state.main.textBody = textBody;
+}
+
+function ensureAgent(actorId, actorName, isFinal) {
+  if (state.agents.has(actorId)) return state.agents.get(actorId);
+  const avatar = el('div', { class: 'avatar sub' }, actorName.charAt(0).toUpperCase());
+  const tag = isFinal
+    ? el('span', { class: 'tag final' }, '最终回答')
+    : el('span', { class: 'tag sub' }, '子 Agent 回复');
+  const status = el('span', { class: 'status', id: 'agentStatus-' + actorId }, [
+    el('span', { class: 'pulse' }),
+    el('span', {}, '思考中…'),
+  ]);
+  const roleLine = el('div', { class: 'role-line' }, [
+    el('span', { class: 'name' }, actorName),
+    tag,
+    status,
+  ]);
+  const summary = el('div', { class: 'summary-line', 'aria-expanded': 'true' }, [
+    el('span', { class: 'check' }, '✓'),
+    el('span', { id: 'agentSummaryText-' + actorId }, '已完成 0 步 · 0 个工具'),
+    el('span', { class: 'arrow' }, '▴'),
+  ]);
+  summary.addEventListener('click', () => {
+    const open = traceSteps.classList.contains('open');
+    traceSteps.classList.toggle('open');
+    summary.setAttribute('aria-expanded', String(open));
+    summary.querySelector('.arrow').textContent = open ? '▾' : '▴';
+  });
+  const traceSteps = el('div', { class: 'agent-trace open' });
+  const empty = el('div', { class: 'empty-state' }, [
+    el('span', {}, '思考中'),
+    el('span', { class: 'dots' }),
+  ]);
+  const textBody = el('div', { class: 'text-body' });
+  const bubble = el('div', { class: 'bubble agent working' }, [summary, traceSteps, empty, textBody]);
+  const col = el('div', { class: 'body-col' }, [roleLine, bubble]);
+  const msg = el('div', { class: 'msg agent' }, [avatar, col]);
+  chatList.appendChild(msg);
+
+  const agent = {
+    bubble, roleLine, traceSteps, textBody, empty,
+    working: true, isFinal,
+    steps: [], lastStep: null, lastText: '',
+    stepCount: 0, toolCount: 0,
+  };
+  state.agents.set(actorId, agent);
+
+  // place agent bubble immediately after the main assistant row
+  // (already appended; will visually follow since main bubble was created earlier)
+  return agent;
+}
+
+function updateMainSummary() {
+  const s = state.main;
+  const stepCount = s.traceSteps.querySelectorAll('.trace-step').length;
+  const toolCount = s.traceSteps.querySelectorAll('.trace-step.t-tool, .trace-step[data-kind="tool"]').length;
+  document.getElementById('mainSummaryText').textContent = `已完成 ${stepCount} 步 · ${toolCount} 个工具`;
+}
+
+function updateAgentSummary(agent) {
+  const stepCount = agent.traceSteps.querySelectorAll('.agent-step').length;
+  const toolCount = agent.traceSteps.querySelectorAll('.agent-step.t-tool, .agent-step[data-kind="tool"]').length;
+  document.getElementById('agentSummaryText-' + agent.actorId).textContent = `已完成 ${stepCount} 步 · ${toolCount} 个工具`;
+}
+
+/* ============================================================
+ * Step events
+ * ============================================================ */
+function mainThinkingDelta(text) {
+  ensureMain();
+  const s = state.main;
+  if (!s.streamingStep || s.streamingStep.kind !== 'thinking') {
+    const row = el('div', { class: 'trace-step streaming', 'data-kind': 'thinking' }, [
+      el('span', { class: 'ico t-thinking' }, '✦'),
+      el('span', { class: 'label', id: 'mainStreamingLabel' }, '思考'),
+      el('span', { class: 'arrow' }, '▸'),
+    ]);
+    row.addEventListener('click', () => toggleStepDetail(row, '思考过程', text));
+    s.traceSteps.appendChild(row);
+    s.streamingStep = { kind: 'thinking', row };
+  }
+  document.getElementById('mainStreamingLabel').textContent = '思考 · ' + text.slice(0, 30) + (text.length > 30 ? '…' : '');
+}
+
+function mainThinkingDone() {
+  const s = state.main;
+  if (s.streamingStep) {
+    s.streamingStep.row.classList.remove('streaming');
+    s.streamingStep = null;
+  }
+}
+
+function mainToolCall(name, toolId, input) {
+  ensureMain();
+  const s = state.main;
+  if (s.streamingStep) { s.streamingStep.row.classList.remove('streaming'); s.streamingStep = null; }
+  const row = el('div', { class: 'trace-step streaming', 'data-kind': 'tool', 'data-tool-id': toolId }, [
+    el('span', { class: 'ico t-tool' }, '⚙'),
+    el('span', { class: 'label' }, humanTool(name) + ' · ' + shortInput(input)),
+    el('span', { class: 'arrow' }, '▸'),
+  ]);
+  row.addEventListener('click', () => toggleStepDetail(row, humanTool(name), JSON.stringify(input, null, 2)));
+  s.traceSteps.appendChild(row);
+  s.streamingStep = { kind: 'tool', row, toolId };
+  updateMainSummary();
+}
+
+function mainToolEnd(toolId, summary) {
+  const s = state.main;
+  const row = s.traceSteps.querySelector(`[data-tool-id="${toolId}"]`);
+  if (row) {
+    row.classList.remove('streaming');
+    row.querySelector('.label').textContent = row.querySelector('.label').textContent + ' · ✓';
+  }
+  if (s.streamingStep?.toolId === toolId) s.streamingStep = null;
+  updateMainSummary();
+}
+
+function mainTextDelta(text) {
+  ensureMain();
+  const s = state.main;
+  if (!s.textBody.dataset.started) {
+    s.textBody.dataset.started = '1';
+    s.textBody.textContent = '';
+  }
+  // strip streaming cursor
+  const cursor = s.textBody.querySelector('.cursor');
+  if (cursor) cursor.remove();
+  s.textBody.appendChild(document.createTextNode(text));
+  // add cursor
+  s.textBody.appendChild(el('span', { class: 'cursor' }));
+}
+
+function mainTextDone() {
+  const s = state.main;
+  const cursor = s.textBody.querySelector('.cursor');
+  if (cursor) cursor.remove();
+}
+
+function mainDone() {
+  const s = state.main;
+  s.working = false;
+  const status = document.getElementById('mainStatus');
+  if (status) {
+    status.classList.add('done');
+    status.querySelector('span:last-child').textContent = '已完成';
+  }
+}
+
+function agentOpen(actorId, actorName, isFinal) {
+  ensureAgent(actorId, actorName, isFinal);
+  const a = state.agents.get(actorId);
+  a.actorId = actorId;
+  a.actorName = actorName;
+}
+
+function agentStepOpen(kind, label, meta) {
+  // route to last opened agent (we only have one in this demo)
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  if (agent.streamingStep) {
+    agent.streamingStep.row.classList.remove('streaming');
+  }
+  const row = el('div', { class: 'agent-step streaming', 'data-kind': kind }, [
+    el('span', { class: 'ico ' + (kind === 'thinking' ? 't-thinking' : 't-tool') }, kind === 'thinking' ? '✦' : '⚙'),
+    el('span', { class: 'label' }, label + (meta ? ' · ' + meta : '')),
+    el('span', { class: 'arrow' }, '▸'),
+  ]);
+  agent.traceSteps.appendChild(row);
+  agent.streamingStep = { kind, row };
+  // remove empty state
+  if (agent.empty && agent.empty.parentElement) agent.empty.remove();
+  agent.empty = null;
+  updateAgentSummary(agent);
+  row.addEventListener('click', () => toggleStepDetail(row, label, kind === 'thinking' ? '…' : '{…参数…}'));
+}
+
+function agentThinkingDelta(text) {
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  if (!agent.streamingStep || agent.streamingStep.kind !== 'thinking') return;
+  const labelEl = agent.streamingStep.row.querySelector('.label');
+  labelEl.textContent = '思考 · ' + text.slice(0, 40) + (text.length > 40 ? '…' : '');
+}
+
+function agentStepDone() {
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  if (agent.streamingStep) {
+    agent.streamingStep.row.classList.remove('streaming');
+    agent.streamingStep.row.querySelector('.label').textContent += ' · ✓';
+    agent.streamingStep = null;
+  }
+  updateAgentSummary(agent);
+}
+
+function agentToolEnd(summary, isError) {
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  if (agent.streamingStep) {
+    agent.streamingStep.row.classList.remove('streaming');
+    const labelEl = agent.streamingStep.row.querySelector('.label');
+    labelEl.textContent += ' · ✓ ' + summary;
+    agent.streamingStep = null;
+  }
+  updateAgentSummary(agent);
+}
+
+function agentTextDelta(text) {
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  if (!agent.textBody.dataset.started) {
+    agent.textBody.dataset.started = '1';
+    agent.textBody.textContent = '';
+    if (agent.empty && agent.empty.parentElement) agent.empty.remove();
+    agent.empty = null;
+  }
+  // remove old cursor
+  const cursor = agent.textBody.querySelector('.cursor');
+  if (cursor) cursor.remove();
+  agent.textBody.appendChild(document.createTextNode(text));
+  agent.textBody.appendChild(el('span', { class: 'cursor' }));
+}
+
+function agentDone() {
+  const agent = [...state.agents.values()][state.agents.size - 1];
+  agent.working = false;
+  agent.bubble.classList.remove('working');
+  // remove cursor
+  const cursor = agent.textBody.querySelector('.cursor');
+  if (cursor) cursor.remove();
+  // status
+  const status = document.getElementById('agentStatus-' + agent.actorId);
+  if (status) {
+    status.classList.add('done');
+    status.querySelector('span:last-child').textContent = '已完成';
+  }
+  // collapse trace by default
+  agent.traceSteps.classList.remove('open');
+  const summary = agent.bubble.querySelector('.summary-line');
+  summary.setAttribute('aria-expanded', 'false');
+  summary.querySelector('.arrow').textContent = '▾';
+}
+
+/* ============================================================
+ * Helpers
+ * ============================================================ */
+function humanTool(name) {
+  const map = {
+    dispatch_to: '派发 · dispatch_to',
+    hand_off_to: '移交 · hand_off_to',
+    run_worker: '派生 · run_worker',
+    list_files: '列出文件',
+    read_file: '读取文件',
+    write_file: '写入文件',
+    search_files: '搜索文件',
+  };
+  return map[name] || name;
+}
+function shortInput(input) {
+  if (!input) return '';
+  if (typeof input === 'string') return input.slice(0, 40);
+  const t = input.to || input.task || input.path || input.query || '';
+  return (t + '').slice(0, 40);
+}
+function toggleStepDetail(row, label, content) {
+  let detail = row.nextElementSibling;
+  if (detail && detail.classList.contains('step-detail')) {
+    detail.remove();
+    return;
+  }
+  detail = el('div', { class: 'step-detail' }, [
+    el('div', { class: 'kv' }, [el('span', { class: 'k' }, '▸ ' + label), el('span', { class: 'v' }, content)]),
+  ]);
+  row.parentElement.insertBefore(detail, row.nextSibling);
+}
+
+/* ============================================================
+ * Player
+ * ============================================================ */
+async function play() {
+  for (const ev of script) {
+    await sleep(550);
+    applyEvent(ev);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function applyEvent(ev) {
+  switch (ev.type) {
+    case 'user_text': ensureUser(ev.text); break;
+    case 'main_thinking_delta': mainThinkingDelta(ev.text); break;
+    case 'main_thinking_done': mainThinkingDone(); break;
+    case 'main_tool_call': mainToolCall(ev.name, ev.toolId, ev.input); break;
+    case 'main_tool_end': mainToolEnd(ev.toolId, ev.summary); break;
+    case 'main_text_delta': mainTextDelta(ev.text); break;
+    case 'main_text_done': mainTextDone(); break;
+    case 'main_done': mainDone(); break;
+    case 'agent_open': agentOpen(ev.actorId, ev.actorName, ev.isFinal); break;
+    case 'agent_step_open': agentStepOpen(ev.kind, ev.label, ev.meta); break;
+    case 'agent_thinking_delta': agentThinkingDelta(ev.text); break;
+    case 'agent_step_done': agentStepDone(); break;
+    case 'agent_tool_end': agentToolEnd(ev.summary, ev.isError); break;
+    case 'agent_text_delta': agentTextDelta(ev.text); break;
+    case 'agent_done': agentDone(); break;
+  }
+}
+
+function replay() {
+  resetState();
+  play();
+}
+resetState();
+play();
+</script>
+</body>
+</html>

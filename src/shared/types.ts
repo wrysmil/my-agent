@@ -116,10 +116,10 @@ export type StreamEvent =
   | { type: "tool_use_delta"; id: string; input: string }
   | { type: "tool_use_end"; id: string }
   // ---- 工具执行事件（Runner 层：AgentRunEvent 直接映射） ----
-  | { type: "tool_start"; name: string; id: string; input: unknown }
+  | { type: "tool_start"; name: string; id: string; input: unknown; actorName?: string; actorKind?: string }
   | { type: "tool_delta"; name?: string; id: string; inputDelta: string; inputBytes?: number }
   | { type: "tool_progress"; name: string; id: string; phase?: string; message: string; data?: Record<string, unknown> }
-  | { type: "tool_end"; name: string; id: string; result: string; isError?: boolean; durationMs?: number }
+  | { type: "tool_end"; name: string; id: string; result: string; isError?: boolean; durationMs?: number; actorName?: string; actorKind?: string }
   // ---- 上下文管理 ----
   | { type: "compaction"; tokensBefore: number; tokensAfter: number; summary?: string; durationMs?: number }
   | { type: "context_status"; phase: string; message: string; data?: Record<string, unknown> }
@@ -136,6 +136,28 @@ export type StreamEvent =
     }
   // ---- 思考完成 ----
   | { type: "thinking_complete"; text: string; durationMs: number }
+  // ---- 子 Agent 消息 ----
+  | {
+      type: "agent_message";
+      actorId: string;
+      actorName: string;
+      actorKind: string;
+      text: string;
+      isFinal: boolean;
+    }
+  // ---- 子 Agent 派发 / worker 步骤（实时气泡渲染）----
+  | {
+      type: "dispatch_started";
+      actorId: string;
+      actorName: string;
+      toolName: string;
+      toolId: string;
+      isFinal: boolean;
+    }
+  | { type: "worker_step_start"; actorId: string; kind: string; label: string; stepId: string }
+  | { type: "worker_text_delta"; actorId: string; text: string; stepId: string }
+  | { type: "worker_step_end"; actorId: string; stepId: string; summary: string; isError: boolean }
+  | { type: "dispatch_done"; actorId: string; toolName: string }
   // ---- 终止 ----
   | { type: "done"; result?: unknown }
   | { type: "error"; error: Error };

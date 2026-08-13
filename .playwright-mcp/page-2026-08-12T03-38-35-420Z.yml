@@ -1,0 +1,352 @@
+- generic [ref=f11e3]:
+  - complementary [ref=f11e4]:
+    - generic [ref=f11e5]: my-agent
+    - navigation [ref=f11e6]:
+      - link "控制台" [ref=f11e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f11e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f11e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f11e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f11e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f11e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f11e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f11e39]:
+      - generic [ref=f11e40]:
+        - generic [ref=f11e41]: 历史会话
+        - button "新对话" [ref=f11e42]
+      - list [ref=f11e44]:
+        - listitem [ref=f11e45]:
+          - link "研究开源 AI 桌面应用" [ref=f11e46] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e47]'
+        - listitem [ref=f11e51]:
+          - link "研究开源 AI 桌面应用" [ref=f11e52] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e53]'
+        - listitem [ref=f11e57]:
+          - link "研究开源 AI 桌面应用" [ref=f11e58] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e59]'
+        - listitem [ref=f11e63]:
+          - link "研究开源 AI 桌面应用" [ref=f11e64] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e65]'
+        - listitem [ref=f11e69]:
+          - link "研究开源 AI 桌面应用" [ref=f11e70] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e71]'
+        - listitem [ref=f11e75]:
+          - link "研究开源 AI 桌面应用" [ref=f11e76] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f11e77]'
+        - listitem [ref=f11e81]:
+          - link "项目目录看看" [ref=f11e82] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f11e83]'
+        - listitem [ref=f11e87]:
+          - link "项目目录看看" [ref=f11e88] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f11e89]'
+        - listitem [ref=f11e93]:
+          - link "项目目录看看" [ref=f11e94] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f11e95]'
+        - listitem [ref=f11e99]:
+          - link "项目目录看看" [ref=f11e100] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f11e101]'
+        - listitem [ref=f11e105]:
+          - link "项目目录看看" [ref=f11e106] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f11e107]'
+        - listitem [ref=f11e111]:
+          - link "项目目录看看" [ref=f11e112] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f11e113]'
+        - listitem [ref=f11e117]:
+          - link "项目目录看看" [ref=f11e118] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f11e119]'
+        - listitem [ref=f11e123]:
+          - link "项目目录看看" [ref=f11e124] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f11e125]'
+        - listitem [ref=f11e129]:
+          - link "看看项目目录" [ref=f11e130] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f11e131]'
+        - listitem [ref=f11e135]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f11e136] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f11e137]'
+        - listitem [ref=f11e141]:
+          - link "帮我看看项目目录" [ref=f11e142] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e143]'
+        - listitem [ref=f11e147]:
+          - link "帮我看看项目目录" [ref=f11e148] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e149]'
+        - listitem [ref=f11e153]:
+          - link "帮我看看项目目录" [ref=f11e154] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f11e155]'
+        - listitem [ref=f11e159]:
+          - link "帮我看看当前项目目录" [ref=f11e160] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f11e161]'
+  - generic [ref=f11e165]:
+    - banner [ref=f11e166]:
+      - generic [ref=f11e167]:
+        - button "Toggle theme" [ref=f11e168]
+        - button "Switch language" [ref=f11e175]
+        - generic [ref=f11e180]: K
+    - main [ref=f11e184]:
+      - generic [ref=f11e185]:
+        - heading "对话" [level=2] [ref=f11e193]
+        - log [ref=f11e593]:
+          - generic [ref=f11e594]:
+            - generic [ref=f11e637]: 项目目录看看
+            - generic [ref=f11e642]:
+              - generic [ref=f11e643]:
+                - generic [ref=f11e645]:
+                  - button "已完成 15 个步骤 · 10 个工具 15 步 · 10 个工具" [expanded] [ref=f11e646]:
+                    - generic [ref=f11e649]: 已完成 15 个步骤 · 10 个工具
+                    - generic [ref=f11e650]: 15 步 · 10 个工具
+                  - list [ref=f11e654]:
+                    - listitem [ref=f11e655]:
+                      - button "查看思考过程" [expanded] [ref=f11e656]:
+                        - generic [ref=f11e657]: 思考
+                      - paragraph [ref=f11e665]: 用户让我看看项目目录。我需要列出工作目录的内容。
+                    - listitem [ref=f11e666]:
+                      - button "查看 list_files 结果" [expanded] [ref=f11e667]:
+                        - generic [ref=f11e668]:
+                          - generic "列出文件" [ref=f11e669]
+                          - generic [ref=f11e670]: 已完成
+                      - generic [ref=f11e673]:
+                        - generic [ref=f11e674]: "dirPath: D:\\studyspace\\project\\my-agent, depth: 2"
+                        - generic [ref=f11e676]: <persisted-output ref="6555883a7c71c282" tool="list_files" size="46053" estimated_tokens="10596" status="success"> 📁 D:\studyspace\project\my-agent 📁 .git/ 📁
+                        - generic [ref=f11e677]: <persisted-output ref="6555883a7c71c282" tool="list_files" size="46053" estimated_tokens="10596" status="success"> 📁 D:\studyspace\project\my-agent 📁 .git/ 📁 .git/cursor/ 📁 .git/cursor/crepe/ 📁 .git/gk/ 📄 .git/gk/config (740 B) 📁 .git/hooks/ 📄 .git/hooks/applypatch-msg.sample (478 B) 📄 .git/hooks/commit-msg.sample (896 B) 📄 .git/hooks/fsmonitor-watchman.sample (4.6 KB) 📄 .git/hooks/post-update.sample (189 B) 📄 .git/hooks/pre-applypatch.sample (424 B) 📄 .git/hooks/pre-commit.sample (1.6 KB) 📄 .git/hooks/pre-merge-commit.sample (416 B) 📄 .git/hooks/pre-push.sample (1.3 KB) 📄 .git/hooks/pre-rebase.sample (4.8 KB) 📄 .git/hooks/pre-receive.sample (544 B) 📄 .git/hooks/prepare-commit-msg.sample (1.5 KB) 📄 .git/hooks/push-to-checkout.sample (2.7 KB) 📄 .git/hooks/sendemail-validate.sample (2.3 KB) 📄 .git/hooks/update.sample (3.6 KB) 📁 .git/info/ 📄 .git/info/exclude (541 B) 📁 .git/logs/ 📁 .git/logs/refs/ 📄 .git/logs/HEAD (18.6 KB) 📁 .git/objects/ 📁 .git/objects/00/ 📁 .git/objects/01/ 📁 .git/objects/02/ 📁 .git/objects/03/ 📁 .git/objects/04/ 📁 .git/objects/05/ 📁 .git/objects/06/ 📁 .git/objects/07/ 📁 .git/objects/08/ 📁 .git/objects/09/ 📁 .git/objects/0a/ 📁 .git/objects/0b/ 📁 .git/objects/0c/ 📁 .git/objects/0d/ 📁 .git/objects/0e/ 📁 .git/objects/0f/ 📁 .git/objects/10/ 📁 .git/objects/11/ 📁 .git/objects/12/ 📁 .git/objects/13/ 📁 .git/objects/14/ 📁 .git/objects/15/ 📁 .git/objects/16/ 📁 .git/objects/17/ 📁 .git/objects/18/ 📁 .git/objects/19/ 📁 .git/objects/1a/ 📁 .git/objects/1b/ 📁 .git/objects/1c/ 📁 .git/objects/1d/ 📁 .git/objects/1e/ 📁 .git/objects/1f/ 📁 .git/objects/20/ 📁 .git/objects/21/ 📁 .git/objects/22/ 📁 .git/objects/23/ 📁 .git/objects/24/ 📁 .git/objects/25/ 📁 .git/objects/26/ 📁 .git/objects/27/ 📁 .git/objects/28/ 📁 .git/objects/29/ 📁 .git/objects/2a/ 📁 .git/objects/2b/ 📁 .git/objects/2c/ 📁 .gi ... [40938 字符省略] ... ) 📄 .env.example (108 B) 📄 .gitignore (340 B) 📄 .mcp.json (226 B) 📄 .server.log (13.2 KB) 📄 AGENTS.md (6.1 KB) 📄 brainstorm-cycle-full.png (255.2 KB) 📄 brainstorm-cycle-v2.png (255.3 KB) 📄 chat.ts (32.5 KB) 📄 CLAUDE.md (915 B) 📄 config.json (670 B) 📄 cycle-grouping-empty.png (149.1 KB) 📄 cycle-grouping-multi.png (217.2 KB) 📄 cycle-grouping-multi2.png (149.1 KB) 📄 cycle-grouping-verified.png (182.8 KB) 📄 cycle-grouping-white.png (148.6 KB) 📄 manage.ps1 (18.6 KB) 📄 manage.sh (10.9 KB) 📄 package-lock.json (64.5 KB) 📄 package.json (548 B) 📄 README.md (5.8 KB) 📄 run-trace-typing-overview.png (171.4 KB) 📄 tsconfig.json (416 B) 📄 vitest.config.ts (311 B) 共 1275 项 [Full content is stored under result ref 6555883a7c71c282. Use tool_result_search(ref, query) first, or tool_result_read_chunk(ref, cursor, maxTokens) for an exact bounded slice. Do not use read_file on the stored path. </persisted-output>
+                    - listitem [ref=f11e678]:
+                      - button "查看思考过程" [expanded] [ref=f11e679]:
+                        - generic [ref=f11e680]: 思考
+                      - paragraph [ref=f11e688]: 项目目录内容很多。让我查看更多细节，比如 src 目录、package.json、README 等关键文件。
+                    - listitem [ref=f11e689]:
+                      - button "查看 read_file 结果" [expanded] [ref=f11e690]:
+                        - generic [ref=f11e691]:
+                          - generic "读取文件" [ref=f11e692]
+                          - generic [ref=f11e693]: 已完成
+                      - generic [ref=f11e696]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\package.json" [ref=f11e698]: package.json
+                        - generic [ref=f11e699]: "📄 package.json (27 行, 548 字符) 1| { 2| \"name\": \"my-agent\", 3| \"version\": \"0.1.0\", 4| \"type\": \"module\", 5| \"bin\": { 6| \"my-agent-web\": \"bin/my-agent-web.ts\" 7| }"
+                        - generic [ref=f11e700]: "📄 package.json (27 行, 548 字符) 1| { 2| \"name\": \"my-agent\", 3| \"version\": \"0.1.0\", 4| \"type\": \"module\", 5| \"bin\": { 6| \"my-agent-web\": \"bin/my-agent-web.ts\" 7| }, 8| \"scripts\": { 9| \"check\": \"tsc --noEmit\", 10| \"test\": \"vitest run\", 11| \"test:watch\": \"vitest\", 12| \"chat\": \"tsx chat.ts\", 13| \"web\": \"tsx bin/my-agent-web.ts\" 14| }, 15| \"dependencies\": { 16| \"async-mutex\": \"^0.5.0\", 17| \"dotenv\": \"^16.6.1\", 18| \"zod\": \"^3.24.0\" 19| }, 20| \"devDependencies\": { 21| \"@types/node\": \"^22.0.0\", 22| \"tsx\": \"^4.0.0\", 23| \"typescript\": \"^5.7.0\", 24| \"vitest\": \"^2.0.0\" 25| } 26| } 27|"
+                    - listitem [ref=f11e701]:
+                      - button "查看 read_file 结果" [expanded] [ref=f11e702]:
+                        - generic [ref=f11e703]:
+                          - generic "读取文件" [ref=f11e704]
+                          - generic [ref=f11e705]: 已完成
+                      - generic [ref=f11e708]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\README.md" [ref=f11e710]: README.md
+                        - generic [ref=f11e711]: "📄 README.md (174 行, 4185 字符) 1| # My Agent 2| 3| LLM Agent 运行时框架 - 从零搭建学习项目。 4| 5| ## 特性 6| 7| - **数字彩菜单 CLI** — 启动后进入主菜单，6 色循环编号，一键切换/配置/查看 8| - **本地 Provider"
+                        - generic [ref=f11e712]: "📄 README.md (174 行, 4185 字符) 1| # My Agent 2| 3| LLM Agent 运行时框架 - 从零搭建学习项目。 4| 5| ## 特性 6| 7| - **数字彩菜单 CLI** — 启动后进入主菜单，6 色循环编号，一键切换/配置/查看 8| - **本地 Provider 配置** — 在 `~/.my-agent/providers.json` 维护多个模型提供商，零环境变量 9| - **DeepSeek 适配** — 流式 / 非流式 / 工具调用 / 错误映射 10| - **持久化会话** — JSONL 消息存档 + 上下文侧车，可恢复历史对话 11| 12| ## 项目结构 13| 14| ``` 15| my-agent/ 16| ├── src/ 17| │ ├── shared/ # 错误、类型、日志（零依赖） 18| │ ├── config/ # Zod schema 配置 19| │ ├── tools/ # 工具抽象层 20| │ ├── providers/ # LLM Provider 适配层 21| │ ├── agent/ # Agent 主循环 22| │ ├── cli/ # 数字彩菜单 + 表单 23| │ ├── storage/ # JSON / JSONL 持久化 24| │ └── prompts/ # System Prompt 模板 25| ├── harness-kit/ # Harness-Kit 工程规范 26| └── tests/ # 单测 + 集成测试 27| ``` 28| 29| ## 技术栈 30| 31| - **TypeScript** + **Node.js** (ESM, NodeNext) 32| - **Zod** - 运行时配置校验 33| - **Vitest** - 测试框架 34| - **tsx** - TypeScript 直接执行 35| - **原生 ANSI 转义序列** - 数字彩菜单（无 chalk 依赖） 36| 37| ## 快速开始 38| 39| ```bash 40| npm install 41| npm run chat 42| ``` 43| 44| 首次运行会自动创建 `~/.my-agent/providers.json` 并预填 DeepSeek。进入主菜单后选 ② 设置 API Key。 45| 46| ## 数字彩菜单 47| 48| ``` 49| ┌───────────────────────────────────────┐ 50| │ 🤖 My Agent — 主菜单 │ 51| └───────────────────────────────────────┘ 52| 53| 当前: deepseek (DeepSeek) [启用] 54| 55| ① 开始对话 56| ② 设置模型提供商 57| ③ 查看当前提供商 58| ④ 退出 59| 60| 请选择 (1-4): 61| ``` 62| 63| **设置子菜单**（选 ② 进入）： 64| 65| ``` 66| ① 列出所有提供商 67| ② 修改当前提供商 68| ③ 切换当前提供商 69| ④ 启用 / 禁用 70| ⑤ 删除提供商 71| ⑥ 返回上级 72| ``` 73| 74| ## Provider 配置 75| 76| 存储路径：`~/.my-agent/providers.json`（文件权限 `0o600`） 77| 78| 可通过环境变量 `MY_AGENT_HOME` 覆盖根目录。 79| 80| ```json 81| { 82| \"version\": 1, 83| \"activeProviderId\": \"deepseek\", 84| \"providers\": { 85| \"deepseek\": { 86| \"id\": \"deepseek\", 87| \"name\": \"DeepSeek\", 88| \"type\": \"deepseek\", 89| \"apiKey\": \"sk-xxxxx\", 90| \"baseUrl\": \"https://api.deepseek.com/v1\", 91| \"defaultModel\": \"deepseek-chat\", 92| \"enabled\": true 93| } 94| } 95| } 96| ``` 97| 98| ## CLI 命令 99| 100| ```bash 101| npm run chat # 主菜单（默认） 102| npx tsx chat.ts --list # 列出历史会话 103| npx tsx chat.ts --load <id> # 恢复指定会话（跳过菜单） 104| ``` 105| 106| 对话内命令（输入 `/help` 查看）： 107| 108| - `/quit` `/exit` — 退出 109| - `/clear` — 清空上下文（新建 session） 110| - `/save` — 显示当前 session ID 111| - `/tools` — 列出所有工具 112| - `/skills` — 列出所有 Skill 113| - `/skill <id>` — 查看 Skill 详细内容 114| 115| ## Web 模式 116| 117| 除 CLI 外，亦提供浏览器版，启动后默认监听 `http://localhost:4321`。 118| 119| ### 启动 120| 121| ```bash 122| npm run web # 启动 Web 模式（默认端口 4321） 123| npx my-agent-web # 等价命令 124| ``` 125| 126| 启动后，`open-browser` 模块会**自动唤起默认浏览器**（macOS / Linux / Windows 跨平台支持）；若需手动打开，请访问 <http://localhost:4321>。 127| 128| ### 主要功能 129| 130| - **会话管理** — 新建 / 列表 / 重命名 / 删除 / 导出 131| - **Chat** — SSE 流式响应 + Markdown 渲染 + 工具调用卡片 132| - **Provider 管理** — DeepSeek 等多 provider 切换与配置 133| - **Agent / Skill 启动** — 一键拉起已注册的 Agent 与 Skill 134| - **上下文压缩** — `/session-compact` 滑动窗口式摘要 135| - **主题与 i18n** — 主题 `auto / light / dark`；i18n `zh / en` 136| 137| ### 快捷键 138| 139| | 快捷键 | 作用 | 140| | --- | --- | 141| | `Cmd/Ctrl+K` | 命令面板 | 142| | `Cmd/Ctrl+N` | 新建会话 | 143| | `Cmd/Ctrl+,` | 打开设置 | 144| | `Cmd/Ctrl+/` | 主菜单 | 145| | `Cmd/Ctrl+B` | 切换侧栏 | 146| | `Cmd/Ctrl+.` | 停止生成 | 147| | `Cmd/Ctrl+Enter` | 发送（Chat composer 内） | 148| | `Esc` | 关闭最上层 modal | 149| 150| ### 安全 151| 152| - **CSP / SRI** — `index.html` 声明严格 CSP，所有外链资源均带 `integrity` + `crossorigin` 153| - **零运行时依赖** — 仅 vanilla HTML / CSS / JS，无打包器、无运行时 npm 依赖 154| - **vendor 本地化** — `marked` / `DOMPurify` 等第三方库全部本地化（位于 `web/js/vendor/`），离线可用、可审计 155| - **API Key 隔离** — 与 CLI 共用 `~/.my-agent/providers.json`，前端不持久化原始 Key 156| 157| > 截图占位：<img src=\"docs/screenshots/web-home.png\" alt=\"Web home — 主菜单\"> 158| > 159| > （截图待 PR 补；提交前请将 `docs/screenshots/web-home.png` 加入 PR） 160| 161| ## 开发 162| 163| ```bash 164| npm test # 跑全量测试 165| npm run check # TypeScript 类型检查 166| npm run chat # 启动 CLI 167| ``` 168| 169| ## 文档 170| 171| - 设计规范：[`.ai-runtime-artifacts/specs/2026-08-05-cli-menu-and-provider-config.md`](.ai-runtime-artifacts/specs/2026-08-05-cli-menu-and-provider-config.md) 172| - 实施计划：[`.ai-runtime-artifacts/plans/2026-08-05-cli-menu-and-provider-config-plan.md`](.ai-runtime-artifacts/plans/2026-08-05-cli-menu-and-provider-config-plan.md) 173| - 验证产物：[`.ai-runtime-artifacts/verifications/2026-08-05-cli-menu-and-provider-config-verification.md`](.ai-runtime-artifacts/verifications/2026-08-05-cli-menu-and-provider-config-verification.md) 174|"
+                    - listitem [ref=f11e713]:
+                      - button "查看 list_files 结果" [expanded] [ref=f11e714]:
+                        - generic [ref=f11e715]:
+                          - generic "列出文件" [ref=f11e716]
+                          - generic [ref=f11e717]: 已完成
+                      - generic [ref=f11e720]:
+                        - generic [ref=f11e721]: "dirPath: D:\\studyspace\\project\\my-agent\\src, depth: 3"
+                        - generic [ref=f11e723]: 📁 D:\studyspace\project\my-agent\src 📁 agent/ 📄 agent/index.ts (4.4 KB) 📄 agent/persistent-session.ts (23.6 KB) 📄 agent/runner.ts (93.4 KB) 📄 agent/sessio
+                        - generic [ref=f11e724]: 📁 D:\studyspace\project\my-agent\src 📁 agent/ 📄 agent/index.ts (4.4 KB) 📄 agent/persistent-session.ts (23.6 KB) 📄 agent/runner.ts (93.4 KB) 📄 agent/session-serde.ts (4.2 KB) 📄 agent/session.ts (29.6 KB) 📄 agent/types.ts (28.2 KB) 📁 cli/ 📄 cli/agent-menu.ts (7.4 KB) 📄 cli/io.ts (2.9 KB) 📄 cli/menu.ts (3.3 KB) 📄 cli/provider-menu.ts (7.7 KB) 📄 cli/session-history.ts (3.4 KB) 📁 config/ 📄 config/loader.ts (2.8 KB) 📄 config/schema.ts (10.4 KB) 📁 orchestration/ 📄 orchestration/actor.ts (1.2 KB) 📄 orchestration/agent-spec.ts (3.4 KB) 📄 orchestration/dispatch.ts (9.1 KB) 📄 orchestration/tools.ts (9.0 KB) 📄 orchestration/workflow.ts (2.3 KB) 📁 prompts/ 📁 prompts/templates/ 📄 prompts/templates/base-agent.md (4.4 KB) 📄 prompts/templates/shared-rules.md (2.0 KB) 📄 prompts/index.ts (1.3 KB) 📄 prompts/loader.ts (6.2 KB) 📄 prompts/runtime-context.ts (2.6 KB) 📄 prompts/system-prompt-builder.ts (12.1 KB) 📁 providers/ 📁 providers/codecs/ 📄 providers/codecs/anthropic-messages.ts (5.6 KB) 📄 providers/codecs/google-generative-ai.ts (5.5 KB) 📄 providers/codecs/index.ts (1.1 KB) 📄 providers/codecs/openai-completions.ts (3.7 KB) 📄 providers/codecs/types.ts (551 B) 📁 providers/thinking/ 📄 providers/thinking/anthropic-messages.ts (2.9 KB) 📄 providers/thinking/google-generative-ai.ts (2.4 KB) 📄 providers/thinking/openai-completions.ts (1.4 KB) 📄 providers/thinking/types.ts (420 B) 📄 providers/anthropic.ts (16.1 KB) 📄 providers/base.ts (3.8 KB) 📄 providers/deepseek.ts (15.1 KB) 📄 providers/google.ts (13.1 KB) 📄 providers/grok.ts (2.7 KB) 📄 providers/index.ts (601 B) 📄 providers/mistral.ts (2.8 KB) 📄 providers/moonshot.ts (2.8 KB) 📄 providers/openai-compatible-stream.ts (9.1 KB) 📄 providers/openai.ts (9.6 KB) 📄 providers/provider-metadata.ts (2.0 KB) 📄 providers/qwen.ts (2.8 KB) 📄 providers/registry.ts (4.4 KB) 📄 providers/types.ts (811 B) 📁 shared/ 📄 shared/errors.ts (9.9 KB) 📄 shared/logger.ts (1.7 KB) 📄 shared/types.ts (5.2 KB) 📁 skills/ 📄 skills/index.ts (311 B) 📄 skills/loader.ts (9.9 KB) 📄 skills/prompt.ts (3.3 KB) 📄 skills/types.ts (1.3 KB) 📁 storage/ 📄 storage/index.ts (728 B) 📄 storage/jsonl.ts (7.6 KB) 📄 storage/locks.ts (1.0 KB) 📄 storage/path-sandbox.ts (1.4 KB) 📄 storage/paths.ts (3.1 KB) 📄 storage/providers-store.ts (5.6 KB) 📄 storage/README.md (2.0 KB) 📄 storage/session-store.ts (7.3 KB) 📁 tools/ 📄 tools/base.ts (2.7 KB) 📄 tools/bash-permissions.test.ts (5.1 KB) 📄 tools/bash-permissions.ts (4.0 KB) 📄 tools/builtin.ts (23.9 KB) 📄 tools/catalog.test.ts (6.1 KB) 📄 tools/catalog.ts (8.5 KB) 📄 tools/execution-plan.ts (3.3 KB) 📄 tools/tool-result-cap.test.ts (10.3 KB) 📄 tools/tool-result-cap.ts (12.2 KB) 📄 tools/tool-result-tools.test.ts (4.4 KB) 📄 tools/tool-result-tools.ts (7.3 KB) 📄 tools/view-skill.ts (1.7 KB) 📁 web/ 📁 web/server/ 📁 web/server/routes/ 📄 web/server/routes/agents.test.ts (14.0 KB) 📄 web/server/routes/agents.ts (10.6 KB) 📄 web/server/routes/config.ts (5.0 KB) 📄 web/server/routes/messages.test.ts (62.8 KB) 📄 web/server/routes/messages.ts (32.4 KB) 📄 web/server/routes/providers.test.ts (25.6 KB) 📄 web/server/routes/providers.ts (19.4 KB) 📄 web/server/routes/sessions.test.ts (19.3 KB) 📄 web/server/routes/sessions.ts (20.3 KB) 📄 web/server/routes/skills.test.ts (10.4 KB) 📄 web/server/routes/skills.ts (17.2 KB) 📄 web/server/routes/tools.ts (1.9 KB) 📁 web/server/validators/ 📄 web/server/validators/providers.ts (7.0 KB) 📄 web/server/validators/sessions.ts (5.2 KB) 📄 web/server/csp.ts (3.1 KB) 📄 web/server/errors.test.ts (16.1 KB) 📄 web/server/errors.ts (16.0 KB) 📄 web/server/graceful-shutdown.ts (4.3 KB) 📄 web/server/http-helpers.ts (4.6 KB) 📄 web/server/index.test.ts (10.9 KB) 📄 web/server/index.ts (11.6 KB) 📄 web/server/open-browser.test.ts (15.5 KB) 📄 web/server/open-browser.ts (11.1 KB) 📄 web/server/router.ts (6.8 KB) 📄 web/server/sse.test.ts (14.1 KB) 📄 web/server/sse.ts (11.6 KB) 📄 web/server/static.ts (5.8 KB) 📄 web/server/wire-routes.ts (6.9 KB) 共 119 项
+                    - listitem [ref=f11e725]:
+                      - button "查看思考过程" [expanded] [ref=f11e726]:
+                        - generic [ref=f11e727]: 思考
+                      - paragraph [ref=f11e735]: 让我再看一下根目录的关键文件，比如 config.json、.mcp.json、AGENTS.md 等，以及 web 前端部分，给出完整的项目概览。
+                    - listitem [ref=f11e736]:
+                      - button "查看 read_file 结果" [expanded] [ref=f11e737]:
+                        - generic [ref=f11e738]:
+                          - generic "读取文件" [ref=f11e739]
+                          - generic [ref=f11e740]: 已完成
+                      - generic [ref=f11e743]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\config.json" [ref=f11e745]: config.json
+                        - generic [ref=f11e746]: "📄 config.json (28 行, 628 字符) 1| { 2| \"agent\": { 3| \"defaultModel\": \"deepseek-v4-pro\", 4| \"defaultProvider\": \"deepseek\", 5| \"maxRetries\": 2, 6| \"maxToolLoops\":"
+                        - generic [ref=f11e747]: "📄 config.json (28 行, 628 字符) 1| { 2| \"agent\": { 3| \"defaultModel\": \"deepseek-v4-pro\", 4| \"defaultProvider\": \"deepseek\", 5| \"maxRetries\": 2, 6| \"maxToolLoops\": 20, 7| \"toolIdleTimeoutMs\": 300000, 8| \"systemPrompt\": \"你是一个有工具调用能力的 AI 助手。用中文回复。\" 9| }, 10| \"models\": { 11| \"providers\": { 12| \"deepseek\": { 13| \"baseUrl\": \"https://api.deepseek.com/v1\" 14| } 15| }, 16| \"catalog\": { 17| \"deepseek-v4-pro\": { 18| \"provider\": \"deepseek\", 19| \"model\": \"deepseek-v4-pro\", 20| \"contextWindow\": 65536, 21| \"maxOutputTokens\": 100000, 22| \"supportsTools\": true, 23| \"supportsStreaming\": true 24| } 25| } 26| } 27| } 28|"
+                    - listitem [ref=f11e748]:
+                      - button "查看 read_file 结果" [expanded] [ref=f11e749]:
+                        - generic [ref=f11e750]:
+                          - generic "读取文件" [ref=f11e751]
+                          - generic [ref=f11e752]: 已完成
+                      - generic [ref=f11e755]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\.mcp.json" [ref=f11e757]: .mcp.json
+                        - generic [ref=f11e758]: "📄 .mcp.json (5 行, 160 字符) 1| { 2| \"_comment\": \"MCP server 配置模板 — 由 harness-project.sh 投影到项目根 .mcp.json。Cursor 与 Claude Code 均读此文件（事实标准）。按需在 mcpServers 下添加 serv"
+                        - generic [ref=f11e759]: "📄 .mcp.json (5 行, 160 字符) 1| { 2| \"_comment\": \"MCP server 配置模板 — 由 harness-project.sh 投影到项目根 .mcp.json。Cursor 与 Claude Code 均读此文件（事实标准）。按需在 mcpServers 下添加 server。\", 3| \"mcpServers\": {} 4| } 5|"
+                    - listitem [ref=f11e760]:
+                      - button "查看 read_file 结果" [expanded] [ref=f11e761]:
+                        - generic [ref=f11e762]:
+                          - generic "读取文件" [ref=f11e763]
+                          - generic [ref=f11e764]: 已完成
+                      - generic [ref=f11e767]:
+                        - generic "filePath=D:\\studyspace\\project\\my-agent\\AGENTS.md" [ref=f11e769]: AGENTS.md
+                        - generic [ref=f11e770]: 📄 AGENTS.md (89 行, 4441 字符) 1| <!-- 自主性指令 — 请勿删除 --> 2| 你是一个自主编码代理。**自主性仅适用于实现阶段**，且须满足全部条件： 3| 1. 用户在本会话**已单独说过**「开始实现 / 直接做 / 并行执行」（或等价），**或** spec/plan FM 已
+                        - generic [ref=f11e771]: "📄 AGENTS.md (89 行, 4441 字符) 1| <!-- 自主性指令 — 请勿删除 --> 2| 你是一个自主编码代理。**自主性仅适用于实现阶段**，且须满足全部条件： 3| 1. 用户在本会话**已单独说过**「开始实现 / 直接做 / 并行执行」（或等价），**或** spec/plan FM 已 `approved: true` 且引用该授权原话； 4| 2. **不**含同句组合指令里的「然后执行」（见 `routing.md` § 组合指令）； 5| 3. 当前任务 **非**「写方案 / 写计划」阶段。 6| 满足后无需逐步征求许可，执行至完成（Tier 2+ 仍须尾盘产物）。 7| **Harness 阶段门禁优先：** 写入 spec / plan / decision 后须暂停；「写方案」「写计划」不属于实现阶段，未获用户继续指令前不得 auto-continue 改代码。详见 `routing.md` § 阶段门禁。Cursor 平台额外见 `.cursor/rules/ai-entry.mdc` § 文件写入与阶段门禁。 8| **Harness 尾盘优先（Cursor）：** 「完成」指本 GROUP / 批次已通过**集体测试**与**集体审查**并落盘（`collective-test` + `code-review`），而非末个 WU 返回即可停。见 `harness-kit/docs/superpowers/specs/2026-05-28-batch-closeout-review-and-collective-test.md`。 9| **Tier 1 Leader 直做：** 须 Write `verifications/*-verification-lite.md`，不得零落盘。见 `routing.md` § 任务 Tier。 10| 若受阻，尝试替代方案。仅在真正歧义或具有破坏性时才提问。 11| 并行子任务：Cursor 用 `.agents/agents/<role>.md` 共享 subagent（见 `harness-kit/.agents/`）；Claude / Trae 同理。 12| <!-- 自主性指令结束 --> 13| 14| <!-- 项目 Harness 覆盖层 — 请勿删除 --> 15| 在开展任务专项工作之前，按 **Route-first** 加载 `harness-kit/`（勿预读全集）。 16| 17| ## 加载规则 18| 19| 1. **始终**：`harness-kit/core/routing.md`（路由判定、阶段门禁、§ 按判定加载） 20| 2. **按 routing 判定追加**（见 `routing.md` § 按判定加载；**先 stage skill，再 artifacts 契约**）： 21| - 设计 / spec → Load **`brainstorming`** → `artifacts.md`（勿用 `artifact-templates/spec.md` 作正文） 22| - 计划 → Load **`writing-plans`** → `artifacts.md` + `plan.harness-overlay.md`；并行时 `dispatch.harness-overlay.md` 23| - 验证 → Load **`verification-before-completion`** → `project.verification.md`、`core/verification.md` 24| - 编排产物（execution-log、track 等）→ `artifact-templates/` 对应文件 25| - 改代码前 → `project.profile.md`、`context-map.md`（涉及模块时） 26| - Git → **`git-xywh` skill** + `project.git.md` 27| - runbook 任务 → `core/runbooks.md` 对应节 28| 3. **架构总览（可选）**：`core/harness.md` 29| 30| `harness-kit/` 层负责项目边界、产物契约、验证门禁与迁移可移植性。 31| 默认 harness 路由是强制基线。若用户指定技能或工具，将其视为对 `harness-kit/core/routing.md` 的附加项，除非用户明确要求跳过、禁用或仅使用其他路由。 32| 33| 34| <!-- 项目 Harness 覆盖层结束 --> 35| 36| # Agent Harness 顶层契约 37| 38| 本文件是**工具中立**的 Harness 入口。平台专章分列，避免 Cursor 误读其他平台指令。 39| 40| ## 平台专章 41| 42| | 平台 | 加载 | 43| | --- | --- | 44| | **Cursor** | `harness-kit/entrypoints/AGENTS.cursor-overlay.md`、`.cursor/rules/`、`.agents/agents/`、`orchestration` skill | 45| | **Claude Code** | `CLAUDE.md`、`orchestration` skill、`adapters/claude/bindings.md` | 46| 47| ## 强制声明 48| 49| 每个任务第一句：`「Harness：<route 或 Tier 0/1>」`；stage skill / Tier 1+ 次行 `Skills:`（见 `routing.md` § 阶段指定 skill 必用）。 50| 路由表见 `harness-kit/core/routing.md`（含 Capability / Cursor / Claude 列）。 51| 52| ## 路由摘要 53| 54| | 任务 | Cursor | Claude | 55| | --- | --- | --- | 56| | 设计 | `superpowers:brainstorming` | 同左 | 57| | 计划 | `superpowers:writing-plans` | 同左 | 58| | 多 task 实现 | `orchestration` | `orchestration` | 59| | 验证 / 集体测试 | `superpowers:verification-before-completion` | 同左 | 60| | 尾盘（批次收尾） | `verification-before-completion` → `requesting-code-review` | 同左 | 61| | 信息调研 | `web-investigator` | Task + web-investigator | 62| | Git（提交 / 分支 / MR） | `git-xywh` + `project.git.md` | 同左 | 63| 64| 涉及提交、分支、MR 时由 **Leader** invoke `git-xywh`；子 Agent 默认不 commit。组织规范在 skill，项目差异在 `project.git.md`。 65| 66| ## 可选：Cursor Hooks 67| 68| 启用 Harness 路由提示 hook：见 `harness-kit/adapters/cursor/.cursor/hooks/README.md`。 69| 70| ## 参考资料索引 71| 72| 以下参考资料统一存放在 `harness-kit/references/`（集中式）。**不是\"按需参考\"，而是对应阶段路由的强制门禁。** Leader 进入路由时必须 Read 关联 references 并逐项对照执行（见 `routing.md` § 参考资料强制加载）。 73| 74| | 文件 | 用途 | 被引用的 skill | 75| |------|------|---------------| 76| | `harness-kit/references/definition-of-done.md` | 项目级完成定义（20+ 检查项） | `verification-before-completion`, `incremental-implementation`, `shipping-and-launch` | 77| | `harness-kit/references/testing-patterns.md` | 测试模式（AAA、Mock 层次、反模式） | `test-driven-development`, `debugging-and-error-recovery` | 78| | `harness-kit/references/security-checklist.md` | Web 安全 + OWASP/LLM Top 10 | `security-and-hardening`, `code-review-and-quality`, `shipping-and-launch` | 79| | `harness-kit/references/performance-checklist.md` | Web 性能（CWV、前后端清单） | `performance-optimization`, `code-review-and-quality`, `shipping-and-launch` | 80| | `harness-kit/references/orchestration-patterns.md` | 编排模式 + 反模式 + 决策流 | `orchestration`, `doubt-driven-development` | 81| | `harness-kit/references/observability-checklist.md` | 可观测性（RED/USE、日志/指标/告警） | `observability-and-instrumentation` | 82| | `harness-kit/references/accessibility-checklist.md` | WCAG 2.1 AA 无障碍检查 | `frontend-ui-engineering`, `shipping-and-launch` | 83| 84| **违反：** 未 Read references 即声称完成 → 无效；产物无 `### References 检查` → 退回。 85| 86| ## 可选：Continuous Loop 87| 88| 长期自治循环（opt-in）：见 `harness-kit/core/orchestration/continuous-loop.md`。 89|"
+                    - listitem [ref=f11e772]:
+                      - button "查看 list_files 结果" [expanded] [ref=f11e773]:
+                        - generic [ref=f11e774]:
+                          - generic "列出文件" [ref=f11e775]
+                          - generic [ref=f11e776]: 已完成
+                      - generic [ref=f11e779]:
+                        - generic [ref=f11e780]: "depth: 1, dirPath: D:\\studyspace\\project\\my-agent\\web"
+                        - generic [ref=f11e782]: 📁 D:\studyspace\project\my-agent\web 📁 dist/ 📁 dist/assets/ 📁 dist/fonts/ 📄 dist/brainstorm-cycle.html (18.6 KB) 📄 dist/index.html (786 B) 📁 node_modules
+                        - generic [ref=f11e783]: 📁 D:\studyspace\project\my-agent\web 📁 dist/ 📁 dist/assets/ 📁 dist/fonts/ 📄 dist/brainstorm-cycle.html (18.6 KB) 📄 dist/index.html (786 B) 📁 node_modules/ 📁 node_modules/@adobe/ 📁 node_modules/@alloc/ 📁 node_modules/@asamuzakjp/ 📁 node_modules/@axe-core/ 📁 node_modules/@babel/ 📁 node_modules/@csstools/ 📁 node_modules/@esbuild/ 📁 node_modules/@hookform/ 📁 node_modules/@jridgewell/ 📁 node_modules/@napi-rs/ 📁 node_modules/@playwright/ 📁 node_modules/@radix-ui/ 📁 node_modules/@rolldown/ 📁 node_modules/@rollup/ 📁 node_modules/@standard-schema/ 📁 node_modules/@tailwindcss/ 📁 node_modules/@tanstack/ 📁 node_modules/@testing-library/ 📁 node_modules/@types/ 📁 node_modules/@ungap/ 📁 node_modules/@vitejs/ 📁 node_modules/@vitest/ 📁 node_modules/agent-base/ 📁 node_modules/ansi-regex/ 📁 node_modules/ansi-styles/ 📁 node_modules/aria-query/ 📁 node_modules/assertion-error/ 📁 node_modules/asynckit/ 📁 node_modules/axe-core/ 📁 node_modules/bail/ 📁 node_modules/baseline-browser-mapping/ 📁 node_modules/browserslist/ 📁 node_modules/cac/ 📁 node_modules/call-bind-apply-helpers/ 📁 node_modules/caniuse-lite/ 📁 node_modules/ccount/ 📁 node_modules/chai/ 📁 node_modules/character-entities/ 📁 node_modules/character-entities-html4/ 📁 node_modules/character-entities-legacy/ 📁 node_modules/character-reference-invalid/ 📁 node_modules/check-error/ 📁 node_modules/clsx/ 📁 node_modules/combined-stream/ 📁 node_modules/comma-separated-tokens/ 📁 node_modules/convert-source-map/ 📁 node_modules/cookie/ 📁 node_modules/css.escape/ 📁 node_modules/cssstyle/ 📁 node_modules/csstype/ 📁 node_modules/data-urls/ 📁 node_modules/debug/ 📁 node_modules/decimal.js/ 📁 node_modules/decode-named-character-reference/ 📁 node_modules/deep-eql/ 📁 node_modules/delayed-stream/ 📁 node_modules/dequal/ 📁 node_modules/detect-libc/ 📁 node_modules/devlop/ 📁 node_modules/dom-accessibility-api/ 📁 node_modules/dunder-proto/ 📁 node_modules/electron-to-chromium/ 📁 node_modules/enhanced-resolve/ 📁 node_modules/entities/ 📁 node_modules/es-define-property/ 📁 node_modules/es-errors/ 📁 node_modules/es-module-lexer/ 📁 node_modules/es-object-atoms/ 📁 node_modules/es-set-tostringtag/ 📁 node_modules/esbuild/ 📁 node_modules/escalade/ 📁 node_modules/escape-string-regexp/ 📁 node_modules/estree-util-is-identifier-name/ 📁 node_modules/estree-walker/ 📁 node_modules/expect-type/ 📁 node_modules/extend/ 📁 node_modules/fdir/ 📁 node_modules/form-data/ 📁 node_modules/function-bind/ 📁 node_modules/gensync/ 📁 node_modules/get-intrinsic/ 📁 node_modules/get-proto/ 📁 node_modules/gopd/ 📁 node_modules/graceful-fs/ 📁 node_modules/has-symbols/ 📁 node_modules/has-tostringtag/ 📁 node_modules/hasown/ 📁 node_modules/hast-util-is-element/ 📁 node_modules/hast-util-sanitize/ 📁 node_modules/hast-util-to-jsx-runtime/ 📁 node_modules/hast-util-to-text/ 📁 node_modules/hast-util-whitespace/ 📁 node_modules/highlight.js/ 📁 node_modules/html-encoding-sniffer/ 📁 node_modules/html-url-attributes/ 📁 node_modules/http-proxy-agent/ 📁 node_modules/https-proxy-agent/ 📁 node_modules/iconv-lite/ 📁 node_modules/indent-string/ 📁 node_modules/inline-style-parser/ 📁 node_modules/is-alphabetical/ 📁 node_modules/is-alphanumerical/ 📁 node_modules/is-decimal/ 📁 node_modules/is-hexadecimal/ 📁 node_modules/is-plain-obj/ 📁 node_modules/is-potential-custom-element-name/ 📁 node_modules/jiti/ 📁 node_modules/js-tokens/ 📁 node_modules/jsdom/ 📁 node_modules/jsesc/ 📁 node_modules/json5/ 📁 node_modules/lightningcss/ 📁 node_modules/lightningcss-win32-x64-msvc/ 📁 node_modules/longest-streak/ 📁 node_modules/loupe/ 📁 node_modules/lowlight/ 📁 node_modules/lru-cache/ 📁 node_modules/lucide-react/ 📁 node_modules/lz-string/ 📁 node_modules/magic-string/ 📁 node_modules/markdown-table/ 📁 node_modules/math-intrinsics/ 📁 node_modules/mdast-util-find-and-replace/ 📁 node_modules/mdast-util-from-markdown/ 📁 node_modules/mdast-util-gfm/ 📁 node_modules/mdast-util-gfm-autolink-literal/ 📁 node_modules/mdast-util-gfm-footnote/ 📁 node_modules/mdast-util-gfm-strikethrough/ 📁 node_modules/mdast-util-gfm-table/ 📁 node_modules/mdast-util-gfm-task-list-item/ 📁 node_modules/mdast-util-mdx-expression/ 📁 node_modules/mdast-util-mdx-jsx/ 📁 node_modules/mdast-util-mdxjs-esm/ 📁 node_modules/mdast-util-phrasing/ 📁 node_modules/mdast-util-to-hast/ 📁 node_modules/mdast-util-to-markdown/ 📁 node_modules/mdast-util-to-string/ 📁 node_modules/micromark/ 📁 node_modules/micromark-core-commonmark/ 📁 node_modules/micromark-extension-gfm/ 📁 node_modules/micromark-extension-gfm-autolink-literal/ 📁 node_modules/micromark-extension-gfm-footnote/ 📁 node_modules/micromark-extension-gfm-strikethrough/ 📁 node_modules/micromark-extension-gfm-table/ 📁 node_modules/micromark-extension-gfm-tagfilter/ 📁 node_modules/micromark-extension-gfm-task-list-item/ 📁 node_modules/micromark-factory-destination/ 📁 node_modules/micromark-factory-label/ 📁 node_modules/micromark-factory-space/ 📁 node_modules/micromark-factory-title/ 📁 node_modules/micromark-factory-whitespace/ 📁 node_modules/micromark-util-character/ 📁 node_modules/micromark-util-chunked/ 📁 node_modules/micromark-util-classify-character/ 📁 node_modules/micromark-util-combine-extensions/ 📁 node_modules/micromark-util-decode-numeric-character-reference/ 📁 node_modules/micromark-util-decode-string/ 📁 node_modules/micromark-util-encode/ 📁 node_modules/micromark-util-html-tag-name/ 📁 node_modules/micromark-util-normalize-identifier/ 📁 node_modules/micromark-util-resolve-all/ 📁 node_modules/micromark-util-sanitize-uri/ 📁 node_modules/micromark-util-subtokenize/ 📁 node_modules/micromark-util-symbol/ 📁 node_modules/micromark-util-types/ 📁 node_modules/mime-db/ 📁 node_modules/mime-types/ 📁 node_modules/min-indent/ 📁 node_modules/ms/ 📁 node_modules/nanoid/ 📁 node_modules/node-releases/ 📁 node_modules/nwsapi/ 📁 node_modules/parse-entities/ 📁 node_modules/parse5/ 📁 node_modules/pathe/ 📁 node_modules/pathval/ 📁 node_modules/picocolors/ 📁 node_modules/picomatch/ 📁 node_modules/playwright/ 📁 node_modules/playwright-core/ 📁 node_modules/postcss/ 📁 node_modules/pretty-format/ 📁 node_modules/property-information/ 📁 node_modules/punycode/ 📁 node_modules/react/ 📁 node_modules/react-dom/ 📁 node_modules/react-hook-form/ 📁 node_modules/react-is/ 📁 node_modules/react-markdown/ 📁 node_modules/react-refresh/ 📁 node_modules/react-router/ 📁 node_modules/react-router-dom/ 📁 node_modules/redent/ 📁 node_modules/rehype-highlight/ 📁 node_modules/rehype-sanitize/ 📁 node_modules/remark-gfm/ 📁 node_modules/remark-parse/ 📁 node_modules/remark-rehype/ 📁 node_modules/remark-stringify/ 📁 node_modules/rollup/ 📁 node_modules/rrweb-cssom/ 📁 node_modules/safer-buffer/ 📁 node_modules/saxes/ 📁 node_modules/scheduler/ 📁 node_modules/semver/ 📁 node_modules/set-cookie-parser/ 📁 node_modules/siginfo/ 📁 node_modules/source-map-js/ 📁 node_modules/space-separated-tokens/ 📁 node_modules/stackback/ 📁 node_modules/std-env/ 📁 node_modules/stringify-entities/ 📁 node_modules/strip-indent/ 📁 node_modules/style-to-js/ 📁 node_modules/style-to-object/ 📁 node_modules/symbol-tree/ 📁 node_modules/tailwind-merge/ 📁 node_modules/tailwindcss/ 📁 node_modules/tapable/ 📁 node_modules/tinybench/ 📁 node_modules/tinyexec/ 📁 node_modules/tinyglobby/ 📁 node_modules/tinypool/ 📁 node_modules/tinyrainbow/ 📁 node_modules/tinyspy/ 📁 node_modules/tldts/ 📁 node_modules/tldts-core/ 📁 node_modules/tough-cookie/ 📁 node_modules/tr46/ 📁 node_modules/trim-lines/ 📁 node_modules/trough/ 📁 node_modules/typescript/ 📁 node_modules/undici-types/ 📁 node_modules/unified/ 📁 node_modules/unist-util-find-after/ 📁 node_modules/unist-util-is/ 📁 node_modules/unist-util-position/ 📁 node_modules/unist-util-stringify-position/ 📁 node_modules/unist-util-visit/ 📁 node_modules/unist-util-visit-parents/ 📁 node_modules/update-browserslist-db/ 📁 node_modules/vfile/ 📁 node_modules/vfile-message/ 📁 node_modules/vite/ 📁 node_modules/vite-node/ 📁 node_modules/vitest/ 📁 node_modules/w3c-xmlserializer/ 📁 node_modules/webidl-conversions/ 📁 node_modules/whatwg-encoding/ 📁 node_modules/whatwg-mimetype/ 📁 node_modules/whatwg-url/ 📁 node_modules/why-is-node-running/ 📁 node_modules/ws/ 📁 node_modules/xml-name-validator/ 📁 node_modules/xmlchars/ 📁 node_modules/yallist/ 📁 node_modules/zod/ 📁 node_modules/zustand/ 📁 node_modules/zwitch/ 📄 node_modules/.package-lock.json (177.2 KB) 📁 public/ 📁 public/fonts/ 📄 public/brainstorm-cycle.html (18.6 KB) 📁 src/ 📁 src/components/ 📁 src/features/ 📁 src/hooks/ 📁 src/i18n/ 📁 src/lib/ 📁 src/pages/ 📁 src/styles/ 📄 src/App.tsx (226 B) 📄 src/main.tsx (588 B) 📄 src/routes.tsx (1.4 KB) 📄 src/test-setup.ts (752 B) 📁 tests/ 📁 tests/e2e/ 📁 tests/features/ 📁 tests/unit/ 📄 index.html (602 B) 📄 package-lock.json (238.6 KB) 📄 package.json (1.4 KB) 📄 playwright.config.ts (650 B) 📄 postcss.config.js (61 B) 📄 tsconfig.json (468 B) 📄 tsconfig.tsbuildinfo (3.6 KB) 📄 vite.config.ts (558 B) 📄 vitest.config.ts (371 B) 共 294 项
+                    - listitem [ref=f11e784]:
+                      - button "查看思考过程" [expanded] [ref=f11e785]:
+                        - generic [ref=f11e786]: 思考
+                      - paragraph [ref=f11e794]: 项目结构比较清晰了。让我再看一下根目录其他关键文件，比如 chat.ts 的开头、manage.sh/ps1、CLAUDE.md 等，然后给用户一个简洁的项目概览。其实已经有足够信息了。让我快速看一下根目录的完整文件列表（第一层）。
+                    - listitem [ref=f11e795]:
+                      - button "查看 bash 结果" [expanded] [ref=f11e796]:
+                        - generic [ref=f11e797]:
+                          - generic "执行命令" [ref=f11e798]
+                          - generic [ref=f11e799]: 已完成
+                      - generic [ref=f11e802]:
+                        - generic "command=dir /b \"D:\\studyspace\\project\\my-agent\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\harness-kit\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\tests\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\.ai-runtime-artifacts\" 2>nul" [ref=f11e804]: dir /b "D:\studyspace\project\my-agent" …
+                        - generic [ref=f11e805]: .agents .ai-runtime-artifacts .claude .cursor .env.example .gitignore .idea .mcp.json .playwright-mcp .server.log .superpowers AGENTS.md bin brainstorm-cycle-fu
+                        - generic [ref=f11e806]: .agents .ai-runtime-artifacts .claude .cursor .env.example .gitignore .idea .mcp.json .playwright-mcp .server.log .superpowers AGENTS.md bin brainstorm-cycle-full.png brainstorm-cycle-v2.png chat.ts CLAUDE.md config.json cycle-grouping-empty.png cycle-grouping-multi.png cycle-grouping-multi2.png cycle-grouping-verified.png cycle-grouping-white.png dist docs fixtures harness-kit manage.ps1 manage.sh node_modules package-lock.json package.json pingtan README.md run-trace-typing-overview.png skills src test tsconfig.json vitest.config.ts web world-map ---- .agents .ai-runtime-artifacts .claude .idea .mcp.json adapters AGENTS.md artifact-templates context-map.md core docs entrypoints init project.git.md project.profile.md project.verification.md README.md references scripts ---- ---- contracts execution-logs plans research reviews specs stack verifications
+                    - listitem [ref=f11e807]:
+                      - button "查看思考过程" [expanded] [ref=f11e808]:
+                        - generic [ref=f11e809]: 思考
+                      - paragraph [ref=f11e817]: 注意到根目录有 tests 和 test 两个目录？tests 目录是空的（dir /b 没输出）。还有一个 test 目录。让我确认一下。另外 pingtan、world-map、skills、fixtures 等目录也值得看一眼。
+                    - listitem [ref=f11e818]:
+                      - button "查看 bash 结果" [expanded] [ref=f11e819]:
+                        - generic [ref=f11e820]:
+                          - generic "执行命令" [ref=f11e821]
+                          - generic [ref=f11e822]: 已完成
+                      - generic [ref=f11e825]:
+                        - generic "command=dir /b \"D:\\studyspace\\project\\my-agent\\test\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\pingtan\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\skills\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\world-map\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\docs\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\bin\" 2>nul & echo ---- & dir /b \"D:\\studyspace\\project\\my-agent\\fixtures\" 2>nul" [ref=f11e827]: dir /b "D:\studyspace\project\my-agent\t…
+                        - generic [ref=f11e828]: agent agent-runner.test.ts builtin-tools.test.ts chat-bootstrap.test.ts chat-full-flow.test.ts cli-io.test.ts cli-menu.test.ts config.test.ts e2e errors.test.ts
+                        - generic [ref=f11e829]: agent agent-runner.test.ts builtin-tools.test.ts chat-bootstrap.test.ts chat-full-flow.test.ts cli-io.test.ts cli-menu.test.ts config.test.ts e2e errors.test.ts fixtures logger.test.ts mocks orchestration persistent-session.test.ts prompt-system.test.ts providers providers-store.test.ts run-skill.test.ts session-history.test.ts skill-loader.test.ts skills-prompt.test.ts storage tools-page-api.test.ts tools.test.ts types.test.ts ---- index.html ---- api-and-interface-design browser-testing-with-devtools ci-cd-and-automation code-review-and-quality code-simplification coding context-engineering debugging-and-error-recovery deprecation-and-migration documentation-and-adrs doubt-driven-development frontend-ui-engineering git-workflow-and-versioning idea-refine incremental-implementation interview-me observability-and-instrumentation performance-optimization planning-and-task-breakdown security-and-hardening shipping-and-launch source-driven-development spec-driven-development test-driven-development using-agent-skills ---- index.html ---- plan spec ---- my-agent-web.ts run-skill.cjs ---- orchestration skills
+                - generic [ref=f11e832]:
+                  - paragraph [ref=f11e833]:
+                    - text: 项目概览已整理完毕。这是一个
+                    - strong [ref=f11e834]: LLM Agent 运行时框架
+                    - text: （TypeScript/Node，从零搭建的学习项目），核心情况如下：
+                  - heading [level=2] [ref=f11e835]:
+                    - text: 项目结构（
+                    - code [ref=f11e836]: D:\studyspace\project\my-agent
+                    - text: ）
+                  - paragraph [ref=f11e837]:
+                    - strong [ref=f11e838]:
+                      - text: 运行时核心
+                      - code [ref=f11e839]: src/
+                  - list [ref=f11e840]:
+                    - listitem [ref=f11e841]:
+                      - code [ref=f11e842]: agent/
+                      - text: — 主循环、会话管理（
+                      - code [ref=f11e843]: runner.ts
+                      - text: 93KB、
+                      - code [ref=f11e844]: session.ts
+                      - text: 、
+                      - code [ref=f11e845]: persistent-session.ts
+                      - text: ）
+                    - listitem [ref=f11e846]:
+                      - code [ref=f11e847]: providers/
+                      - text: — 多 Provider 适配：DeepSeek、OpenAI、Anthropic、Google、Grok、Mistral、Moonshot、Qwen，含 codec / thinking / 流式
+                    - listitem [ref=f11e848]:
+                      - code [ref=f11e849]: tools/
+                      - text: — 工具抽象层（bash 权限、catalog、tool-result 工具链，带测试）
+                    - listitem [ref=f11e850]:
+                      - code [ref=f11e851]: skills/
+                      - text: — Skill 加载与提示词模板
+                    - listitem [ref=f11e852]:
+                      - code [ref=f11e853]: cli/
+                      - text: — 数字彩菜单 CLI（1-6 色循环编号）
+                    - listitem [ref=f11e854]:
+                      - code [ref=f11e855]: web/server/
+                      - text: — HTTP/SSE 服务端（路由、SSE、CSP、优雅退出）
+                    - listitem [ref=f11e856]:
+                      - code [ref=f11e857]: config/
+                      - code [ref=f11e858]: storage/
+                      - code [ref=f11e859]: prompts/
+                      - code [ref=f11e860]: shared/
+                      - code [ref=f11e861]: orchestration/
+                      - text: — 配置、JSONL 持久化、提示词构建、编排
+                  - paragraph [ref=f11e862]:
+                    - strong [ref=f11e863]:
+                      - text: Web 前端
+                      - code [ref=f11e864]: web/src/
+                    - text: — React + Vite + Tailwind + Zustand（react-markdown、rehype-sanitize 等）
+                  - paragraph [ref=f11e865]:
+                    - strong [ref=f11e866]:
+                      - text: Harness 工程层
+                      - code [ref=f11e867]: harness-kit/
+                    - text: — 自主编码规范（routing、stage 门禁、产物契约），根目录
+                    - code [ref=f11e868]: AGENTS.md
+                    - text: 是入口
+                  - paragraph [ref=f11e869]:
+                    - strong [ref=f11e870]: 测试
+                    - text: — 主要放在根
+                    - code [ref=f11e871]: test/
+                    - text: （agent、providers、storage、orchestration、e2e 等），
+                    - code [ref=f11e872]: src/tools/
+                    - text: 、
+                    - code [ref=f11e873]: web/server/routes/
+                    - text: 内也有内联测试；根
+                    - code [ref=f11e874]: tests/
+                    - text: 目录为空
+                  - paragraph [ref=f11e875]:
+                    - strong [ref=f11e876]: 其他
+                    - text: —
+                    - code [ref=f11e877]: pingtan/
+                    - text: 、
+                    - code [ref=f11e878]: world-map/
+                    - text: （含 index.html）、
+                    - code [ref=f11e879]: skills/
+                    - text: （24 个领域 skill）、
+                    - code [ref=f11e880]: .ai-runtime-artifacts/
+                    - text: （specs/plans/verifications 文档）、
+                    - code [ref=f11e881]: docs/
+                    - text: （plan/spec）
+                  - heading "关键配置" [level=2] [ref=f11e882]
+                  - list [ref=f11e883]:
+                    - listitem [ref=f11e884]:
+                      - code [ref=f11e885]: config.json
+                      - text: — 默认 provider
+                      - code [ref=f11e886]: deepseek
+                      - text: 、模型
+                      - code [ref=f11e887]: deepseek-v4-pro
+                    - listitem [ref=f11e888]:
+                      - code [ref=f11e889]: .env.example
+                      - text: +
+                      - code [ref=f11e890]: ~/.my-agent/providers.json
+                      - text: — API Key 管理（零环境变量）
+                    - listitem [ref=f11e891]:
+                      - code [ref=f11e892]: package.json
+                      - text: — 脚本：
+                      - code [ref=f11e893]: chat
+                      - text: /
+                      - code [ref=f11e894]: web
+                      - text: /
+                      - code [ref=f11e895]: test
+                      - text: /
+                      - code [ref=f11e896]: check
+                  - paragraph [ref=f11e897]:
+                    - text: 当前
+                    - code [ref=f11e898]: src/web
+                    - text: 用的是 React 版（README 里描述的 vanilla 版与现状不符，README 可能滞后于代码演进）。
+                  - paragraph [ref=f11e899]: 需要我深入看某个模块，还是有什么具体任务？
+              - button "复制消息" [ref=f11e900]
+        - generic [ref=f11e603]:
+          - textbox "输入消息（⌘+Enter 发送）" [ref=f11e605]
+          - generic [ref=f11e606]:
+            - button "添加附件" [ref=f11e608]
+            - button "选择模型" [ref=f11e612]
+            - generic [ref=f11e620]:
+              - generic [ref=f11e629]: Effort
+              - generic [ref=f11e630]: MED
+              - slider "Effort" [ref=f11e632] [cursor=pointer]: "2"
+            - button "发送" [disabled] [ref=f11e633]

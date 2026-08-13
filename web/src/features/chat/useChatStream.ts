@@ -50,7 +50,9 @@ import type {
   TextBlock,
   ThinkingBlock,
   ToolCallBlock,
+  ToolResultBlock,
 } from './types';
+import { stripWorkerEnvelope } from './runTrace';
 
 // ============================================================
 // 常量
@@ -111,7 +113,7 @@ interface SerializedContentBlock {
   mediaType?: string;
 }
 
-interface SerializedMsg {
+export interface SerializedMsg {
   role: string;
   content: SerializedContentBlock[];
   turnId?: number;
@@ -193,7 +195,24 @@ function parseHistoryBlocks(
   return blocks;
 }
 
-function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
+export function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
+  // 预扫描：识别含 dispatch_to / hand_off_to 的 runId。一次 dispatch 后主 Agent 在
+  // JSONL 中会有两条 assistant 行（#1 等待态 id=randomUUID + #2 收尾 id=assistantMessageId，
+  // 见 runner.addAssistantMessage 的 persistedAssistantMessageId 逻辑），runId 相同。
+  // 这些 run 必须按 messageId 分组拆成独立气泡；普通工具循环（无 dispatch）仍按 runId
+  // 合并为单气泡，避免破坏「一次发送一个气泡」的既有行为。
+  const dispatchRunIds = new Set<string>();
+  for (const m of rawMessages) {
+    if (m.role !== 'assistant' || !m.runId) continue;
+    const content = Array.isArray(m.content) ? m.content : [];
+    const hasDispatch = content.some(
+      (c) =>
+        c.type === 'tool_use' &&
+        (c.name === 'dispatch_to' || c.name === 'hand_off_to'),
+    );
+    if (hasDispatch) dispatchRunIds.add(m.runId);
+  }
+
   const messages: ChatMessage[] = [];
   const assistantIndexByRun = new Map<string, number>();
 
@@ -222,11 +241,17 @@ function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
 
     // PersistentSession 按模型调用分别保存 assistant/tool_result 行，
     // UI 则以一次发送为一个气泡。新记录用 runId，旧 JSONL 回退到 turnId。
-    const groupKey = m.runId
-      ? `run:${m.runId}`
-      : m.turnId !== undefined
-        ? `turn:${m.turnId}`
-        : null;
+    // dispatch run 的 assistant 行（有 id）按 messageId 分组，使 #1 等待态 / #2 收尾
+    // 分离为独立气泡；tool_result 行始终按 runId 归并到 dispatch 后最后一条 assistant。
+    const isDispatchRun = m.runId !== undefined && dispatchRunIds.has(m.runId);
+    const useMsgGrouping = m.role === 'assistant' && isDispatchRun && m.id;
+    const groupKey = useMsgGrouping
+      ? `msg:${m.id}`
+      : m.runId
+        ? `run:${m.runId}`
+        : m.turnId !== undefined
+          ? `turn:${m.turnId}`
+          : null;
     const blocks = parseHistoryBlocks(m);
 
     const existingIndex =
@@ -257,9 +282,142 @@ function parseHistoryMessages(rawMessages: SerializedMsg[]): ChatMessage[] {
     if (groupKey !== null) {
       assistantIndexByRun.set(groupKey, messages.length - 1);
     }
+    // tool_result 行按 runId 分组归并，需让 run:runId 指向该 run 当前最后一条
+    // assistant（dispatch run 中 assistant 行按 msg:id 分组，但 tool_result 无 id，
+    // 必须经 runId 归并到等待态气泡 #1，而不是新建气泡）。
+    if (m.role === 'assistant' && m.runId) {
+      assistantIndexByRun.set(`run:${m.runId}`, messages.length - 1);
+    }
   }
 
-  return messages;
+  return rebuildDispatchAgentMessages(messages);
+}
+
+/**
+ * 后处理：从 history 消息里识别 dispatch_to / hand_off_to，
+ * 配对对应的 tool_result，剥 worker XML 信封，生成独立的 role:'agent' 消息
+ * 插到对应 assistant 之后。
+ *
+ * JSONL 持久化层未存 agent_message SSE 事件（见上一批 verification-lite），
+ * 刷新页面 / refetch 路径下必须靠 tool_call + tool_result 自重建 agent 气泡，
+ * 否则 dispatch_to / hand_off_to 的输出在 history 加载时凭空消失。
+ */
+function rebuildDispatchAgentMessages(
+  messages: ChatMessage[],
+): ChatMessage[] {
+  const DISPATCH_TOOL_NAMES = new Set(['dispatch_to', 'hand_off_to']);
+
+  const dispatchCalls: Array<{
+    insertAfter: number;
+    agentMsg: ChatMessage;
+  }> = [];
+
+  // 1) 收集 assistant 消息中所有 dispatch_to / hand_off_to 调用的 toolId + 目标 agent
+  for (let i = 0; i < messages.length; i += 1) {
+    const msg = messages[i];
+    if (msg.role !== 'assistant') continue;
+
+    for (const block of msg.blocks) {
+      if (block.type !== 'tool_call') continue;
+      if (!DISPATCH_TOOL_NAMES.has(block.toolName)) continue;
+
+      // dispatch_to / hand_off_to 的 input 都是 { to, prompt, ... }
+      const targetAgent =
+        typeof block.input === 'object' &&
+        block.input !== null &&
+        typeof (block.input as Record<string, unknown>).to === 'string'
+          ? ((block.input as Record<string, unknown>).to as string)
+          : undefined;
+
+      // 2) 找配对 tool_result：在 messages 里扫所有 tool_result block（不管 role），
+      //    其 toolCallId === block.toolId。注意 tool_result 可能跨多条消息存放。
+      let matchedContent: string | undefined;
+      let matchedResult: ToolResultBlock | undefined;
+      for (const candidate of messages) {
+        for (const cb of candidate.blocks) {
+          if (cb.type !== 'tool_result') continue;
+          if (cb.toolCallId !== block.toolId) continue;
+          matchedContent = cb.content;
+          matchedResult = cb;
+          break;
+        }
+        if (matchedContent !== undefined) break;
+      }
+
+      if (matchedContent === undefined || matchedResult === undefined) {
+        // 没有 tool_result：跳过（罕见；理论上前端流式层不会让这种情况持久化）
+        continue;
+      }
+
+      // 3) 剥 worker XML 信封（与流式路径 agent_message.text 等价）
+      const text = stripWorkerEnvelope(matchedContent);
+
+      // 4) 重建内部步骤 blocks（与 WU-02 实时路径 agent 气泡 blocks 结构一致）：
+      //    tool_call + tool_result，供刷新后 agent 气泡内 trace 步骤完整显示。
+      const actorName =
+        targetAgent !== undefined ? targetAgent : matchedResult.actorName;
+      const internalBlocks: Block[] = [
+        {
+          id: nextBlockId(),
+          type: 'tool_call',
+          status: 'done',
+          toolId: block.toolId,
+          toolName: block.toolName,
+          input: block.input,
+          inputRaw: block.inputRaw ?? '',
+          blockId: block.blockId,
+          ...(actorName !== undefined ? { actorName } : {}),
+        },
+        {
+          id: nextBlockId(),
+          type: 'tool_result',
+          status: matchedResult.isError ? 'error' : 'done',
+          toolCallId: block.toolId,
+          toolName: block.toolName,
+          content: text,
+          isError: matchedResult.isError,
+          durationMs: matchedResult.durationMs,
+          blockId: matchedResult.blockId,
+          ...(matchedResult.actorKind !== undefined
+            ? { actorKind: matchedResult.actorKind }
+            : {}),
+          ...(actorName !== undefined ? { actorName } : {}),
+        },
+      ];
+
+      // 5) 构造 agent 消息；ID 稳定以保证 mergePersistedWithOverlay 复用同一槽位
+      const agentMsg: ChatMessage = {
+        id: `hist-agent-${block.toolId}`,
+        role: 'agent',
+        blocks: internalBlocks,
+        text,
+        runId: msg.runId,
+        toolName: block.toolName,
+        ...(targetAgent !== undefined ? { actorName: targetAgent } : {}),
+        ...(matchedResult.actorKind !== undefined
+          ? { actorKind: matchedResult.actorKind }
+          : {}),
+        ...(matchedResult.actorName !== undefined && targetAgent === undefined
+          ? { actorName: matchedResult.actorName }
+          : {}),
+        summary: buildAgentSummary(internalBlocks),
+        status: 'done',
+        isFinal: block.toolName === 'hand_off_to',
+      };
+
+      dispatchCalls.push({ insertAfter: i, agentMsg });
+    }
+  }
+
+  if (dispatchCalls.length === 0) return messages;
+
+  // 5) 倒序插入（高 index 先插），避免前面插入导致 index 失效
+  const result = [...messages];
+  for (let k = dispatchCalls.length - 1; k >= 0; k -= 1) {
+    const { insertAfter, agentMsg } = dispatchCalls[k];
+    result.splice(insertAfter + 1, 0, agentMsg);
+  }
+  return result;
 }
 
 /**
@@ -307,6 +465,12 @@ export function mergePersistedWithOverlay(
     );
     if (idMatch >= 0) {
       const candidate = result[idMatch];
+      // agent 气泡（WU-04 review-fix）：实时气泡是权威（worker 步骤 blocks / 流式文本），
+      // persisted 重建气泡仅用于补齐缺失字段，不覆盖实时渲染，避免 refetch 后闪烁。
+      if (candidate.role === 'agent') {
+        result[idMatch] = mergeAgentForSameRun(persistedMsg, candidate);
+        continue;
+      }
       const indexedRevision = candidate.runId
         ? requiredRevisionForRun(candidate.runId)
         : null;
@@ -364,6 +528,27 @@ export function mergePersistedWithOverlay(
         result[userMatch] = mergeUserForSameRun(
           result[userMatch],
           persistedMsg,
+        );
+        continue;
+      }
+    }
+
+    // agent 兜底去重（WU-04 review-fix）：persisted 重建的 agent 气泡与 overlay 实时
+    // agent 气泡按 runId + toolName 归并。实时气泡 id 已与历史重建同构（
+    // hist-agent-${tool_use id}），正常按 identity 命中；此处兜底覆盖「实时 toolId
+    // 不可得（回退 blk-N）」的罕见场景，防止 persisted 重建气泡被当作独有条目插入。
+    if (persistedMsg.role === 'agent' && persistedMsg.runId) {
+      const agentMatch = result.findIndex(
+        (message) =>
+          message.role === 'agent' &&
+          message.runId === persistedMsg.runId &&
+          message.toolName !== undefined &&
+          message.toolName === persistedMsg.toolName,
+      );
+      if (agentMatch >= 0) {
+        result[agentMatch] = mergeAgentForSameRun(
+          persistedMsg,
+          result[agentMatch],
         );
         continue;
       }
@@ -476,20 +661,150 @@ function mergeAssistantForSameRun(
   return mergeAssistantTextFromOverlay(persisted, overlay);
 }
 
+/**
+ * agent 气泡去重合并（WU-04 review-fix）：overlay 实时气泡是权威（worker 步骤
+ * blocks / 流式文本），persisted 重建气泡只补齐 overlay 缺失的稳定字段 / 内容，
+ * 不覆盖实时渲染——避免 refetch 后 agent 气泡内容闪烁或丢失实时步骤。
+ */
+function mergeAgentForSameRun(
+  persisted: ChatMessage,
+  overlay: ChatMessage,
+): ChatMessage {
+  const overlayHasText = Boolean(overlay.text && overlay.text.length > 0);
+  const overlayHasBlocks = overlay.blocks.length > 0;
+  return {
+    ...overlay,
+    id: persisted.id ?? overlay.id,
+    ...(!overlayHasText && persisted.text
+      ? { text: persisted.text }
+      : {}),
+    ...(!overlayHasBlocks && persisted.blocks.length > 0
+      ? { blocks: persisted.blocks, summary: persisted.summary }
+      : {}),
+    ...(overlay.actorName === undefined && persisted.actorName !== undefined
+      ? { actorName: persisted.actorName }
+      : {}),
+  };
+}
+
+/**
+ * 更新 runId 对应的「最后一条」assistant 消息。
+ *
+ * 主 Agent 多气泡（mainResume）后，同一 run 可能只有一条 assistant（旧气泡），
+ * 收尾气泡使用新 runId——因此这里保持按 runId 精确匹配即可。改为从末尾向前
+ * 查找：若同 runId 出现多条 assistant（历史路径等场景），以最新一条为准，
+ * 避免旧等待态气泡被后续流式事件误更新。
+ */
 function updateAssistantForRun(
   messages: ChatMessage[],
   runId: string,
   updater: (message: ChatMessage) => ChatMessage,
 ): ChatMessage[] {
-  const index = messages.findIndex(
-    (message) => message.role === 'assistant' && message.runId === runId,
-  );
+  let index = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message.role === 'assistant' && message.runId === runId) {
+      index = i;
+      break;
+    }
+  }
   if (index < 0) return messages;
   const updated = updater(messages[index]);
   if (updated === messages[index]) return messages;
   const next = [...messages];
   next[index] = updated;
   return next;
+}
+
+/**
+ * 把 agent 消息插入到 runId 匹配的最后一条 assistant 消息之后（WU-03 §4.3）。
+ *
+ * 锚定「该 run 最后一条 assistant」；若其后已有同 run 的 agent 消息则继续越过，
+ * 以保持多个 agent_message 的到达顺序。找不到 assistant 时追加到末尾。
+ * 返回新数组（不可变）。
+ */
+export function insertAgentMessage(
+  messages: ChatMessage[],
+  runId: string,
+  agentMsg: ChatMessage,
+): ChatMessage[] {
+  let lastAssistantIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (message.role === 'assistant' && message.runId === runId) {
+      lastAssistantIdx = i;
+      break;
+    }
+  }
+  if (lastAssistantIdx < 0) {
+    return [...messages, agentMsg];
+  }
+  let insertAt = lastAssistantIdx + 1;
+  while (
+    insertAt < messages.length &&
+    messages[insertAt].role === 'agent' &&
+    messages[insertAt].runId === runId
+  ) {
+    insertAt += 1;
+  }
+  const next = [...messages];
+  next.splice(insertAt, 0, agentMsg);
+  return next;
+}
+
+/**
+ * 按 (runId, actorId) 定位 agent 气泡（WU-02 并发 dispatch 隔离路由）。
+ *
+ * agent 气泡在同一 run 内可多条（不同 actorId）；命名 agent 的 actor.id 恒等于
+ * agent_id（后端 `tools.ts` 不随派发实例唯一），同 turn 二次派发时 actorId 相同。
+ * 因此从末尾向前查找取「最后一条」匹配气泡——它是最近一次 dispatch 的活动气泡，
+ * 避免 worker 事件误写入已关闭的旧气泡。
+ */
+function findAgentMessageIndex(
+  messages: ChatMessage[],
+  runId: string,
+  actorId: string,
+): number {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i];
+    if (
+      message.role === 'agent' &&
+      message.runId === runId &&
+      message.actorId === actorId
+    ) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+/** 对 (runId, actorId) 对应的 agent 气泡应用 updater；未找到时原样返回（不可变）。 */
+function updateAgentForActor(
+  messages: ChatMessage[],
+  runId: string,
+  actorId: string,
+  updater: (message: ChatMessage) => ChatMessage,
+): ChatMessage[] {
+  const index = findAgentMessageIndex(messages, runId, actorId);
+  if (index < 0) return messages;
+  const updated = updater(messages[index]);
+  if (updated === messages[index]) return messages;
+  const next = [...messages];
+  next[index] = updated;
+  return next;
+}
+
+/** agent 气泡折叠摘要：已完成步骤 / 工具计数（WU-03 summary-line 契约）。 */
+export function buildAgentSummary(blocks: Block[]): string {
+  const doneSteps = blocks.filter(
+    (block) => block.status === 'done' || block.status === 'error',
+  ).length;
+  const doneTools = blocks.filter(
+    (block) =>
+      block.type === 'tool_call' &&
+      (block.status === 'done' || block.status === 'error'),
+  ).length;
+  return `已完成 ${doneSteps} 步 · ${doneTools} 个工具`;
 }
 
 // ============================================================
@@ -726,6 +1041,12 @@ export function useChatStream(sessionId: string) {
         let retries = 0;
         let assistantCreated = false;
         let terminalReceived = false;
+        /**
+         * 主 Agent 恢复（mainResume）后新建收尾气泡的 runId。
+         * dispatch_done（dispatch_to）触发 mainResume 时写入；此后同一响应内
+         * 的 assistant 流式事件（文本增量等）路由到该新气泡。
+         */
+        let mainResumeRunId: string | null = null;
 
         /** 确保 assistant 消息存在 */
         const ensureAssistant = () => {
@@ -811,8 +1132,9 @@ export function useChatStream(sessionId: string) {
                   const cbName = (cb.name as string) || '';
                   if (toolId && cbName) toolNameCache.set(toolId, cbName);
                   const toolName = cbName || toolNameCache.get(toolId) || '';
-                  store.updateMessages(sessionId, runId, (msgs) =>
-                    updateAssistantForRun(msgs, runId, (assistant) => {
+                  const blockStartRunId = mainResumeRunId ?? runId;
+                  store.updateMessages(sessionId, blockStartRunId, (msgs) =>
+                    updateAssistantForRun(msgs, blockStartRunId, (assistant) => {
                     const blocks = [...assistant.blocks];
                     blocks.push({
                       id: nextBlockId(),
@@ -841,10 +1163,12 @@ export function useChatStream(sessionId: string) {
 
                 if (delta.type === 'text_delta' && typeof delta.text === 'string') {
                   ensureAssistant();
+                  // mainResume 后主 Agent 继续流式：文本路由到新收尾气泡，避免污染旧等待态气泡。
+                  const targetRunId = mainResumeRunId ?? runId;
                   // P0: 使用 store 的 rAF 缓冲（按 run 隔离）
-                  store.appendTextBuffer(runId, delta.text);
-                  store.updateMessages(sessionId, runId, (msgs) =>
-                    updateAssistantForRun(msgs, runId, (assistant) =>
+                  store.appendTextBuffer(targetRunId, delta.text);
+                  store.updateMessages(sessionId, targetRunId, (msgs) =>
+                    updateAssistantForRun(msgs, targetRunId, (assistant) =>
                       assistant.streamState === 'generating'
                         ? assistant
                         : { ...assistant, streamState: 'generating' },
@@ -856,8 +1180,9 @@ export function useChatStream(sessionId: string) {
                   delta.type === 'input_json_delta' &&
                   typeof delta.partial_json === 'string'
                 ) {
-                  store.updateMessages(sessionId, runId, (msgs) =>
-                    updateAssistantForRun(msgs, runId, (assistant) => {
+                  const inputJsonRunId = mainResumeRunId ?? runId;
+                  store.updateMessages(sessionId, inputJsonRunId, (msgs) =>
+                    updateAssistantForRun(msgs, inputJsonRunId, (assistant) => {
                     const blocks = [...assistant.blocks];
                     let tcIdx = -1;
                     for (let i = blocks.length - 1; i >= 0; i--) {
@@ -882,8 +1207,9 @@ export function useChatStream(sessionId: string) {
               }
 
               case 'content_block_stop': {
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => {
+                const blockStopRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, blockStopRunId, (msgs) =>
+                  updateAssistantForRun(msgs, blockStopRunId, (assistant) => {
                   const blocks = [...assistant.blocks];
                   let textIdx = -1;
                   for (let i = blocks.length - 1; i >= 0; i--) {
@@ -905,8 +1231,9 @@ export function useChatStream(sessionId: string) {
                 ensureAssistant();
                 const thinking = (innerData.thinking as string) ?? '';
                 if (!thinking) break;
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => {
+                const thinkingRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, thinkingRunId, (msgs) =>
+                  updateAssistantForRun(msgs, thinkingRunId, (assistant) => {
                   const blocks = [...assistant.blocks];
                   let thIdx = -1;
                   for (let i = blocks.length - 1; i >= 0; i--) {
@@ -951,9 +1278,20 @@ export function useChatStream(sessionId: string) {
                 // 兜底：tool_use_delta SSE 帧不带 name —— 查同进程 toolNameCache
                 const toolName = cbName || toolNameCache.get(toolId) || '';
                 const isPartial = innerData.partial === true;
+                // 子 Agent 身份（WU-03）：tool_use 帧可选 actor_name/actor_kind
+                const actorName = (innerData.actor_name as string) ?? undefined;
+                const actorKind = (innerData.actor_kind as string) ?? undefined;
+                const actorFields =
+                  actorName !== undefined || actorKind !== undefined
+                    ? {
+                        ...(actorName !== undefined ? { actorName } : {}),
+                        ...(actorKind !== undefined ? { actorKind } : {}),
+                      }
+                    : {};
 
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => {
+                const toolUseRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, toolUseRunId, (msgs) =>
+                  updateAssistantForRun(msgs, toolUseRunId, (assistant) => {
                   const blocks = [...assistant.blocks];
                   const tcIdx = blocks.findIndex(
                     (b) => b.type === 'tool_call' && (b as import('./types').ToolCallBlock).toolId === toolId,
@@ -967,6 +1305,7 @@ export function useChatStream(sessionId: string) {
                         ...tc,
                         toolName: toolName || tc.toolName,
                         inputRaw: tc.inputRaw + delta,
+                        ...actorFields,
                       };
                     } else {
                       blocks[tcIdx] = {
@@ -977,6 +1316,7 @@ export function useChatStream(sessionId: string) {
                             ? (innerData.input as Record<string, unknown>)
                             : tc.input,
                         status: 'done',
+                        ...actorFields,
                       };
                     }
                   } else if (toolId) {
@@ -988,6 +1328,7 @@ export function useChatStream(sessionId: string) {
                       toolName,
                       inputRaw: '',
                       blockId: toolId,
+                      ...actorFields,
                     });
                   }
                   return {
@@ -1007,14 +1348,19 @@ export function useChatStream(sessionId: string) {
                 const trContent = (innerData.content as string) ?? '';
                 const trIsError = (innerData.is_error as boolean) ?? false;
                 const trDurationMs = innerData.duration_ms as number | undefined;
+                // 子 Agent 身份（WU-03）：tool_result 帧可选 actor_name/actor_kind
+                const actorName = (innerData.actor_name as string) ?? undefined;
+                const actorKind = (innerData.actor_kind as string) ?? undefined;
 
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => {
+                const toolResultRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, toolResultRunId, (msgs) =>
+                  updateAssistantForRun(msgs, toolResultRunId, (assistant) => {
                   const blocks = [...assistant.blocks];
 
                   // 标记对应 tool_call 为 done；同时补救 toolName —— Anthropic 协议下
                   // 部分 tool_use start 事件可能晚于 input delta，或 initial 事件的 name 字段
                   // 为空，需借助 tool_result 的 tool_name 兜底，否则用户看到工具名长时间空白。
+                  // actor 字段同理：tool_call 优先，tool_result 兜底（仅缺失时补写）。
                   const tcIdx = blocks.findIndex(
                     (b) => b.type === 'tool_call' && (b as import('./types').ToolCallBlock).toolId === trToolUseId,
                   );
@@ -1024,6 +1370,12 @@ export function useChatStream(sessionId: string) {
                       ...tc,
                       toolName: trToolName || tc.toolName,
                       status: 'done',
+                      ...(actorName !== undefined && tc.actorName === undefined
+                        ? { actorName }
+                        : {}),
+                      ...(actorKind !== undefined && tc.actorKind === undefined
+                        ? { actorKind }
+                        : {}),
                     };
                   }
 
@@ -1043,6 +1395,8 @@ export function useChatStream(sessionId: string) {
                       isError: trIsError,
                       durationMs: trDurationMs,
                       blockId: `result:${trToolUseId}`,
+                      ...(actorName !== undefined ? { actorName } : {}),
+                      ...(actorKind !== undefined ? { actorKind } : {}),
                     });
                   }
 
@@ -1064,6 +1418,281 @@ export function useChatStream(sessionId: string) {
               case 'tool_progress':
                 break;
 
+              // ==================================================
+              // WU-02：子 Agent 实时流式气泡状态机
+              // 事件契约见 spec §2 / plan WU-02；所有 agent 气泡更新
+              // 均按 (runId, actorId) 路由，支持并发 dispatch 隔离。
+              // ==================================================
+
+              case 'dispatch_started': {
+                // 派发开始：立即创建 role:'agent' 气泡（status working），
+                // 插到该 run 最后一条 assistant 之后。
+                // 同名 agent（actor.id=agent_id）可能同 turn 连续派发：若上一气泡
+                // 仍在工作中（未 close），复用现有气泡而非新建。
+                const dsActorId = (innerData.actorId as string) ?? '';
+                if (!dsActorId) break;
+                const dsToolName = (innerData.toolName as string) ?? '';
+                const dsToolId = (innerData.toolId as string) ?? '';
+                const dsIsFinal = (innerData.isFinal as boolean) ?? false;
+                store.updateMessages(sessionId, runId, (msgs) => {
+                  const existingIdx = findAgentMessageIndex(msgs, runId, dsActorId);
+                  const existingActive =
+                    existingIdx >= 0 &&
+                    msgs[existingIdx].status !== 'done';
+                  if (existingActive) return msgs;
+                  // 稳定 id（WU-04 review-fix）：与历史重建 rebuildDispatchAgentMessages
+                  // 同构 `hist-agent-${tool_use id}`，使 done 后 refetch 的 merge 能按
+                  // identity 命中 persisted 重建的 agent 气泡，避免重复插入。
+                  // 后端 dispatch_started 的 toolId 是合成 `sub:...`，与持久化 tool_use id
+                  // 不一致，因此回查该 run assistant 消息里最后一个未被占用的 dispatch
+                  // tool_call block，取其真实 tool_use id。
+                  const agentId = (() => {
+                    for (let i = msgs.length - 1; i >= 0; i -= 1) {
+                      const msg = msgs[i];
+                      if (msg.role !== 'assistant') continue;
+                      const blocks = msg.blocks;
+                      for (let b = blocks.length - 1; b >= 0; b -= 1) {
+                        const block = blocks[b];
+                        if (block.type !== 'tool_call') continue;
+                        if (block.toolName !== dsToolName) continue;
+                        if (!block.toolId) continue;
+                        const candidateId = `hist-agent-${block.toolId}`;
+                        if (
+                          !msgs.some(
+                            (m) => m.role === 'agent' && m.id === candidateId,
+                          )
+                        ) {
+                          return candidateId;
+                        }
+                      }
+                    }
+                    return nextBlockId();
+                  })();
+                  return insertAgentMessage(msgs, runId, {
+                    id: agentId,
+                    role: 'agent',
+                    blocks: [],
+                    text: '',
+                    actorId: dsActorId,
+                    ...((innerData.actorName as string | undefined)
+                      ? { actorName: innerData.actorName as string }
+                      : {}),
+                    ...(dsToolName ? { toolName: dsToolName } : {}),
+                    ...(dsToolId ? { toolId: dsToolId } : {}),
+                    isFinal: dsIsFinal,
+                    status: 'working',
+                    runId,
+                  });
+                });
+                break;
+              }
+
+              case 'worker_step_start': {
+                // worker 步骤开始：向对应气泡 blocks 推入 thinking / tool_call 步骤。
+                const wsActorId = (innerData.actorId as string) ?? '';
+                if (!wsActorId) break;
+                const kind = (innerData.kind as string) ?? '';
+                const label = (innerData.label as string) ?? '';
+                const stepId = (innerData.stepId as string) ?? '';
+                if (!stepId) break;
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAgentForActor(msgs, runId, wsActorId, (agentMsg) => {
+                    const blocks = [...agentMsg.blocks];
+                    if (kind === 'thinking') {
+                      blocks.push({
+                        id: nextBlockId(),
+                        type: 'thinking',
+                        status: 'streaming' as const,
+                        thinking: label,
+                        collapsed: false,
+                        stepId,
+                      });
+                    } else {
+                      blocks.push({
+                        id: nextBlockId(),
+                        type: 'tool_call',
+                        status: 'streaming' as const,
+                        toolId: stepId,
+                        toolName: label,
+                        inputRaw: '',
+                        stepId,
+                      });
+                    }
+                    return { ...agentMsg, blocks, summary: buildAgentSummary(blocks) };
+                  }),
+                );
+                break;
+              }
+
+              case 'worker_text_delta': {
+                // worker 文本增量：agent 气泡 .text 追加（typewriter）。
+                const wtActorId = (innerData.actorId as string) ?? '';
+                const deltaText = (innerData.text as string) ?? '';
+                if (!wtActorId || !deltaText) break;
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAgentForActor(msgs, runId, wtActorId, (agentMsg) => ({
+                    ...agentMsg,
+                    text: (agentMsg.text ?? '') + deltaText,
+                  })),
+                );
+                break;
+              }
+
+              case 'worker_step_end': {
+                // worker 步骤结束：finalize 对应内部步骤 + 追加 tool_result 摘要。
+                const weActorId = (innerData.actorId as string) ?? '';
+                const weStepId = (innerData.stepId as string) ?? '';
+                if (!weActorId || !weStepId) break;
+                const stepSummary = (innerData.summary as string) ?? '';
+                const stepIsError = (innerData.isError as boolean) ?? false;
+                const stepStatus: 'done' | 'error' = stepIsError ? 'error' : 'done';
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAgentForActor(msgs, runId, weActorId, (agentMsg) => {
+                    const blocks = agentMsg.blocks.map((block) => {
+                      if (block.stepId !== weStepId) return block;
+                      if (block.type === 'tool_call') {
+                        return { ...block, status: stepStatus };
+                      }
+                      if (block.type === 'thinking') {
+                        return { ...block, status: 'done' as const };
+                      }
+                      return block;
+                    });
+                    const toolCall = agentMsg.blocks.find(
+                      (block): block is ToolCallBlock =>
+                        block.type === 'tool_call' && block.stepId === weStepId,
+                    );
+                    const nextBlocks = toolCall
+                      ? [
+                          ...blocks,
+                          {
+                            id: nextBlockId(),
+                            type: 'tool_result' as const,
+                            status: stepStatus as 'done' | 'error',
+                            toolCallId: toolCall.toolId,
+                            toolName: toolCall.toolName,
+                            content: stepSummary,
+                            isError: stepIsError,
+                            stepId: weStepId,
+                          },
+                        ]
+                      : blocks;
+                    return {
+                      ...agentMsg,
+                      blocks: nextBlocks,
+                      summary: buildAgentSummary(nextBlocks),
+                    };
+                  }),
+                );
+                break;
+              }
+
+              case 'dispatch_done': {
+                // 派发完成：关闭 agent 气泡；dispatch_to（非 hand_off_to）触发 mainResume
+                // → 旧主 Agent 气泡标 done + 新建收尾气泡（新 runId 隔离路由）。
+                const ddActorId = (innerData.actorId as string) ?? '';
+                if (!ddActorId) break;
+                const ddToolName = (innerData.toolName as string) ?? '';
+                store.updateMessages(sessionId, runId, (msgs) =>
+                  updateAgentForActor(msgs, runId, ddActorId, (agentMsg) =>
+                    agentMsg.status === 'done'
+                      ? agentMsg
+                      : { ...agentMsg, status: 'done' },
+                  ),
+                );
+                const isHandOff = ddToolName === 'hand_off_to';
+                if (!isHandOff) {
+                  const newRunId = crypto.randomUUID();
+                  store.createRun(sessionId, newRunId);
+                  store.setRunStatus(newRunId, 'running');
+                  store.updateMessages(sessionId, runId, (msgs) => {
+                    const withOldDone = updateAssistantForRun(msgs, runId, (assistant) => {
+                      const next: ChatMessage =
+                        assistant.streamState === 'done'
+                          ? assistant
+                          : { ...assistant, streamState: 'done' };
+                      // WU-04 review-fix：等待态气泡的 messageId 来自 message_start
+                      //（= assistantMessageId），但该 id 属于终态收尾行（runner 非终态
+                      // 行用 randomUUID）。这里清空，避免 refetch merge 时 persisted
+                      // 终态行按 messageId 误命中等待气泡 → 收尾文本双份。
+                      if (next.messageId !== undefined) {
+                        return { ...next, messageId: undefined };
+                      }
+                      return next;
+                    });
+                    return [
+                      ...withOldDone,
+                      {
+                        id: nextBlockId(),
+                        role: 'assistant',
+                        blocks: [],
+                        runId: newRunId,
+                        streamState: 'generating',
+                        streamStartTime: Date.now(),
+                      },
+                    ];
+                  });
+                  mainResumeRunId = newRunId;
+                }
+                break;
+              }
+
+              case 'agent_message': {
+                // WU-03：子 Agent 可见回复。
+                // - 已有「实时气泡」（dispatch_started 创建，带 toolName/toolId）→ 收尾：
+                //   标 done / isFinal，文本与 worker_text_delta 流式内容去重；
+                // - 无实时气泡（纯 agent_message 兼容路径）→ 维持既有逻辑：每个事件新建气泡。
+                const amActorId = (innerData.actorId as string) ?? '';
+                if (!amActorId) break;
+                const amText = (innerData.text as string) ?? '';
+                const amIsFinal = (innerData.isFinal as boolean) ?? false;
+                store.updateMessages(sessionId, runId, (msgs) => {
+                  const existingIdx = findAgentMessageIndex(msgs, runId, amActorId);
+                  const realtimeBubble =
+                    existingIdx >= 0 &&
+                    Boolean(
+                      msgs[existingIdx].toolName ?? msgs[existingIdx].toolId,
+                    );
+                  if (realtimeBubble) {
+                    const existing = msgs[existingIdx];
+                    const existingText = existing.text ?? '';
+                    // 文本合并：最终文本权威。流式文本为最终文本前缀时以最终文本为准，
+                    // 避免 includes 在前缀场景（流式丢尾 / 与最终 result 不一致）重复拼接。
+                    const nextText =
+                      amText !== '' && amText.startsWith(existingText)
+                        ? amText
+                        : existingText.startsWith(amText)
+                          ? existingText
+                          : existingText + amText;
+                    const next = [...msgs];
+                    next[existingIdx] = {
+                      ...existing,
+                      text: nextText,
+                      isFinal: amIsFinal,
+                      status: 'done',
+                    };
+                    return next;
+                  }
+                  return insertAgentMessage(msgs, runId, {
+                    id: nextBlockId(),
+                    role: 'agent',
+                    blocks: [],
+                    text: amText,
+                    actorId: amActorId,
+                    ...(innerData.actorName !== undefined
+                      ? { actorName: innerData.actorName as string }
+                      : {}),
+                    ...(innerData.actorKind !== undefined
+                      ? { actorKind: innerData.actorKind as string }
+                      : {}),
+                    isFinal: amIsFinal,
+                    status: 'done',
+                    runId,
+                  });
+                });
+                break;
+              }
+
               case 'compaction':
               case 'context_status':
               case 'retry':
@@ -1078,9 +1707,11 @@ export function useChatStream(sessionId: string) {
               }
 
               case 'message_stop': {
-                store.setRunMessageStopped(runId, true);
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => ({
+                // mainResume 后主 Agent 恢复流在同一响应内：终态路由到恢复气泡。
+                const stopRunId = mainResumeRunId ?? runId;
+                store.setRunMessageStopped(stopRunId, true);
+                store.updateMessages(sessionId, stopRunId, (msgs) =>
+                  updateAssistantForRun(msgs, stopRunId, (assistant) => ({
                     ...assistant,
                     blocks: assistant.blocks.map((block) =>
                       block.status === 'streaming'
@@ -1096,8 +1727,9 @@ export function useChatStream(sessionId: string) {
               case 'usage': {
                 const usage = innerData.usage as Record<string, unknown> | undefined;
                 if (usage) {
-                  store.updateMessages(sessionId, runId, (msgs) =>
-                    updateAssistantForRun(msgs, runId, (assistant) => ({
+                  const usageRunId = mainResumeRunId ?? runId;
+                  store.updateMessages(sessionId, usageRunId, (msgs) =>
+                    updateAssistantForRun(msgs, usageRunId, (assistant) => ({
                         ...assistant,
                         usage: {
                           inputTokens: (usage.inputTokens as number) ?? 0,
@@ -1199,6 +1831,34 @@ export function useChatStream(sessionId: string) {
                 // flush text buffer + finalize
                 store.flushTextBuffer(runId);
                 store.cancelRunRaf(runId);
+                // mainResume 后主 Agent 恢复流的文本缓冲按新 run 隔离，需一并冲刷，
+                // 恢复气泡同步 finalize，并回收合成 run（避免僵尸 run 累积）。
+                const resumeRunId = mainResumeRunId;
+                if (resumeRunId) {
+                  store.flushTextBuffer(resumeRunId);
+                  store.cancelRunRaf(resumeRunId);
+                  store.updateMessages(sessionId, resumeRunId, (msgs) =>
+                    updateAssistantForRun(msgs, resumeRunId, (assistant) => {
+                      const finalized = finalizeStreamingBlocks(assistant.blocks);
+                      const finalizedAssistant: ChatMessage =
+                        finalized === assistant.blocks
+                          ? assistant
+                          : {
+                              ...assistant,
+                              blocks: finalized,
+                              streamState: 'done',
+                            };
+                      // WU-04 review-fix：done.messageId 即终态收尾 assistant 的持久化
+                      // id。写入合成收尾气泡，使 refetch merge 按 messageId 精确命中该
+                      // 气泡（而非等待态气泡），收尾文本只保留一份。
+                      if (messageId !== undefined) {
+                        return { ...finalizedAssistant, messageId };
+                      }
+                      return finalizedAssistant;
+                    }),
+                  );
+                  store.removeRun(resumeRunId);
+                }
                 store.updateMessages(sessionId, runId, (msgs) =>
                   updateAssistantForRun(msgs, runId, (assistant) => {
                     const finalized = finalizeStreamingBlocks(assistant.blocks);
@@ -1255,13 +1915,14 @@ export function useChatStream(sessionId: string) {
                 const errInfo = innerData.error as Record<string, unknown> | undefined;
                 const errMsg = (errInfo?.message as string) || '未知错误';
                 logger.error(`❌ 流式响应错误: ${errMsg}`);
-                store.updateMessages(sessionId, runId, (msgs) => {
+                const errRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, errRunId, (msgs) => {
                   const assistantExists = msgs.some(
                     (message) =>
-                      message.role === 'assistant' && message.runId === runId,
+                      message.role === 'assistant' && message.runId === errRunId,
                   );
                   if (assistantExists) {
-                    return updateAssistantForRun(msgs, runId, (assistant) => {
+                    return updateAssistantForRun(msgs, errRunId, (assistant) => {
                     const blocks = finalizeStreamingBlocks([...assistant.blocks]);
                     blocks.push({
                       id: nextBlockId(),
@@ -1285,7 +1946,7 @@ export function useChatStream(sessionId: string) {
                           text: `❌ 错误：${errMsg}`,
                         },
                       ],
-                      runId,
+                      runId: errRunId,
                     },
                   ];
                 });
@@ -1297,8 +1958,9 @@ export function useChatStream(sessionId: string) {
                 terminalReceived = true;
                 store.flushTextBuffer(runId);
                 store.cancelRunRaf(runId);
-                store.updateMessages(sessionId, runId, (msgs) =>
-                  updateAssistantForRun(msgs, runId, (assistant) => {
+                const abortedRunId = mainResumeRunId ?? runId;
+                store.updateMessages(sessionId, abortedRunId, (msgs) =>
+                  updateAssistantForRun(msgs, abortedRunId, (assistant) => {
                     const finalized = finalizeStreamingBlocks(assistant.blocks);
                     return finalized === assistant.blocks
                       ? assistant

@@ -234,9 +234,11 @@ function TraceRowCard({
 }) {
   const isError =
     step.status === 'error' || (step.kind === 'tool' && step.isError);
+  // WU-04 方案 B：子 Agent 步骤加绿色左描边（仅 actorName 存在时）
+  const hasActor = step.kind === 'tool' && step.actorName !== undefined;
   const baseClass = `flex h-9 w-full min-w-0 items-center gap-x-2 rounded-md border px-2.5 overflow-hidden ${
     isError ? 'border-danger/40 bg-danger-bg' : 'border-border bg-white'
-  }`;
+  }${hasActor ? ' border-l-2 border-l-emerald-500' : ''}`;
 
   return (
     <li className="relative min-w-0 pr-2">
@@ -345,6 +347,15 @@ function ToolStepRow({
       >
         {step.actionLabel}
       </span>
+      {step.actorName && (
+        <span
+          data-testid="badge-agent"
+          title={step.actorName}
+          className="shrink-0 rounded border border-emerald-500/25 bg-emerald-500/15 px-1.5 py-0.5 text-[11px] font-semibold text-emerald-700 whitespace-nowrap"
+        >
+          {step.actorName}
+        </span>
+      )}
       <span className="min-w-0 flex-1" aria-hidden />
       <span
         className={`shrink-0 text-xs tabular-nums ${

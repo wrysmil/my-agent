@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子 Agent 调度渲染 · 推荐方案 B+C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --surface: #f7f7f8;
+    --surface-2: #ffffff;
+    --border: rgba(15,18,28,.10);
+    --text: #161922;
+    --text-muted: #5b6373;
+    --text-muted-2: rgba(91,99,115,.65);
+    --primary: #6c5ce7;
+    --primary-soft: rgba(108,92,231,.08);
+    --primary-soft-2: rgba(108,92,231,.14);
+    --agent: #0e9f6e;
+    --agent-soft: rgba(14,159,110,.10);
+    --agent-soft-2: rgba(14,159,110,.16);
+    --danger: #d63b3b;
+    --shadow-card: 0 1px 2px rgba(15,18,28,.04), 0 4px 14px rgba(15,18,28,.05);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--surface); color: var(--text); font-family: 'Inter', system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; }
+
+  header.page { position: sticky; top: 0; z-index: 10; background: rgba(247,247,248,.88); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  header.page .inner { max-width: 920px; margin: 0 auto; padding: 14px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header.page h1 { font-size: 16px; font-weight: 600; margin: 0; letter-spacing: -0.005em; }
+  header.page .sub { font-size: 12px; color: var(--text-muted); }
+  header.page .spacer { flex: 1; }
+  header.page .tag-rec { font-size: 11px; font-weight: 600; color: #fff; background: var(--agent); padding: 3px 10px; border-radius: 999px; }
+
+  main { max-width: 920px; margin: 24px auto 80px; padding: 0 24px; }
+
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 12px 16px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; font-size: 12.5px; color: var(--text-muted); }
+  .legend .item { display: flex; align-items: center; gap: 8px; }
+  .legend .dot { width: 12px; height: 12px; border-radius: 4px; }
+  .legend .dot.main { background: var(--primary); }
+  .legend .dot.sub { background: var(--agent); }
+  .legend b { color: var(--text); }
+
+  .chat-list { display: flex; flex-direction: column; gap: 16px; }
+
+  .msg { display: flex; gap: 12px; }
+  .msg.user { justify-content: flex-end; }
+  .msg.user .bubble { background: #eaf2ff; color: #0b2d6b; padding: 10px 14px; border-radius: 16px; border-bottom-right-radius: 6px; max-width: 85%; font-size: 13.5px; line-height: 1.5; }
+
+  .msg.assistant { flex-direction: column; align-items: stretch; }
+  .msg.agent { flex-direction: column; align-items: stretch; }
+
+  .trace-bubble { background: #f1f2f4; border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-card); position: relative; overflow: hidden; align-self: flex-start; width: 100%; max-width: 660px; }
+  .trace-bubble::before { content: ""; position: absolute; left: 0; top: 6px; bottom: 6px; width: 3px; border-radius: 999px; background: linear-gradient(180deg, var(--primary) 0%, rgba(108,92,231,.5) 100%); pointer-events: none; }
+
+  .final-bubble { align-self: flex-start; width: 100%; max-width: 720px; color: var(--text); font-size: 14px; line-height: 1.65; padding: 4px 0; }
+  .final-bubble p { margin: 0 0 12px; }
+  .final-bubble code { background: rgba(0,0,0,.05); padding: 1px 6px; border-radius: 4px; font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; }
+
+  /* ===== run-trace 摘要行 ===== */
+  .run-trace .summary { display: flex; align-items: center; gap: 10px; padding: 10px 14px; width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; font-size: 13px; font-family: inherit; }
+  .run-trace .summary:hover { background: rgba(0,0,0,.03); }
+  .run-trace .summary .label { flex: 1; min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .run-trace .summary .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .run-trace .summary .chev { transition: transform .2s; color: var(--text-muted); }
+  .icon-ok { width: 16px; height: 16px; color: #16a34a; flex: 0 0 auto; }
+  .icon-spin { width: 16px; height: 16px; color: var(--primary); flex: 0 0 auto; animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .run-trace .timeline { border-top: 1px solid var(--border); padding: 6px 6px 8px; }
+  .run-trace .timeline ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+  /* ===== step-card 基础 ===== */
+  .step-card { display: flex; align-items: center; gap: 8px; min-height: 32px; width: 100%; min-width: 0; padding: 0 10px; border: 1px solid var(--border); border-radius: 8px; background: #ffffff; cursor: pointer; text-align: left; font-family: inherit; overflow: hidden; }
+  .step-card .name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; flex: 0 0 auto; }
+  .step-card .name-chip { background: var(--primary-soft-2); color: var(--primary); padding: 3px 8px; border-radius: 6px; font-size: 12.5px; font-weight: 500; white-space: nowrap; flex: 0 0 auto; }
+  .step-card .meta { color: var(--text-muted); font-size: 12px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+  .step-card .chev { width: 14px; height: 14px; color: var(--text-muted); transition: transform .2s; flex: 0 0 auto; }
+  .step-card .dot { width: 4px; height: 4px; border-radius: 999px; background: var(--text-muted-2); flex: 0 0 auto; }
+  .step-card .grow { flex: 1; min-width: 0; }
+  .step-card.thinking .name { color: var(--text-muted); font-weight: 400; }
+  .step-card.error { border-color: rgba(214,59,59,.4); background: rgba(214,59,59,.04); }
+  .step-card.error .meta { color: var(--danger); }
+
+  /* ===== 方案 B：平铺 + 徽章 ===== */
+  .badge-agent { background: var(--agent-soft-2); color: #0e7a55; padding: 2px 7px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; flex: 0 0 auto; border: 1px solid rgba(14,159,110,.25); }
+
+  /* ===== 方案 C：独立 agent 气泡 ===== */
+  .agent-bubble { align-self: flex-start; width: 100%; max-width: 640px; background: rgba(14,159,110,.07); border: 1px solid rgba(14,159,110,.28); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-card); }
+  .agent-bubble .agent-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: rgba(14,159,110,.10); border-bottom: 1px solid rgba(14,159,110,.18); }
+  .agent-bubble .agent-bar .avatar { width: 20px; height: 20px; border-radius: 6px; background: var(--agent); color: #fff; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .agent-bubble .agent-bar .who { font-size: 12.5px; font-weight: 600; color: #0e7a55; }
+  .agent-bubble .agent-bar .label-tag { font-size: 11px; color: var(--text-muted); background: #fff; border: 1px solid var(--border); padding: 1px 7px; border-radius: 999px; }
+  .agent-bubble .agent-content { padding: 10px 14px; font-size: 13px; line-height: 1.6; color: var(--text); }
+  .agent-bubble .agent-content p { margin: 0 0 8px; }
+  .agent-bubble .agent-content .file-card { margin-top: 8px; background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+  .agent-bubble .agent-content .file-card .ok { color: #16a34a; }
+
+  .gen-indicator { margin-top: 6px; padding: 4px 0; display: flex; align-items: center; justify-content: center; }
+  .gen-indicator .spinner { width: 14px; height: 14px; color: var(--primary); animation: spin 1s linear infinite; }
+
+  .note { margin-top: 28px; padding: 14px 16px; background: var(--surface-2); border: 1px dashed var(--border); border-radius: 12px; font-size: 12.5px; line-height: 1.7; color: var(--text-muted); }
+  .note b { color: var(--text); }
+  .note code { background: rgba(0,0,0,.05); padding: 1px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header class="page">
+  <div class="inner">
+    <h1>子 Agent 调度渲染 · 推荐方案 B + C</h1>
+    <span class="sub">run_worker / dispatch_to / hand_off_to 完整对话流（含中文可读名）</span>
+    <span class="spacer"></span>
+    <span class="tag-rec">推荐</span>
+  </div>
+</header>
+
+<main>
+
+  <div class="legend">
+    <span class="item"><span class="dot main"></span><b>主 Agent 步骤</b></span>
+    <span class="item"><span class="dot sub"></span><b>子 Agent 步骤（带 coder 徽章）</b></span>
+    <span class="item"><b>绿色气泡 = 子 Agent 可见回复</b></span>
+  </div>
+
+  <div class="chat-list">
+
+    <!-- ============================================================
+         第 1 轮：run_worker（私密结果）→ B 徽章平铺
+    ============================================================ -->
+    <div class="msg user">
+      <div class="bubble">用 coder 子 Agent 写一个旅游主题 HTML 页面</div>
+    </div>
+
+    <div class="msg assistant">
+      <div class="trace-bubble">
+        <div class="run-trace">
+          <button class="summary" aria-expanded="true">
+            <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="label">已完成 4 个步骤 · 3 个工具</span>
+            <span class="meta">4 步 · 3 个工具</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="timeline">
+            <ol>
+              <li>
+                <button class="step-card thinking" aria-expanded="false">
+                  <span class="dot"></span><span class="name">思考</span><span class="grow"></span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </li>
+              <li>
+                <button class="step-card" aria-expanded="true">
+                  <span class="name-chip">run_worker</span>
+                  <span class="name" style="font-weight:500">派生子 Agent</span>
+                  <span class="badge-agent">coder</span>
+                  <span class="grow"></span>
+                  <span class="meta">2.1s</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </li>
+              <li>
+                <button class="step-card" aria-expanded="true" style="border-left:3px solid var(--agent);border-radius:8px">
+                  <span class="badge-agent">coder</span>
+                  <span class="name-chip">write_file</span>
+                  <span class="grow"></span>
+                  <span class="meta">✅ tourism.html</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="final-bubble" style="max-width:none;padding:4px 8px;font-size:12.5px">
+                  <code>tourism.html</code> 已写入（~4.2 KB），包含景点卡片、导航栏与响应式布局。
+                </div>
+              </li>
+              <li>
+                <button class="step-card" aria-expanded="false">
+                  <span class="name-chip">run_worker</span>
+                  <span class="name" style="font-weight:500">派生子 Agent</span>
+                  <span class="grow"></span>
+                  <span class="meta">✓ 子Agent 已返回</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="final-bubble">
+        <p>已用 coder 子 Agent 完成，页面文件为 <code>tourism.html</code>，包含：</p>
+        <p>🏝 景点卡片 · 🧭 顶部导航 · 📱 移动端响应式</p>
+        <p>浏览器打开即可预览。</p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         第 2 轮：dispatch_to（可见回复）→ C 独立气泡
+    ============================================================ -->
+    <div class="msg user">
+      <div class="bubble">很好，让 coder 再帮我加一个「热门目的地」区块，结果直接给我看</div>
+    </div>
+
+    <div class="msg assistant">
+      <div class="trace-bubble">
+        <div class="run-trace">
+          <button class="summary" aria-expanded="true">
+            <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="label">已派发 coder · 2 个步骤</span>
+            <span class="meta">2 步 · 2 个工具</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="timeline">
+            <ol>
+              <li>
+                <button class="step-card thinking" aria-expanded="false">
+                  <span class="dot"></span><span class="name">思考</span><span class="grow"></span>
+                </button>
+              </li>
+              <li>
+                <button class="step-card" aria-expanded="true">
+                  <span class="name-chip">dispatch_to</span>
+                  <span class="name" style="font-weight:500">派发子 Agent</span>
+                  <span class="badge-agent">coder</span>
+                  <span class="grow"></span>
+                  <span class="meta">1.9s</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 子 Agent 独立气泡（dispatch_to 可见回复） -->
+    <div class="msg agent">
+      <div class="agent-bubble">
+        <div class="agent-bar">
+          <span class="avatar">C</span>
+          <span class="who">coder</span>
+          <span class="label-tag">子 Agent 回复</span>
+        </div>
+        <div class="agent-content">
+          <p>已添加「热门目的地」区块：</p>
+          <p>🏝 三亚 · 🏔 张家界 · 🏯 西安 · 🌊 青岛</p>
+          <div class="file-card"><span class="ok">✓</span> tourism.html · 已更新 · 5.1 KB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主 Agent 收尾 -->
+    <div class="msg assistant">
+      <div class="final-bubble">
+        <p>coder 已完成，<code>tourism.html</code> 新增了「热门目的地」区块，刷新浏览器即可查看。</p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         第 3 轮：hand_off_to（直接给答案）→ C 独立气泡即最终答案
+    ============================================================ -->
+    <div class="msg user">
+      <div class="bubble">接下来这个问题直接交给 coder 回答</div>
+    </div>
+
+    <div class="msg assistant">
+      <div class="trace-bubble">
+        <div class="run-trace">
+          <button class="summary" aria-expanded="true">
+            <svg class="icon-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+            <span class="label">已移交 coder · 1 个步骤</span>
+            <span class="meta">1 步 · 1 个工具</span>
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="timeline">
+            <ol>
+              <li>
+                <button class="step-card" aria-expanded="true">
+                  <span class="name-chip">hand_off_to</span>
+                  <span class="name" style="font-weight:500">移交子 Agent</span>
+                  <span class="badge-agent">coder</span>
+                  <span class="grow"></span>
+                  <span class="meta">0.8s</span>
+                  <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- hand_off_to：子 Agent 气泡即最终答案 -->
+    <div class="msg agent">
+      <div class="agent-bubble">
+        <div class="agent-bar">
+          <span class="avatar">C</span>
+          <span class="who">coder</span>
+          <span class="label-tag">最终回答</span>
+        </div>
+        <div class="agent-content">
+          <p>页面的移动端适配已通过媒体查询实现：</p>
+          <p><code>@media (max-width: 640px)</code> 下导航折叠为汉堡菜单、景点卡片改为单列、字号降为 14px。</p>
+          <div class="file-card"><span class="ok">✓</span> tourism.html · 响应式实现</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="note">
+    <b>设计要点：</b><br>
+    ① <code>run_worker</code> → <b>派生子 Agent</b>：私密结果只进 trace，子 Agent 的步骤平铺并带绿色 <code>coder</code> 徽章（左侧绿色描边区分归属）。<br>
+    ② <code>dispatch_to</code> → <b>派发子 Agent</b>：trace 内显示调度步骤，子 Agent 回复独立成绿色气泡（含头像 + 名字 + 「子 Agent 回复」标签）。<br>
+    ③ <code>hand_off_to</code> → <b>移交子 Agent</b>：trace 内显示移交步骤，子 Agent 气泡即最终回答（标签「最终回答」），主 Agent 不再补充。<br>
+    ④ 三个工具名在 <code>toolActionLabel</code> 映射为中文（上表），step 卡片上 `name-chip` 保留英文原名 + 中文可读名并排。
+  </div>
+
+</main>
+
+</body>
+</html>

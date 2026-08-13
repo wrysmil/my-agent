@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildDispatchTools, withoutDispatchTools } from "../../src/orchestration/tools.js";
+import type { WorkerProgressEvent } from "../../src/orchestration/dispatch.js";
 import { BUILTIN_TOOLS } from "../../src/tools/builtin.js";
 import { AgentRunner } from "../../src/agent/runner.js";
 import { ProviderRegistry } from "../../src/providers/registry.js";
@@ -287,6 +288,258 @@ describe("tools", () => {
       // 命名 agent 身份进入 <worker-result from="..."> 信封
       expect(result.content).toContain("<worker-result from=\"Coder\">");
       expect(result.content).toContain("counted 3 files");
+    });
+  });
+
+  // ============================================================
+  // WU-02：dispatch_to / hand_off_to 完成后触发 agent_reply 事件
+  // ============================================================
+
+  describe("buildDispatchTools agent_reply 事件", () => {
+    const fixturesHome = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../fixtures/orchestration",
+    );
+    const savedHome = process.env.MY_AGENT_HOME;
+
+    function createRunnerWithMock() {
+      const config = createConfig({
+        agent: {
+          defaultModel: "claude-sonnet-5",
+          defaultProvider: "mock",
+          maxRetries: 0,
+          maxToolLoops: 10,
+          toolIdleTimeoutMs: 5_000,
+        },
+      });
+      const mockProvider = new MockProvider();
+      const providers = new ProviderRegistry(config);
+      // 直接用 mock provider 替换（绕过工厂注册）
+      (providers as any).providers?.set?.("mock", mockProvider);
+      providers.registerFactory("mock", () => mockProvider);
+      const runner = new AgentRunner({
+        config,
+        providers,
+        tools: [...BUILTIN_TOOLS],
+      });
+      return { runner, mockProvider, config };
+    }
+
+    afterEach(() => {
+      if (savedHome === undefined) delete process.env.MY_AGENT_HOME;
+      else process.env.MY_AGENT_HOME = savedHome;
+      _resetDataRoot();
+    });
+
+    it("dispatch_to 完成后触发 agent_reply（isFinal:false），text 不含 XML 信封", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const events: WorkerProgressEvent[] = [];
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-reply-test",
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+      mockProvider.program({ kind: "text", text: "agent visible reply" });
+
+      const result = await tools[1].execute(
+        { task: "summarize", to: "coder" },
+        { state: {} },
+      );
+
+      const replies = events.filter((e) => e.type === "agent_reply");
+      expect(replies).toHaveLength(1);
+      expect(replies[0]).toMatchObject({
+        type: "agent_reply",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        isFinal: false,
+      });
+      expect(replies[0].text).toContain("agent visible reply");
+      expect(replies[0].text).not.toMatch(/<worker-result|<worker-error/);
+
+      // 返回给 commander 的 content 保留 label 前缀（行为不变）
+      expect(result.content).toContain("## 💬 Coder 说：");
+    });
+
+    it("hand_off_to 完成后触发 agent_reply（isFinal:true），text 不含 XML 信封", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const events: WorkerProgressEvent[] = [];
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-reply-test",
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+      mockProvider.program({ kind: "text", text: "agent final answer" });
+
+      const result = await tools[2].execute(
+        { task: "answer fully", to: "coder" },
+        { state: {} },
+      );
+
+      const replies = events.filter((e) => e.type === "agent_reply");
+      expect(replies).toHaveLength(1);
+      expect(replies[0]).toMatchObject({
+        type: "agent_reply",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        isFinal: true,
+      });
+      expect(replies[0].text).toContain("agent final answer");
+      expect(replies[0].text).not.toMatch(/<worker-result|<worker-error/);
+
+      // 返回给 commander 的 content 保留 label 前缀（行为不变）
+      expect(result.content).toContain("## 🎯 Coder 回答：");
+    });
+  });
+
+  // ============================================================
+  // WU-01：dispatch_to / hand_off_to 触发 dispatch_started / dispatch_done；
+  //        run_worker 不触发
+  // ============================================================
+
+  describe("buildDispatchTools dispatch_started / dispatch_done 事件", () => {
+    const fixturesHome = path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      "../../fixtures/orchestration",
+    );
+    const savedHome = process.env.MY_AGENT_HOME;
+
+    function createRunnerWithMock() {
+      const config = createConfig({
+        agent: {
+          defaultModel: "claude-sonnet-5",
+          defaultProvider: "mock",
+          maxRetries: 0,
+          maxToolLoops: 10,
+          toolIdleTimeoutMs: 5_000,
+        },
+      });
+      const mockProvider = new MockProvider();
+      const providers = new ProviderRegistry(config);
+      // 直接用 mock provider 替换（绕过工厂注册）
+      (providers as any).providers?.set?.("mock", mockProvider);
+      providers.registerFactory("mock", () => mockProvider);
+      const runner = new AgentRunner({
+        config,
+        providers,
+        tools: [...BUILTIN_TOOLS],
+      });
+      return { runner, mockProvider, config };
+    }
+
+    afterEach(() => {
+      if (savedHome === undefined) delete process.env.MY_AGENT_HOME;
+      else process.env.MY_AGENT_HOME = savedHome;
+      _resetDataRoot();
+    });
+
+    it("dispatch_to 执行前后触发 dispatch_started / dispatch_done", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const events: WorkerProgressEvent[] = [];
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-start-test",
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+      mockProvider.program({ kind: "text", text: "agent visible reply" });
+
+      const result = await tools[1].execute(
+        { task: "summarize", to: "coder" },
+        { state: {} },
+      );
+
+      const started = events.filter((e) => e.type === "dispatch_started");
+      const done = events.filter((e) => e.type === "dispatch_done");
+      expect(started).toHaveLength(1);
+      expect(done).toHaveLength(1);
+      expect(started[0]).toMatchObject({
+        type: "dispatch_started",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        toolName: "dispatch_to",
+        isFinal: false,
+      });
+      expect(done[0]).toMatchObject({
+        type: "dispatch_done",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        toolName: "dispatch_to",
+      });
+      // 时序：dispatch_started 在最前，dispatch_done 在 worker 事件之后
+      const idxStart = events.findIndex((e) => e.type === "dispatch_started");
+      const idxDone = events.findIndex((e) => e.type === "dispatch_done");
+      expect(idxStart).toBeLessThan(idxDone);
+      expect(events[idxStart]).toBe(started[0]);
+
+      expect(result.content).toContain("## 💬 Coder 说：");
+    });
+
+    it("hand_off_to 执行前后触发 dispatch_started(isFinal:true) / dispatch_done", async () => {
+      process.env.MY_AGENT_HOME = fixturesHome;
+      _resetDataRoot();
+
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const events: WorkerProgressEvent[] = [];
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-start-test",
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+      mockProvider.program({ kind: "text", text: "agent final answer" });
+
+      const result = await tools[2].execute(
+        { task: "answer fully", to: "coder" },
+        { state: {} },
+      );
+
+      const started = events.filter((e) => e.type === "dispatch_started");
+      const done = events.filter((e) => e.type === "dispatch_done");
+      expect(started).toHaveLength(1);
+      expect(done).toHaveLength(1);
+      expect(started[0]).toMatchObject({
+        type: "dispatch_started",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        toolName: "hand_off_to",
+        isFinal: true,
+      });
+      expect(done[0]).toMatchObject({
+        type: "dispatch_done",
+        actor: { kind: "agent", id: "coder", name: "Coder" },
+        toolName: "hand_off_to",
+      });
+
+      expect(result.content).toContain("## 🎯 Coder 回答：");
+    });
+
+    it("run_worker 不触发 dispatch_started / dispatch_done", async () => {
+      const { runner, mockProvider, config } = createRunnerWithMock();
+      const events: WorkerProgressEvent[] = [];
+      const tools = buildDispatchTools({
+        getRunner: () => runner,
+        config,
+        cid: "cid-run-worker-test",
+        onWorkerEvent: (ev) => events.push(ev),
+      });
+      mockProvider.program({ kind: "text", text: "worker done" });
+
+      await tools[0].execute(
+        { task: "count files" },
+        { state: {} },
+      );
+
+      expect(events.filter((e) => e.type === "dispatch_started")).toHaveLength(0);
+      expect(events.filter((e) => e.type === "dispatch_done")).toHaveLength(0);
+      // run_worker 无 agent_reply（结果私密回传）
+      expect(events.filter((e) => e.type === "agent_reply")).toHaveLength(0);
     });
   });
 });

@@ -1,0 +1,273 @@
+- generic [ref=f12e3]:
+  - complementary [ref=f12e4]:
+    - generic [ref=f12e5]: my-agent
+    - navigation [ref=f12e6]:
+      - link "控制台" [ref=f12e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f12e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f12e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f12e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f12e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f12e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f12e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f12e39]:
+      - generic [ref=f12e40]:
+        - generic [ref=f12e41]: 历史会话
+        - button "新对话" [ref=f12e42]
+      - list [ref=f12e147]:
+        - listitem [ref=f12e148]:
+          - link "研究开源 AI 桌面应用" [ref=f12e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e150]'
+        - listitem [ref=f12e154]:
+          - link "研究开源 AI 桌面应用" [ref=f12e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e156]'
+        - listitem [ref=f12e160]:
+          - link "研究开源 AI 桌面应用" [ref=f12e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e162]'
+        - listitem [ref=f12e166]:
+          - link "研究开源 AI 桌面应用" [ref=f12e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e168]'
+        - listitem [ref=f12e172]:
+          - link "研究开源 AI 桌面应用" [ref=f12e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e174]'
+        - listitem [ref=f12e178]:
+          - link "研究开源 AI 桌面应用" [ref=f12e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e180]'
+        - listitem [ref=f12e184]:
+          - link "项目目录看看" [ref=f12e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f12e186]'
+        - listitem [ref=f12e190]:
+          - link "项目目录看看" [ref=f12e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f12e192]'
+        - listitem [ref=f12e196]:
+          - link "项目目录看看" [ref=f12e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f12e198]'
+        - listitem [ref=f12e202]:
+          - link "项目目录看看" [ref=f12e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f12e204]'
+        - listitem [ref=f12e208]:
+          - link "项目目录看看" [ref=f12e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f12e210]'
+        - listitem [ref=f12e214]:
+          - link "项目目录看看" [ref=f12e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f12e216]'
+        - listitem [ref=f12e220]:
+          - link "项目目录看看" [ref=f12e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f12e222]'
+        - listitem [ref=f12e226]:
+          - link "项目目录看看" [ref=f12e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f12e228]'
+        - listitem [ref=f12e232]:
+          - link "看看项目目录" [ref=f12e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f12e234]'
+        - listitem [ref=f12e238]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f12e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f12e240]'
+        - listitem [ref=f12e244]:
+          - link "帮我看看项目目录" [ref=f12e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e246]'
+        - listitem [ref=f12e250]:
+          - link "帮我看看项目目录" [ref=f12e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e252]'
+        - listitem [ref=f12e256]:
+          - link "帮我看看项目目录" [ref=f12e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e258]'
+        - listitem [ref=f12e262]:
+          - link "帮我看看当前项目目录" [ref=f12e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f12e264]'
+  - generic [ref=f12e47]:
+    - banner [ref=f12e48]:
+      - generic [ref=f12e49]:
+        - button "Toggle theme" [ref=f12e50]
+        - button "Switch language" [ref=f12e57]
+        - generic [ref=f12e62]: K
+    - main [ref=f12e66]:
+      - generic [ref=f12e721]:
+        - generic [ref=f12e722]:
+          - generic [ref=f12e723]:
+            - heading "技能" [level=1] [ref=f12e724]
+            - paragraph [ref=f12e725]: 共 26 个技能
+          - button "新建技能" [ref=f12e726]
+        - generic [ref=f12e728]:
+          - generic [ref=f12e729] [cursor=pointer]:
+            - generic [ref=f12e730]:
+              - heading "hello-skill" [level=3] [ref=f12e731]
+              - generic [ref=f12e732]: builtin
+            - paragraph [ref=f12e733]: "Demo skill: run the main script to get a greeting, used to verify the skill execution pipeline"
+            - paragraph [ref=f12e734]: "ID: hello-skill"
+          - generic [ref=f12e735] [cursor=pointer]:
+            - generic [ref=f12e736]:
+              - heading "api-and-interface-design" [level=3] [ref=f12e737]
+              - generic [ref=f12e738]: builtin
+            - paragraph [ref=f12e739]: Guides stable API and interface design. Use when designing APIs, module boundaries, or any public interface. Use when creating REST or GraphQL endpoints, defining type contracts between modules, or establishing boundaries between frontend and backend.
+            - paragraph [ref=f12e740]: "ID: api-and-interface-design"
+          - generic [ref=f12e741] [cursor=pointer]:
+            - generic [ref=f12e742]:
+              - heading "browser-testing-with-devtools" [level=3] [ref=f12e743]
+              - generic [ref=f12e744]: builtin
+            - paragraph [ref=f12e745]: Tests in real browsers via Chrome DevTools MCP. Use when building or debugging anything that runs in a browser. Use when you need to inspect the DOM, capture console errors, analyze network requests, profile performance, or verify visual output with real runtime data. Requires the chrome-devtools MCP server to be configured.
+            - paragraph [ref=f12e746]: "ID: browser-testing-with-devtools"
+          - generic [ref=f12e747] [cursor=pointer]:
+            - generic [ref=f12e748]:
+              - heading "ci-cd-and-automation" [level=3] [ref=f12e749]
+              - generic [ref=f12e750]: builtin
+            - paragraph [ref=f12e751]: Automates CI/CD pipeline setup. Use when setting up or modifying build and deployment pipelines. Use when you need to automate quality gates, configure test runners in CI, or establish deployment strategies.
+            - paragraph [ref=f12e752]: "ID: ci-cd-and-automation"
+          - generic [ref=f12e753] [cursor=pointer]:
+            - generic [ref=f12e754]:
+              - heading "code-review-and-quality" [level=3] [ref=f12e755]
+              - generic [ref=f12e756]: builtin
+            - paragraph [ref=f12e757]: Conducts multi-axis code review. Use before merging any change. Use when reviewing code written by yourself, another agent, or a human. Use when you need to assess code quality across multiple dimensions before it enters the main branch.
+            - paragraph [ref=f12e758]: "ID: code-review-and-quality"
+          - generic [ref=f12e759] [cursor=pointer]:
+            - generic [ref=f12e760]:
+              - heading "code-simplification" [level=3] [ref=f12e761]
+              - generic [ref=f12e762]: builtin
+            - paragraph [ref=f12e763]: Simplifies code for clarity. Use when refactoring code for clarity without changing behavior. Use when code works but is harder to read, maintain, or extend than it should be. Use when reviewing code that has accumulated unnecessary complexity.
+            - paragraph [ref=f12e764]: "ID: code-simplification"
+          - generic [ref=f12e765] [cursor=pointer]:
+            - generic [ref=f12e766]:
+              - heading "coding" [level=3] [ref=f12e767]
+              - generic [ref=f12e768]: builtin
+            - paragraph [ref=f12e769]: "Engineering standards for non-trivial code changes: follow repo conventions, plan, minimize edits, verify."
+            - paragraph [ref=f12e770]: "ID: coding"
+          - generic [ref=f12e771] [cursor=pointer]:
+            - generic [ref=f12e772]:
+              - heading "context-engineering" [level=3] [ref=f12e773]
+              - generic [ref=f12e774]: builtin
+            - paragraph [ref=f12e775]: Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.
+            - paragraph [ref=f12e776]: "ID: context-engineering"
+          - generic [ref=f12e777] [cursor=pointer]:
+            - generic [ref=f12e778]:
+              - heading "debugging-and-error-recovery" [level=3] [ref=f12e779]
+              - generic [ref=f12e780]: builtin
+            - paragraph [ref=f12e781]: Guides systematic root-cause debugging. Use when tests fail, builds break, behavior doesn't match expectations, or you encounter any unexpected error. Use when you need a systematic approach to finding and fixing the root cause rather than guessing.
+            - paragraph [ref=f12e782]: "ID: debugging-and-error-recovery"
+          - generic [ref=f12e783] [cursor=pointer]:
+            - generic [ref=f12e784]:
+              - heading "deprecation-and-migration" [level=3] [ref=f12e785]
+              - generic [ref=f12e786]: builtin
+            - paragraph [ref=f12e787]: Manages deprecation and migration. Use when removing old systems, APIs, or features. Use when migrating users from one implementation to another. Use when deciding whether to maintain or sunset existing code.
+            - paragraph [ref=f12e788]: "ID: deprecation-and-migration"
+          - generic [ref=f12e789] [cursor=pointer]:
+            - generic [ref=f12e790]:
+              - heading "documentation-and-adrs" [level=3] [ref=f12e791]
+              - generic [ref=f12e792]: builtin
+            - paragraph [ref=f12e793]: Records decisions and documentation. Use when making architectural decisions, changing public APIs, shipping features, or when you need to record context that future engineers and agents will need to understand the codebase.
+            - paragraph [ref=f12e794]: "ID: documentation-and-adrs"
+          - generic [ref=f12e795] [cursor=pointer]:
+            - generic [ref=f12e796]:
+              - heading "doubt-driven-development" [level=3] [ref=f12e797]
+              - generic [ref=f12e798]: builtin
+            - paragraph [ref=f12e799]: Subjects every non-trivial decision to a fresh-context adversarial review before it stands. Use when correctness matters more than speed, when working in unfamiliar code, when stakes are high (production, security-sensitive logic, irreversible operations), or any time a confident output would be cheaper to verify now than to debug later.
+            - paragraph [ref=f12e800]: "ID: doubt-driven-development"
+          - generic [ref=f12e801] [cursor=pointer]:
+            - generic [ref=f12e802]:
+              - heading "frontend-ui-engineering" [level=3] [ref=f12e803]
+              - generic [ref=f12e804]: builtin
+            - paragraph [ref=f12e805]: Builds production-quality UIs. Use when building or modifying user-facing interfaces. Use when creating components, implementing layouts, managing state, or when the output needs to look and feel production-quality rather than AI-generated.
+            - paragraph [ref=f12e806]: "ID: frontend-ui-engineering"
+          - generic [ref=f12e807] [cursor=pointer]:
+            - generic [ref=f12e808]:
+              - heading "git-workflow-and-versioning" [level=3] [ref=f12e809]
+              - generic [ref=f12e810]: builtin
+            - paragraph [ref=f12e811]: Structures git workflow practices. Use when making any code change. Use when committing, branching, resolving conflicts, or when you need to organize work across multiple parallel streams.
+            - paragraph [ref=f12e812]: "ID: git-workflow-and-versioning"
+          - generic [ref=f12e813] [cursor=pointer]:
+            - generic [ref=f12e814]:
+              - heading "idea-refine" [level=3] [ref=f12e815]
+              - generic [ref=f12e816]: builtin
+            - paragraph [ref=f12e817]: Refines raw ideas into sharp, actionable concepts through structured divergent and convergent thinking. Use when an idea is still vague, when you need to stress-test assumptions before committing to a plan, or when you want to expand options before converging on one. Triggers on "ideate", "refine this idea", or "stress-test my plan".
+            - paragraph [ref=f12e818]: "ID: idea-refine"
+          - generic [ref=f12e819] [cursor=pointer]:
+            - generic [ref=f12e820]:
+              - heading "incremental-implementation" [level=3] [ref=f12e821]
+              - generic [ref=f12e822]: builtin
+            - paragraph [ref=f12e823]: Delivers changes incrementally. Use when implementing any feature or change that touches more than one file. Use when you're about to write a large amount of code at once, or when a task feels too big to land in one step.
+            - paragraph [ref=f12e824]: "ID: incremental-implementation"
+          - generic [ref=f12e825] [cursor=pointer]:
+            - generic [ref=f12e826]:
+              - heading "interview-me" [level=3] [ref=f12e827]
+              - generic [ref=f12e828]: builtin
+            - paragraph [ref=f12e829]: Extracts what the user actually wants instead of what they think they should want. Achieves this through one-question-at-a-time interview until ~95% confidence about the underlying intent. Use when an ask is underspecified ("build me X" without "for whom" or "why now"), when the user explicitly invokes ("interview me", "grill me", "are we sure?", "stress-test my thinking"), or when you catch yourself silently filling in ambiguous requirements before any plan, spec, or code exists.
+            - paragraph [ref=f12e830]: "ID: interview-me"
+          - generic [ref=f12e831] [cursor=pointer]:
+            - generic [ref=f12e832]:
+              - heading "observability-and-instrumentation" [level=3] [ref=f12e833]
+              - generic [ref=f12e834]: builtin
+            - paragraph [ref=f12e835]: Instruments code so production behavior is visible and diagnosable. Use when adding logging, metrics, tracing, or alerting. Use when shipping any feature that runs in production and you need evidence it works. Use when production issues are reported but you can't tell what happened from the available data.
+            - paragraph [ref=f12e836]: "ID: observability-and-instrumentation"
+          - generic [ref=f12e837] [cursor=pointer]:
+            - generic [ref=f12e838]:
+              - heading "performance-optimization" [level=3] [ref=f12e839]
+              - generic [ref=f12e840]: builtin
+            - paragraph [ref=f12e841]: Optimizes application performance. Use when performance requirements exist, when you suspect performance regressions, or when Core Web Vitals or load times need improvement. Use when profiling reveals bottlenecks that need fixing.
+            - paragraph [ref=f12e842]: "ID: performance-optimization"
+          - generic [ref=f12e843] [cursor=pointer]:
+            - generic [ref=f12e844]:
+              - heading "planning-and-task-breakdown" [level=3] [ref=f12e845]
+              - generic [ref=f12e846]: builtin
+            - paragraph [ref=f12e847]: Breaks work into ordered tasks. Use when you have a spec or clear requirements and need to break work into implementable tasks. Use when a task feels too large to start, when you need to estimate scope, or when parallel work is possible.
+            - paragraph [ref=f12e848]: "ID: planning-and-task-breakdown"
+          - generic [ref=f12e849] [cursor=pointer]:
+            - generic [ref=f12e850]:
+              - heading "security-and-hardening" [level=3] [ref=f12e851]
+              - generic [ref=f12e852]: builtin
+            - paragraph [ref=f12e853]: Hardens code against vulnerabilities. Use when handling user input, authentication, data storage, or external integrations. Use when building any feature that accepts untrusted data, manages user sessions, or interacts with third-party services.
+            - paragraph [ref=f12e854]: "ID: security-and-hardening"
+          - generic [ref=f12e855] [cursor=pointer]:
+            - generic [ref=f12e856]:
+              - heading "shipping-and-launch" [level=3] [ref=f12e857]
+              - generic [ref=f12e858]: builtin
+            - paragraph [ref=f12e859]: Prepares production launches. Use when preparing to deploy to production. Use when you need a pre-launch checklist, when setting up monitoring, when planning a staged rollout, or when you need a rollback strategy.
+            - paragraph [ref=f12e860]: "ID: shipping-and-launch"
+          - generic [ref=f12e861] [cursor=pointer]:
+            - generic [ref=f12e862]:
+              - heading "source-driven-development" [level=3] [ref=f12e863]
+              - generic [ref=f12e864]: builtin
+            - paragraph [ref=f12e865]: Grounds every implementation decision in official documentation. Use when you want authoritative, source-cited code free from outdated patterns. Use when building with any framework or library where correctness matters.
+            - paragraph [ref=f12e866]: "ID: source-driven-development"
+          - generic [ref=f12e867] [cursor=pointer]:
+            - generic [ref=f12e868]:
+              - heading "spec-driven-development" [level=3] [ref=f12e869]
+              - generic [ref=f12e870]: builtin
+            - paragraph [ref=f12e871]: Creates specs before coding. Use when starting a new project, feature, or significant change and no specification exists yet. Use when requirements are unclear, ambiguous, or only exist as a vague idea.
+            - paragraph [ref=f12e872]: "ID: spec-driven-development"
+          - generic [ref=f12e873] [cursor=pointer]:
+            - generic [ref=f12e874]:
+              - heading "test-driven-development" [level=3] [ref=f12e875]
+              - generic [ref=f12e876]: builtin
+            - paragraph [ref=f12e877]: Drives development with tests. Use when implementing any logic, fixing any bug, or changing any behavior. Use when you need to prove that code works, when a bug report arrives, or when you're about to modify existing functionality.
+            - paragraph [ref=f12e878]: "ID: test-driven-development"
+          - generic [ref=f12e879] [cursor=pointer]:
+            - generic [ref=f12e880]:
+              - heading "using-agent-skills" [level=3] [ref=f12e881]
+              - generic [ref=f12e882]: builtin
+            - paragraph [ref=f12e883]: Discovers and invokes agent skills. Use when starting a session or when you need to discover which skill applies to the current task. This is the meta-skill that governs how all other skills are discovered and invoked.
+            - paragraph [ref=f12e884]: "ID: using-agent-skills"

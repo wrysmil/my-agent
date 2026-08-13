@@ -1,0 +1,113 @@
+- generic [ref=f12e3]:
+  - complementary [ref=f12e4]:
+    - generic [ref=f12e5]: my-agent
+    - navigation [ref=f12e6]:
+      - link "控制台" [ref=f12e7] [cursor=pointer]:
+        - /url: "#/"
+      - link "对话" [ref=f12e14] [cursor=pointer]:
+        - /url: "#/chat"
+      - link "提供商" [ref=f12e18] [cursor=pointer]:
+        - /url: "#/providers"
+      - link "技能" [ref=f12e22] [cursor=pointer]:
+        - /url: "#/skills"
+      - link "工具" [ref=f12e25] [cursor=pointer]:
+        - /url: "#/tools"
+      - link "子 Agent" [ref=f12e29] [cursor=pointer]:
+        - /url: "#/agents"
+      - link "设置" [ref=f12e34] [cursor=pointer]:
+        - /url: "#/settings"
+    - generic [ref=f12e39]:
+      - generic [ref=f12e40]:
+        - generic [ref=f12e41]: 历史会话
+        - button "新对话" [ref=f12e42]
+      - list [ref=f12e147]:
+        - listitem [ref=f12e148]:
+          - link "研究开源 AI 桌面应用" [ref=f12e149] [cursor=pointer]:
+            - /url: "#/chat/gconv-8115215c0706"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e150]'
+        - listitem [ref=f12e154]:
+          - link "研究开源 AI 桌面应用" [ref=f12e155] [cursor=pointer]:
+            - /url: "#/chat/gconv-4a32c319742b"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e156]'
+        - listitem [ref=f12e160]:
+          - link "研究开源 AI 桌面应用" [ref=f12e161] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d343682187d"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e162]'
+        - listitem [ref=f12e166]:
+          - link "研究开源 AI 桌面应用" [ref=f12e167] [cursor=pointer]:
+            - /url: "#/chat/gconv-6473fd92d10a"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e168]'
+        - listitem [ref=f12e172]:
+          - link "研究开源 AI 桌面应用" [ref=f12e173] [cursor=pointer]:
+            - /url: "#/chat/gconv-9e0461bfc308"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e174]'
+        - listitem [ref=f12e178]:
+          - link "研究开源 AI 桌面应用" [ref=f12e179] [cursor=pointer]:
+            - /url: "#/chat/gconv-1c3928508d16"
+          - 'button "删除: 研究开源 AI 桌面应用" [ref=f12e180]'
+        - listitem [ref=f12e184]:
+          - link "项目目录看看" [ref=f12e185] [cursor=pointer]:
+            - /url: "#/chat/gconv-82443ac8931b"
+          - 'button "删除: 项目目录看看" [ref=f12e186]'
+        - listitem [ref=f12e190]:
+          - link "项目目录看看" [ref=f12e191] [cursor=pointer]:
+            - /url: "#/chat/gconv-5d60cb2fbdd6"
+          - 'button "删除: 项目目录看看" [ref=f12e192]'
+        - listitem [ref=f12e196]:
+          - link "项目目录看看" [ref=f12e197] [cursor=pointer]:
+            - /url: "#/chat/gconv-d0918fd4541f"
+          - 'button "删除: 项目目录看看" [ref=f12e198]'
+        - listitem [ref=f12e202]:
+          - link "项目目录看看" [ref=f12e203] [cursor=pointer]:
+            - /url: "#/chat/gconv-813e44e317c4"
+          - 'button "删除: 项目目录看看" [ref=f12e204]'
+        - listitem [ref=f12e208]:
+          - link "项目目录看看" [ref=f12e209] [cursor=pointer]:
+            - /url: "#/chat/gconv-2741f97b4460"
+          - 'button "删除: 项目目录看看" [ref=f12e210]'
+        - listitem [ref=f12e214]:
+          - link "项目目录看看" [ref=f12e215] [cursor=pointer]:
+            - /url: "#/chat/gconv-b093c6b95b55"
+          - 'button "删除: 项目目录看看" [ref=f12e216]'
+        - listitem [ref=f12e220]:
+          - link "项目目录看看" [ref=f12e221] [cursor=pointer]:
+            - /url: "#/chat/gconv-4e5b707dd929"
+          - 'button "删除: 项目目录看看" [ref=f12e222]'
+        - listitem [ref=f12e226]:
+          - link "项目目录看看" [ref=f12e227] [cursor=pointer]:
+            - /url: "#/chat/gconv-a201ffa46457"
+          - 'button "删除: 项目目录看看" [ref=f12e228]'
+        - listitem [ref=f12e232]:
+          - link "看看项目目录" [ref=f12e233] [cursor=pointer]:
+            - /url: "#/chat/gconv-468c7bfdf6cd"
+          - 'button "删除: 看看项目目录" [ref=f12e234]'
+        - listitem [ref=f12e238]:
+          - link "帮我写一个小说，先写第一章节，小说为我再..." [ref=f12e239] [cursor=pointer]:
+            - /url: "#/chat/gconv-51c829c1057c"
+          - 'button "删除: 帮我写一个小说，先写第一章节，小说为我再..." [ref=f12e240]'
+        - listitem [ref=f12e244]:
+          - link "帮我看看项目目录" [ref=f12e245] [cursor=pointer]:
+            - /url: "#/chat/gconv-b6ab0a800e4f"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e246]'
+        - listitem [ref=f12e250]:
+          - link "帮我看看项目目录" [ref=f12e251] [cursor=pointer]:
+            - /url: "#/chat/gconv-be55e97c96ed"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e252]'
+        - listitem [ref=f12e256]:
+          - link "帮我看看项目目录" [ref=f12e257] [cursor=pointer]:
+            - /url: "#/chat/gconv-4731ca7af57f"
+          - 'button "删除: 帮我看看项目目录" [ref=f12e258]'
+        - listitem [ref=f12e262]:
+          - link "帮我看看当前项目目录" [ref=f12e263] [cursor=pointer]:
+            - /url: "#/chat/gconv-6e9911d6a43d"
+          - 'button "删除: 帮我看看当前项目目录" [ref=f12e264]'
+  - generic [ref=f12e47]:
+    - banner [ref=f12e48]:
+      - generic [ref=f12e49]:
+        - button "Toggle theme" [ref=f12e50]
+        - button "Switch language" [ref=f12e57]
+        - generic [ref=f12e62]: K
+    - main [ref=f12e66]:
+      - generic [ref=f12e886]:
+        - heading "工具" [level=1] [ref=f12e887]
+        - paragraph [ref=f12e888]: 内置工具列表

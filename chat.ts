@@ -50,6 +50,7 @@ import { buildAvailableSkillsBlock } from "./src/skills/index.js";
 import type { SkillSpec, SkillContent } from "./src/skills/types.js";
 import { pickDescription } from "./src/skills/types.js";
 import { buildSystemPrompt } from "./src/prompts/system-prompt-builder.js";
+import { DISPATCH_GUIDELINE } from "./src/prompts/dispatch-guideline.js";
 import {
   runMainMenu,
   showCurrentProvider,
@@ -430,7 +431,7 @@ async function runChat(opts: {
   const toolsBlock = getToolsSystemPromptBlock(allTools.map((t) => t.name));
   const { systemPrompt } = buildSystemPrompt({
     skillsIndex: skillContext || undefined,
-    extraSystemPrompt: opts.config.agent.systemPrompt,
+    extraSystemPrompt: [opts.config.agent.systemPrompt, DISPATCH_GUIDELINE].filter(Boolean).join("\n\n"),
     toolsBlock,
   });
 

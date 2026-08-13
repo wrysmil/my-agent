@@ -14,7 +14,10 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { mergePersistedWithOverlay } from '../../../src/features/chat/useChatStream';
+import {
+  mergePersistedWithOverlay,
+  messageText,
+} from '../../../src/features/chat/useChatStream';
 import { ChatPage } from '../../../src/pages/ChatPage';
 import type { ChatMessage } from '../../../src/features/chat/types';
 
@@ -98,6 +101,28 @@ function makeAssistant(opts: {
     blocks,
     runId: opts.runId,
     messageId: opts.messageId,
+  };
+}
+
+function makeAgent(opts: {
+  id: string;
+  runId: string;
+  toolName?: string;
+  actorName?: string;
+  text?: string;
+  isFinal?: boolean;
+  status?: 'working' | 'done' | 'error';
+}): ChatMessage {
+  return {
+    id: opts.id,
+    role: 'agent',
+    blocks: [],
+    runId: opts.runId,
+    ...(opts.toolName !== undefined ? { toolName: opts.toolName } : {}),
+    ...(opts.actorName !== undefined ? { actorName: opts.actorName } : {}),
+    ...(opts.text !== undefined ? { text: opts.text } : {}),
+    ...(opts.isFinal !== undefined ? { isFinal: opts.isFinal } : {}),
+    ...(opts.status !== undefined ? { status: opts.status } : {}),
   };
 }
 
@@ -402,5 +427,176 @@ describe('mergePersistedWithOverlay order', () => {
         JSON.stringify(k).includes('history'),
     );
     expect(wrongKeys).toHaveLength(0);
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // dispatch run refetch 收敛（WU-04 review-fix）
+  // 背景：done 后 history refetch → parseHistoryMessages 重建 hist-agent-* 气泡 +
+  // 终态 assistant（messageId=assistantMessageId）；overlay 为实时气泡产物
+  // （等待 assistant#1 + 实时 agent 气泡 + dispatch_done 合成收尾 assistant#2）。
+  // merge 必须：不重复 agent 气泡、收尾文本不双份、agent 归位 assistant#1 之后。
+  // ──────────────────────────────────────────────────────────────────────────
+  it('[dispatch_to refetch] 无重复 agent 气泡 · 收尾文本不双份 · agent 归位 assistant#1 之后', () => {
+    const overlay = [
+      makeUser({
+        id: 'user-cm-u1',
+        text: '请 Coder 写个 travel.html',
+        clientMessageId: 'cm-u1',
+        runId: 'run-1',
+      }),
+      // #1 等待态：dispatch_done 后 messageId 已清空（真实收尾气泡才持有 assistantMessageId）
+      makeAssistant({ id: 'asst-run-1', runId: 'run-1', thinking: '等待态' }),
+      // 实时 agent 气泡：id 与历史重建同构（hist-agent-${tool_use id}）
+      makeAgent({
+        id: 'hist-agent-tu1',
+        runId: 'run-1',
+        toolName: 'dispatch_to',
+        actorName: 'Coder',
+        text: '已写入 travel.html',
+        isFinal: false,
+        status: 'done',
+      }),
+      // #2 合成收尾气泡：done.messageId 已写入（= persisted 终态行 messageId）
+      makeAssistant({
+        id: 'blk-9',
+        runId: 'run-b',
+        messageId: 'asst-2',
+        finalText: 'Coder 已完成，travel.html 已就绪。',
+      }),
+    ];
+    const persisted = [
+      makeUser({
+        id: 'hist-u1',
+        text: '请 Coder 写个 travel.html',
+        clientMessageId: 'cm-u1',
+        messageId: 'u1',
+        runId: 'run-1',
+      }),
+      makeAssistant({
+        id: 'hist-rnd1',
+        messageId: 'rnd1',
+        runId: 'run-1',
+        thinking: '等待态',
+      }),
+      makeAgent({
+        id: 'hist-agent-tu1',
+        runId: 'run-1',
+        toolName: 'dispatch_to',
+        actorName: 'coder',
+        text: '已写入 travel.html',
+        isFinal: false,
+        status: 'done',
+      }),
+      makeAssistant({
+        id: 'hist-asst-2',
+        messageId: 'asst-2',
+        runId: 'run-1',
+        finalText: 'Coder 已完成，travel.html 已就绪。',
+      }),
+    ];
+
+    // Act
+    const merged = mergePersistedWithOverlay(persisted, overlay, 10, () => 10);
+
+    // Assert — 结构 [user, assistant#1, agent, assistant#2]
+    expect(merged.map((m) => m.role)).toEqual([
+      'user',
+      'assistant',
+      'agent',
+      'assistant',
+    ]);
+    // 无重复 agent 气泡
+    expect(merged.filter((m) => m.role === 'agent')).toHaveLength(1);
+    // agent 归位 assistant#1 之后
+    const firstAssistantIdx = merged.findIndex((m) => m.role === 'assistant');
+    const agentIdx = merged.findIndex((m) => m.role === 'agent');
+    expect(agentIdx).toBe(firstAssistantIdx + 1);
+    // agent 文本仅一份
+    expect(
+      merged
+        .filter((m) => m.role === 'agent')
+        .map((m) => messageText(m)),
+    ).toEqual(['已写入 travel.html']);
+    // 收尾文本只出现一次，且在最后一条 assistant（#2）；#1 等待气泡不吞收尾文本
+    const closingText = 'Coder 已完成，travel.html 已就绪。';
+    expect(merged.filter((m) => messageText(m) === closingText)).toHaveLength(1);
+    expect(messageText(merged[merged.length - 1])).toBe(closingText);
+    expect(messageText(merged[1])).not.toContain('Coder 已完成');
+  });
+
+  it('[dispatch_to refetch] overlay 实时 agent id 不稳定（blk-N）时按 runId+toolName 兜底去重', () => {
+    // Arrange — 与上一用例同构，但 overlay 实时 agent 气泡 id 为不稳定 blk-N
+    //（模拟 dispatch_started 时无法回查 tool_use id 的兜底场景）
+    const overlay = [
+      makeUser({
+        id: 'user-cm-u1',
+        text: '请 Coder 写个 travel.html',
+        clientMessageId: 'cm-u1',
+        runId: 'run-1',
+      }),
+      makeAssistant({ id: 'asst-run-1', runId: 'run-1', thinking: '等待态' }),
+      makeAgent({
+        id: 'blk-3',
+        runId: 'run-1',
+        toolName: 'dispatch_to',
+        actorName: 'Coder',
+        text: '已写入 travel.html',
+        status: 'done',
+      }),
+      makeAssistant({
+        id: 'blk-9',
+        runId: 'run-b',
+        messageId: 'asst-2',
+        finalText: 'Coder 已完成，travel.html 已就绪。',
+      }),
+    ];
+    const persisted = [
+      makeUser({
+        id: 'hist-u1',
+        text: '请 Coder 写个 travel.html',
+        clientMessageId: 'cm-u1',
+        messageId: 'u1',
+        runId: 'run-1',
+      }),
+      makeAssistant({
+        id: 'hist-rnd1',
+        messageId: 'rnd1',
+        runId: 'run-1',
+        thinking: '等待态',
+      }),
+      makeAgent({
+        id: 'hist-agent-tu1',
+        runId: 'run-1',
+        toolName: 'dispatch_to',
+        actorName: 'coder',
+        text: '已写入 travel.html',
+        isFinal: false,
+        status: 'done',
+      }),
+      makeAssistant({
+        id: 'hist-asst-2',
+        messageId: 'asst-2',
+        runId: 'run-1',
+        finalText: 'Coder 已完成，travel.html 已就绪。',
+      }),
+    ];
+
+    // Act
+    const merged = mergePersistedWithOverlay(persisted, overlay, 10, () => 10);
+
+    // Assert — 仍不产生重复 agent；收尾文本不双份
+    expect(merged.filter((m) => m.role === 'agent')).toHaveLength(1);
+    expect(merged.map((m) => m.role)).toEqual([
+      'user',
+      'assistant',
+      'agent',
+      'assistant',
+    ]);
+    const closingText = 'Coder 已完成，travel.html 已就绪。';
+    expect(merged.filter((m) => messageText(m) === closingText)).toHaveLength(1);
+    // 归并后吸收 persisted 稳定 id
+    expect(
+      merged.filter((m) => m.role === 'agent').map((m) => m.id),
+    ).toEqual(['hist-agent-tu1']);
   });
 });
