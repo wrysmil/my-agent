@@ -1,45 +1,24 @@
 import { z } from 'zod';
+import { RpcErrorCode, normalizeErrorCode } from './api-protocol/errors';
 
-/** 27 API error codes — kept in sync with backend error codes */
-export enum ApiErrorCode {
-  SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
-  SESSION_EXPIRED = 'SESSION_EXPIRED',
-  SESSION_LIMIT_EXCEEDED = 'SESSION_LIMIT_EXCEEDED',
-  MESSAGE_NOT_FOUND = 'MESSAGE_NOT_FOUND',
-  MESSAGE_TOO_LARGE = 'MESSAGE_TOO_LARGE',
-  STREAM_NOT_FOUND = 'STREAM_NOT_FOUND',
-  STREAM_ALREADY_CLOSED = 'STREAM_ALREADY_CLOSED',
-  AGENT_NOT_FOUND = 'AGENT_NOT_FOUND',
-  AGENT_UNAVAILABLE = 'AGENT_UNAVAILABLE',
-  AGENT_RATE_LIMITED = 'AGENT_RATE_LIMITED',
-  PROVIDER_NOT_FOUND = 'PROVIDER_NOT_FOUND',
-  PROVIDER_UNAVAILABLE = 'PROVIDER_UNAVAILABLE',
-  PROVIDER_AUTH_FAILED = 'PROVIDER_AUTH_FAILED',
-  PROVIDER_TIMEOUT = 'PROVIDER_TIMEOUT',
-  SKILL_NOT_FOUND = 'SKILL_NOT_FOUND',
-  SKILL_EXECUTION_FAILED = 'SKILL_EXECUTION_FAILED',
-  INVALID_REQUEST = 'INVALID_REQUEST',
-  INVALID_PARAMETER = 'INVALID_PARAMETER',
-  MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  FORBIDDEN = 'FORBIDDEN',
-  TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  TOKEN_INVALID = 'TOKEN_INVALID',
-  RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
-  INTERNAL_ERROR = 'INTERNAL_ERROR',
-  SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  UPSTREAM_ERROR = 'UPSTREAM_ERROR',
-}
+/** Re-export RpcErrorCode for backward compatibility */
+export type { RpcErrorCode };
+
+/**
+ * @deprecated Use RpcErrorCode from './api-protocol/errors' instead.
+ * Kept for backward compatibility during migration.
+ */
+export type ApiErrorCode = RpcErrorCode;
 
 /** Structured error thrown by all api* helpers on non-2xx responses */
 export class ApiError extends Error {
-  code: string;
+  code: RpcErrorCode;
   status: number;
 
   constructor(code: string, status: number, message: string) {
     super(message);
     this.name = 'ApiError';
-    this.code = code;
+    this.code = normalizeErrorCode(code);
     this.status = status;
   }
 }
