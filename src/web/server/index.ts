@@ -37,6 +37,11 @@ import { matchRoute, ROUTES } from "./router.js";
 import { tryServeStatic } from "./static.js";
 import { handleError, ApiErrorCode, ApiError } from "./errors.js";
 import { wireApiRoutes } from "./wire-routes.js";
+import { createMuxWebSocketServer } from "./ws/mux-handler.js";
+import { createHostWebSocketServer, broadcastHostFrame } from "./ws/host-handler.js";
+import { registerHostDescribeRoute } from "./routes/host-describe.js";
+import { WebSocketServer } from "ws";
+import type { WebSocket } from "ws";
 
 // ============================================================
 // 公开类型
@@ -75,6 +80,10 @@ export type CreateServerDeps = {
 export type WebServer = {
   readonly port: number;
   readonly raw: http.Server;
+  /** WebSocketServer for /api/events.mux (may be undefined if deps not provided) */
+  readonly muxWss?: WebSocketServer;
+  /** WebSocketServer for /api/events.host (may be undefined if deps not provided) */
+  readonly hostWss?: WebSocketServer;
   /** 优雅关闭（停止 accept + 关 keep-alive 空闲 socket） */
   close(): Promise<void>;
 };
@@ -152,6 +161,32 @@ export async function createServer(
     logger: log,
   });
 
+  // ── 注册 host-describe HTTP 端点 ──
+  registerHostDescribeRoute();
+
+  // ── 创建 WebSocket 服务器（M3）────────────────────────────────────────────
+  let muxWss: WebSocketServer | undefined;
+  let hostWss: WebSocketServer | undefined;
+
+  if (deps.sessionStore && deps.runnerFactory) {
+    // /api/events.mux
+    const mux = createMuxWebSocketServer({
+      sessionStore: deps.sessionStore,
+      runnerFactory: deps.runnerFactory,
+      logger: log,
+    });
+    muxWss = mux.wss;
+
+    // /api/events.host
+    const host = createHostWebSocketServer({
+      sessionStore: deps.sessionStore,
+      logger: log,
+    });
+    hostWss = host.wss;
+
+    log.info(`[ws] WebSocket servers created (mux + host)`);
+  }
+
   const server = http.createServer((req, res) => {
     const requestId = randomUUID();
     handleRequest(req, res, { webRoot, log, deps, requestId }).catch(
@@ -168,6 +203,29 @@ export async function createServer(
     );
   });
 
+  // ── WebSocket Upgrade 处理（M3）────────────────────────────────────────────
+  if (muxWss && hostWss) {
+    const { handleUpgrade: handleMuxUpgrade } = createMuxWebSocketServer({
+      sessionStore: deps.sessionStore!,
+      runnerFactory: deps.runnerFactory!,
+      logger: log,
+    });
+    const { handleUpgrade: handleHostUpgrade } = createHostWebSocketServer({
+      sessionStore: deps.sessionStore!,
+      logger: log,
+    });
+
+    server.on("upgrade", (req, socket, head) => {
+      const pathname = new URL(req.url ?? "/", "http://localhost").pathname;
+      if (pathname === "/api/events.mux") {
+        handleMuxUpgrade(req, socket as import("node:net").Socket, head);
+      } else if (pathname === "/api/events.host") {
+        handleHostUpgrade(req, socket as import("node:net").Socket, head);
+      }
+      // 其他路径的 upgrade 交给默认处理（不拦截）
+    });
+  }
+
   return new Promise<WebServer>((resolve, reject) => {
     const onError = (err: Error): void => {
       server.removeListener("listening", onListening);
@@ -182,7 +240,9 @@ export async function createServer(
       resolve({
         port: actualPort,
         raw: server,
-        close: () => closeServer(server),
+        muxWss,
+        hostWss,
+        close: () => closeServer(server, muxWss, hostWss),
       });
     };
 
@@ -316,7 +376,7 @@ async function handleRequest(
  * 2) closeIdleConnections() —— 强关 keep-alive 空闲 socket
  *    （避免 close() 因 keep-alive 长连接而 hang 住）
  */
-function closeServer(server: http.Server): Promise<void> {
+function closeServer(server: http.Server, muxWss?: WebSocketServer, hostWss?: WebSocketServer): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     let settled = false;
     const done = (err?: Error): void => {
@@ -326,11 +386,20 @@ function closeServer(server: http.Server): Promise<void> {
       else resolve();
     };
 
+    // 关闭 WebSocket 服务器
+    const closeWss = (wss: WebSocketServer | undefined): void => {
+      if (!wss) return;
+      wss.clients.forEach((client: WebSocket) => {
+        try { client.close(1001, "server_shutdown"); } catch { /* ignore */ }
+      });
+      try { wss.close(); } catch { /* ignore */ }
+    };
+    closeWss(muxWss);
+    closeWss(hostWss);
+
     server.close((err) => done(err));
     // Node ≥ 18.2：强关 keep-alive 空闲连接
     server.closeIdleConnections?.();
-    // Node ≥ 18.2：强关所有活跃 socket（包括在途请求）—— 这里**不**调，
-    // 因为 spec § 6.3 要求「等待在途请求结束」才退出。
     // 5s 强退由 graceful-shutdown.ts 的 forceTimer 保证。
   });
 }
