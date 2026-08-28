@@ -105,7 +105,9 @@ export class ApprovalManager {
    * 入队一个新的审批请求。
    */
   enqueue(request: ApprovalRequested): void {
-    const id = `${request.sessionId}:${request.rpcId}`;
+    // Extract string value from RpcId (which has .value property) or use as-is
+    const rpcIdStr = (request.rpcId as unknown as { value?: string }).value ?? String(request.rpcId);
+    const id = `${request.sessionId}:${rpcIdStr}`;
     if (this.requests.has(id)) {
       return; // 幂等：已存在则忽略
     }
