@@ -352,44 +352,19 @@ function rebuildDispatchAgentMessages(
       // 3) 剥 worker XML 信封（与流式路径 agent_message.text 等价）
       const text = stripWorkerEnvelope(matchedContent);
 
-      // 4) 重建内部步骤 blocks（与 WU-02 实时路径 agent 气泡 blocks 结构一致）：
-      //    tool_call + tool_result，供刷新后 agent 气泡内 trace 步骤完整显示。
-      const actorName =
-        targetAgent !== undefined ? targetAgent : matchedResult.actorName;
-      const internalBlocks: Block[] = [
-        {
-          id: nextBlockId(),
-          type: 'tool_call',
-          status: 'done',
-          toolId: block.toolId,
-          toolName: block.toolName,
-          input: block.input,
-          inputRaw: block.inputRaw ?? '',
-          blockId: block.blockId,
-          ...(actorName !== undefined ? { actorName } : {}),
-        },
-        {
-          id: nextBlockId(),
-          type: 'tool_result',
-          status: matchedResult.isError ? 'error' : 'done',
-          toolCallId: block.toolId,
-          toolName: block.toolName,
-          content: text,
-          isError: matchedResult.isError,
-          durationMs: matchedResult.durationMs,
-          blockId: matchedResult.blockId,
-          ...(matchedResult.actorKind !== undefined
-            ? { actorKind: matchedResult.actorKind }
-            : {}),
-          ...(actorName !== undefined ? { actorName } : {}),
-        },
-      ];
+      // 4) dispatch_to / hand_off_to 不再进入 agent 气泡 blocks：
+      //    这两个 tool 是**主 Agent 的派发动作**，归主 Agent trace 显示
+      //    （live 路径同理，dispatch_started 只创建空 blocks agent 气泡）。
+      //    历史 refetch 后避免 dispatch_to 行同时出现在主 Agent trace（被过滤）和
+      //    agent 气泡（不再注入）造成视觉错位。
+      //    agent 气泡仅展示 worker 真实回复文本（.text 字段），blocks 留空 →
+      //    MessageBubble 走 buildAgentSummary([]) → "已完成 0 步 · 0 个工具"。
 
       // 5) 构造 agent 消息；ID 稳定以保证 mergePersistedWithOverlay 复用同一槽位
       const agentMsg: ChatMessage = {
         id: `hist-agent-${block.toolId}`,
         role: 'agent',
-        blocks: internalBlocks,
+        blocks: [],
         text,
         runId: msg.runId,
         toolName: block.toolName,
@@ -400,7 +375,6 @@ function rebuildDispatchAgentMessages(
         ...(matchedResult.actorName !== undefined && targetAgent === undefined
           ? { actorName: matchedResult.actorName }
           : {}),
-        summary: buildAgentSummary(internalBlocks),
         status: 'done',
         isFinal: block.toolName === 'hand_off_to',
       };

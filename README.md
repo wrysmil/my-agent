@@ -133,6 +133,7 @@ npx my-agent-web     # 等价命令
 - **Agent / Skill 启动** — 一键拉起已注册的 Agent 与 Skill
 - **上下文压缩** — `/session-compact` 滑动窗口式摘要
 - **主题与 i18n** — 主题 `auto / light / dark`；i18n `zh / en`
+- **雷霆战机插件** — 右下角可拖拽 ⚡ 悬浮球，点击打开 Canvas 小游戏（`web/src/features/plugins/ThunderFighterPet.tsx`）
 
 ### 快捷键
 

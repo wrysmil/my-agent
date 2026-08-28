@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "predev": "node scripts/copy-thunder-fighter.mjs",
+      "dev": "vite",
+    "prebuild": "node scripts/copy-thunder-fighter.mjs",
+      "build": "tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -221,7 +221,7 @@ describe('parseHistoryMessages — dispatch agent bubbles reconstruction', () =>
     expect(result.indexOf(agent)).toBeGreaterThan(asstAIdx);
   });
 
-  it('[WU-04 dispatch_to internalBlocks] 重建 agent 气泡 blocks：tool_call + tool_result 内部步骤', () => {
+  it('[WU-04 dispatch_to 归主 Agent] 重建 agent 气泡 blocks 留空：dispatch_to 不再进入 agent 气泡', () => {
     const raw: SerializedMsg[] = [
       asMsg('user', [text('u1', '请 Coder 写个 travel.html')], { id: 'u-1' }),
       asMsg('assistant', [
@@ -237,27 +237,24 @@ describe('parseHistoryMessages — dispatch agent bubbles reconstruction', () =>
 
     const agent = result.find((m) => m.role === 'agent');
     expect(agent).toBeDefined();
-    // 内部步骤 blocks 与 WU-02 实时路径结构一致：tool_call + tool_result
-    expect(agent?.blocks.map((b) => b.type)).toEqual(['tool_call', 'tool_result']);
-    expect(agent?.blocks[0]).toMatchObject({
-      type: 'tool_call',
-      status: 'done',
-      toolId: 'tu1',
-      toolName: 'dispatch_to',
-    });
-    expect(agent?.blocks[1]).toMatchObject({
-      type: 'tool_result',
-      status: 'done',
-      toolCallId: 'tu1',
-      toolName: 'dispatch_to',
-      isError: false,
-    });
-    // 推导字段
+    // dispatch_to 是主 Agent 的派发动作，不进入 agent 气泡 blocks：
+    // 修复后与 live 路径（dispatch_started → blocks=[]）一致，避免视觉错位。
+    expect(agent?.blocks).toEqual([]);
+    // 派生字段保留
     expect(agent?.toolName).toBe('dispatch_to');
     expect(agent?.actorName).toBe('coder');
-    expect(agent?.summary).toBe('已完成 2 步 · 1 个工具');
     expect(agent?.isFinal).toBe(false);
     expect(agent?.text).toBe('已写入 travel.html');
+    expect(agent?.status).toBe('done');
+
+    // dispatch_to 的 tool_call + tool_result 应归主 Agent 气泡（历史路径同 live 路径）：
+    const assistant = result.find((m) => m.role === 'assistant');
+    expect(
+      assistant?.blocks.some((b) => b.type === 'tool_call' && b.toolName === 'dispatch_to' && b.toolId === 'tu1'),
+    ).toBe(true);
+    expect(
+      assistant?.blocks.some((b) => b.type === 'tool_result' && b.toolCallId === 'tu1'),
+    ).toBe(true);
   });
 
   it('[WU-04 run_worker] 不生成 agent 气泡，run_worker 的 tool_call/tool_result 保留在主 Agent 气泡', () => {
@@ -348,5 +345,109 @@ describe('parseHistoryMessages — dispatch agent bubbles reconstruction', () =>
     const assistant = result.find((m) => m.role === 'assistant');
     expect(assistant?.blocks.some((b) => b.type === 'tool_call')).toBe(true);
     expect(assistant?.blocks.some((b) => b.type === 'tool_result')).toBe(true);
+  });
+
+  // ---------------------------------------------------------------------
+  // 冒烟回归：history 重构 agent 气泡时，dispatch_to 必须从 agent 气泡排除
+  // 之前 rebuildDispatchAgentMessages 故意把 dispatch_to tool_call+tool_result
+  // 推进 agent 气泡的 blocks，导致 history refetch 后 Coder 子气泡里出现
+  // "dispatch_to" 工具行（视觉错位）。修复后：agent 气泡 blocks 留空，
+  // dispatch_to 仅出现在主 Agent 气泡，与 live 路径一致。
+  // ---------------------------------------------------------------------
+  it('[smoke] history 路径 agent 气泡不含 dispatch_to 工具行；dispatch_to 归主 Agent', () => {
+    const raw: SerializedMsg[] = [
+      asMsg('user', [text('u1', '请 Coder 写 React 旅游页')], { id: 'u-1' }),
+      asMsg(
+        'assistant',
+        [
+          text('a1', '好的，我先派给 Coder'),
+          toolUse('tu1', 'dispatch_to', { to: 'coder', prompt: '写 React 旅游页' }),
+        ],
+        { id: 'asst-1', runId: 'run-1' },
+      ),
+      asMsg(
+        'user',
+        [
+          toolResult(
+            'tr1',
+            'tu1',
+            '<worker-result>已写入 50 行 React 旅游页</worker-result>',
+            false,
+            'dispatch_to',
+          ),
+        ],
+        { id: 'tu-1-result', runId: 'run-1' },
+      ),
+    ];
+
+    const result = parseHistoryMessages(raw);
+
+    // 1) agent 气泡存在且 text 是剥信封后的 worker 回复
+    const agent = result.find((m) => m.role === 'agent');
+    expect(agent).toBeDefined();
+    expect(agent?.text).toBe('已写入 50 行 React 旅游页');
+    expect(agent?.actorName).toBe('coder');
+    expect(agent?.toolName).toBe('dispatch_to');
+
+    // 2) ★ 核心冒烟：agent 气泡 blocks 留空，不含 dispatch_to
+    expect(agent?.blocks).toEqual([]);
+    expect(
+      agent?.blocks.some((b) => 'toolName' in b && b.toolName === 'dispatch_to'),
+    ).toBe(false);
+    expect(
+      agent?.blocks.some((b) => b.type === 'tool_result'),
+    ).toBe(false);
+
+    // 3) dispatch_to 的 tool_call + tool_result 必须在主 Agent 气泡（不丢）
+    const assistant = result.find((m) => m.role === 'assistant');
+    expect(assistant).toBeDefined();
+    expect(
+      assistant?.blocks.some(
+        (b) => b.type === 'tool_call' && b.toolName === 'dispatch_to' && b.toolId === 'tu1',
+      ),
+    ).toBe(true);
+    expect(
+      assistant?.blocks.some(
+        (b) => b.type === 'tool_result' && b.toolCallId === 'tu1',
+      ),
+    ).toBe(true);
+  });
+
+  it('[smoke] hand_off_to 同样不再挤入 agent 气泡 blocks（isFinal=true 保留）', () => {
+    const raw: SerializedMsg[] = [
+      asMsg('user', [text('u1', '完全交给 researcher')], { id: 'u-2' }),
+      asMsg(
+        'assistant',
+        [toolUse('tu9', 'hand_off_to', { to: 'researcher', prompt: '调研 X' })],
+        { id: 'asst-2', runId: 'run-2' },
+      ),
+      asMsg(
+        'user',
+        [
+          toolResult(
+            'tr9',
+            'tu9',
+            '<worker-result>调研结论：Y</worker-result>',
+            false,
+            'hand_off_to',
+          ),
+        ],
+        { id: 'tu-9-result', runId: 'run-2' },
+      ),
+    ];
+
+    const result = parseHistoryMessages(raw);
+
+    const agent = result.find((m) => m.role === 'agent');
+    expect(agent).toBeDefined();
+    // hand_off_to 语义保留：agent 气泡 isFinal=true
+    expect(agent?.isFinal).toBe(true);
+    // 但 hand_off_to 也不再挤入 agent 气泡 blocks
+    expect(agent?.blocks).toEqual([]);
+    expect(
+      agent?.blocks.some((b) => 'toolName' in b && b.toolName === 'hand_off_to'),
+    ).toBe(false);
+    // 文本仍是剥信封后的 worker 实际回复
+    expect(agent?.text).toBe('调研结论：Y');
   });
 });
