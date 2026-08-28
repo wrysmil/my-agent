@@ -191,7 +191,7 @@ export function createHostWebSocketServer(deps: {
 } {
   const { sessionStore, logger } = deps;
 
-  const wss = new WebSocketServer({ noServer: false });
+  const wss = new WebSocketServer({ noServer: true });
   const handler = createHostConnectionHandler(deps);
   wss.on("connection", handler);
   logger?.debug("[host] WebSocketServer created for /api/events.host");

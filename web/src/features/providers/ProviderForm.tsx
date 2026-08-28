@@ -7,7 +7,7 @@ import { apiPost, apiPut, ApiError } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
 import { Button } from '@/components/ui/button';
 
-const PROVIDER_TYPES = ['deepseek', 'anthropic', 'openai', 'google', 'moonshot', 'qwen', 'mistral', 'xai'] as const;
+const PROVIDER_TYPES = ['deepseek', 'anthropic', 'openai', 'google', 'moonshot', 'qwen', 'mistral', 'xai', 'minimax'] as const;
 
 const TYPE_LABELS: Record<string, string> = {
   deepseek: 'DeepSeek',
@@ -18,6 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   qwen: 'Qwen (通义千问)',
   mistral: 'Mistral AI',
   xai: 'Grok (xAI)',
+  minimax: 'MiniMax',
 };
 
 const TYPE_DEFAULTS: Record<string, { baseUrl: string; defaultModel: string; apiKeyEnv: string }> = {
@@ -29,6 +30,7 @@ const TYPE_DEFAULTS: Record<string, { baseUrl: string; defaultModel: string; api
   qwen: { baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', defaultModel: 'qwen-max', apiKeyEnv: 'QWEN_API_KEY' },
   mistral: { baseUrl: 'https://api.mistral.ai/v1', defaultModel: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY' },
   xai: { baseUrl: 'https://api.x.ai/v1', defaultModel: 'grok-2', apiKeyEnv: 'XAI_API_KEY' },
+  minimax: { baseUrl: 'https://api.minimax.chat/v1', defaultModel: 'MiniMax-Text-01', apiKeyEnv: 'MINIMAX_API_KEY' },
 };
 
 /** 视觉元数据 — 与 ProvidersPage 网格一致 */
@@ -41,6 +43,7 @@ const TYPE_META: Record<string, { short: string; gradient: string; logoText: str
   qwen: { short: 'Qwen', gradient: 'from-rose-500 to-orange-400', logoText: 'Q' },
   mistral: { short: 'Mistral', gradient: 'from-amber-500 to-yellow-400', logoText: 'Mi' },
   xai: { short: 'Grok', gradient: 'from-slate-700 to-slate-500', logoText: 'X' },
+  minimax: { short: 'MiniMax', gradient: 'from-pink-500 to-rose-400', logoText: 'MM' },
 };
 
 const providerSchema = z.object({

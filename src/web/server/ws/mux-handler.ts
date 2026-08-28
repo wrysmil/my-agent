@@ -293,7 +293,7 @@ export function createMuxWebSocketServer(deps: {
 } {
   const { sessionStore, runnerFactory, logger } = deps;
 
-  const wss = new WebSocketServer({ noServer: false });
+  const wss = new WebSocketServer({ noServer: true });
   const handler = createMuxConnectionHandler(deps);
   wss.on("connection", handler);
   logger?.debug("[mux] WebSocketServer created for /api/events.mux");

@@ -14,6 +14,7 @@ export const PROVIDER_TYPES = [
   "qwen",
   "mistral",
   "xai",
+  "minimax",
 ] as const;
 
 export type ProviderType = (typeof PROVIDER_TYPES)[number];
@@ -73,5 +74,11 @@ export const PROVIDER_META: Record<ProviderType, ProviderMeta> = {
     defaultBaseUrl: "https://api.x.ai/v1",
     envKey: "XAI_API_KEY",
     defaultModel: "grok-2",
+  },
+  minimax: {
+    label: "MiniMax",
+    defaultBaseUrl: "https://api.minimax.chat/v1",
+    envKey: "MINIMAX_API_KEY",
+    defaultModel: "MiniMax-Text-01",
   },
 };

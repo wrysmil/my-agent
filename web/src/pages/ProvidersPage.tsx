@@ -113,6 +113,16 @@ const PROVIDER_META: ProviderTypeMeta[] = [
     logoBg: 'bg-slate-700',
     logoText: 'X',
   },
+  {
+    id: 'minimax',
+    label: 'MiniMax',
+    short: 'MiniMax',
+    baseUrl: 'https://api.minimax.chat/v1',
+    defaultModel: 'MiniMax-Text-01',
+    gradient: 'from-pink-500 to-rose-400',
+    logoBg: 'bg-pink-500',
+    logoText: 'MM',
+  },
 ];
 
 const TYPE_LABEL_MAP = Object.fromEntries(
@@ -142,6 +152,8 @@ export function ProvidersPage() {
     try {
       await apiPut('/api/providers/active', { id: providerId });
       await refetch();
+      // Invalidate ChatPage's active-provider cache so it refreshes immediately
+      queryClient.invalidateQueries({ queryKey: ['active-provider'] });
     } catch {
       // error shown via query state
     } finally {

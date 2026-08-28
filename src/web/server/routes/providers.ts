@@ -56,6 +56,7 @@ import { MoonshotProvider } from "../../../providers/moonshot.js";
 import { QwenProvider } from "../../../providers/qwen.js";
 import { MistralProvider } from "../../../providers/mistral.js";
 import { GrokProvider } from "../../../providers/grok.js";
+import { MiniMaxProvider } from "../../../providers/minimax.js";
 import type { LLMProvider } from "../../../providers/base.js";
 
 // ============================================================
@@ -523,6 +524,8 @@ function createProviderForTest(entry: ProviderConfigEntry): LLMProvider | null {
       return new MistralProvider({ apiKey, baseUrl });
     case "xai":
       return new GrokProvider({ apiKey, baseUrl });
+    case "minimax":
+      return new MiniMaxProvider({ apiKey, baseUrl });
     default:
       return null;
   }

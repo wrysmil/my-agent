@@ -68,7 +68,7 @@ export function ChatPage() {
   const { data: activeProvider } = useQuery({
     queryKey: ['active-provider'],
     queryFn: () => apiGet<any>('/api/providers/active').catch(() => null),
-    staleTime: 60_000,
+    staleTime: 5_000,
   });
 
   // cid：传给 useChatStream。无 sessionId 时为空串，hook 内部 useEffect 会跳过。
@@ -115,10 +115,12 @@ export function ChatPage() {
 
   // Set default model once active provider is loaded
   useEffect(() => {
-    if (activeProvider?.defaultModel && !selectedModel) {
+    console.log('[ChatPage] activeProvider changed:', activeProvider);
+    if (activeProvider?.defaultModel) {
+      console.log('[ChatPage] setting selectedModel to:', activeProvider.defaultModel);
       setSelectedModel(activeProvider.defaultModel);
     }
-  }, [activeProvider, selectedModel]);
+  }, [activeProvider]);
 
   // 让 handleSend 拿到「最新」的 options 快照（避免闭包陈旧）
   const sendRef = useRef(send);
