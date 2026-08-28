@@ -39,3 +39,4 @@ export { ThinkingDots } from './ThinkingDots';
 export { AttachmentList } from './AttachmentList';
 export { ContextDropdown } from './ContextDropdown';
 export { ComposerAttachmentButton } from './ComposerAttachmentButton';
+export { QuestionComposer, type QuestionComposerProps, type QuestionOption } from './QuestionComposer';
